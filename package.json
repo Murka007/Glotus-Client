@@ -1,0 +1,35 @@
+{
+    "name": "glotus-client",
+    "author": "Murka",
+    "version": "2.0.0",
+    "description": "The most advanced hack for moomoo.io",
+    "license": "MIT",
+    "private": true,
+    "scripts": {
+        "dev": "cross-env MODE=development webpack --watch",
+        "build": "cross-env MODE=production webpack"
+    },
+    "keywords": [
+        "hack",
+        "mod",
+        "cheat",
+        "script",
+        "userscript",
+        "io",
+        "tampermonkey",
+        "game",
+        "browser"
+    ],
+    "devDependencies": {
+        "@types/node": "^18.11.18",
+        "cross-env": "^7.0.3",
+        "html-loader": "^4.2.0",
+        "raw-loader": "^4.0.2",
+        "sass": "^1.57.1",
+        "sass-loader": "^13.2.0",
+        "terser-webpack-plugin": "^5.3.6",
+        "ts-loader": "^9.4.2",
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.1"
+    }
+}
