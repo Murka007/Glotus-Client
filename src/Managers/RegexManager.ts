@@ -18,10 +18,12 @@ type TRegex = RegExp | RegExp[] | string | string[];
 class RegexManager {
     code: string;
     readonly COPY_CODE: string;
+    hookCount: number
 
     constructor(code: string) {
         this.code = code;
         this.COPY_CODE = code;
+        this.hookCount = 0;
     }
 
     private isRegExp(regex: RegExp | string): regex is RegExp {
@@ -56,6 +58,7 @@ class RegexManager {
         const expression = new RegExp(regex, flags);
         const match = this.code.match(expression);
         if (match === null) Glotus.error("Failed to find: " + name);
+        this.hookCount++;
         return expression;
     }
 

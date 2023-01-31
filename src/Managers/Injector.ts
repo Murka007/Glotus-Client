@@ -43,18 +43,12 @@ class Injector {
     private static formatCode(code: string) {
         const Hook = new RegexManager(code);
 
-        Hook.append(
-            "Packer",
-            /(\w+)=new \w+,(\w+)=new \w+;/,
-            // "Glotus.WebSocketManager.encode=$2.encode.bind(o);Glotus.WebSocketManager.decode=$3.decode.bind(a);console.log(Glotus);"
-            `console.log("encoder", $1);`
-        );
-
-        Hook.prepend(
-            "storeBuy",
-            /\w+\.storeBuy=(\w+)/,
-            `console.log("storeBuy", $1),`
-        )
+        // Hook.append(
+        //     "Packer",
+        //     /(\w+)=new \w+,(\w+)=new \w+;/,
+        //     // "Glotus.WebSocketManager.encode=$2.encode.bind(o);Glotus.WebSocketManager.decode=$3.decode.bind(a);console.log(Glotus);"
+        //     `console.log("encoder", $1);`
+        // );
         return Hook.code;
     }
     
