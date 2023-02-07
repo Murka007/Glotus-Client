@@ -1,4 +1,4 @@
-class HookManager {
+const Hooker = new class Hooker {
     createRecursiveHook(
         target: any,
         prop: string | number,
@@ -39,4 +39,4 @@ class HookManager {
     }
 }
 
-export default HookManager;
+export default Hooker;

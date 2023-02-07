@@ -74,7 +74,7 @@ export default class Vector {
         return Math.atan2(copy.y, copy.x);
     }
 
-    // direction(angle: number, scalar: number) {
-    //     return this.copy().add(Vector.fromAngle(angle).mult(scalar));
-    // }
+    direction(angle: number, scalar: number) {
+        return this.copy().add(Vector.fromAngle(angle).mult(scalar));
+    }
 }

@@ -34,7 +34,7 @@ if (isProd) plugins.push(
 
 module.exports = {
     mode,
-    target: ["web"],
+    target: ["web", "es2020"],
     entry: "./src/index.ts",
     output: {
         filename: "Glotus_Client.user.js",
@@ -57,8 +57,10 @@ module.exports = {
                     output: false,
                     format: {
                         beautify: true,
-                        comments: true
-                    }
+                    },
+                    keep_classnames: true,
+                    keep_fnames: true,
+                    module: false,
                 }
             })
         ]

@@ -1,4 +1,4 @@
-import RegexManager from "./RegexManager";
+import Regexer from "./Regexer";
 
 class Injector {
 
@@ -41,14 +41,20 @@ class Injector {
 
     // Modify bundle using regular expressions
     private static formatCode(code: string) {
-        const Hook = new RegexManager(code);
+        const Hook = new Regexer(code);
 
-        // Hook.append(
-        //     "Packer",
-        //     /(\w+)=new \w+,(\w+)=new \w+;/,
-        //     // "Glotus.WebSocketManager.encode=$2.encode.bind(o);Glotus.WebSocketManager.decode=$3.decode.bind(a);console.log(Glotus);"
-        //     `console.log("encoder", $1);`
-        // );
+        Hook.prepend(
+            "LockRotationClient",
+            /return \w+\?\(/,
+            `return Glotus.Controller.mouse.angle;`
+        );
+
+        Hook.replace(
+            "DisableResetMoveDir",
+            /,\w+\.send\("rmd"\)/,
+            ""
+        );
+        
         return Hook.code;
     }
     

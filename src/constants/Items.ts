@@ -1,103 +1,8 @@
-export enum ItemType {
-    PRIMARY,
-    SECONDARY,
-    FOOD,
-    WALL,
-    SPIKE,
-    WINDMILL,
-    FARM,
-    TRAP,
-    TURRET,
-    SPAWN,
-}
-
-export enum EWeapons {
-    TOOL_HAMMER,
-    HAND_AXE,
-    GREAT_AXE,
-    SHORT_SWORD,
-    KATANA,
-    POLEARM,
-    BAT,
-    DAGGERS,
-    STICK,
-    HUNTING_BOW,
-    GREAT_HAMMER,
-    WOODEN_SHIELD,
-    CROSSBOW,
-    REPEATER_CROSSBOW,
-    MC_GRABBY,
-    MUSKET,
-}
-
-export enum EItems {
-    APPLE,
-    COOKIE,
-    CHEESE,
-    WOOD_WALL,
-    STONE_WALL,
-    CASTLE_WALL,
-    SPIKES,
-    GREATER_SPIKES,
-    POISON_SPIKES,
-    SPINNING_SPIKES,
-    WINDMILL,
-    FASTER_WINDMILL,
-    POWER_MILL,
-    MINE,
-    SAPLING,
-    PIT_TRAP,
-    BOOST_PAD,
-    TURRET,
-    PLATFORM,
-    HEALING_PAD,
-    SPAWN_PAD,
-    BLOCKER,
-    TELEPORTER,
-}
-
-interface IWeapon {
-    id: EWeapons;
-    itemType: ItemType;
-    type?: 1 | 0;
-    name: string;
-    description: string;
-    src: string;
-    age?: number;
-    spdMult?: number;
-    pre?: number;
-    iPad?: number;
-    knock?: number;
-    hitSlow?: number;
-    cost?: {
-        food?: number;
-        wood?: number;
-        stone?: number;
-        gold?: number;
-    }
-    projectile?: number;
-    sDmg?: number;
-    shield?: number;
-    length: number;
-    width: number;
-    xOffset: number;
-    yOffset: number;
-    damage?: number;
-    range?: number;
-    gather?: number;
-    speed?: number;
-    aboveHand?: boolean;
-    armS?: number;
-    steal?: number;
-    rec?: number;
-    hndS?: number;
-    hndD?: number;
-    hideProjectile?: boolean;
-}
+import { EItem, EWeapon, EWeaponVariant, IEWeaponVariant, IItem, ItemType, IWeapon, WeaponType } from "../types/Items";
 
 export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
-    id: EWeapons.TOOL_HAMMER,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.TOOL_HAMMER,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     name: "tool hammer",
     description: "tool for gathering all resources",
@@ -111,8 +16,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 1,
     speed: 300
 }, {
-    id: EWeapons.HAND_AXE,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.HAND_AXE,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 2,
     name: "hand axe",
@@ -128,8 +33,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 2,
     speed: 400
 }, {
-    id: EWeapons.GREAT_AXE,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.GREAT_AXE,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 8,
     pre: 1,
@@ -146,8 +51,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 4,
     speed: 400
 }, {
-    id: EWeapons.SHORT_SWORD,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.SHORT_SWORD,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 2,
     name: "short sword",
@@ -164,8 +69,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 1,
     speed: 300
 }, {
-    id: EWeapons.KATANA,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.KATANA,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 8,
     pre: 3,
@@ -183,8 +88,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 1,
     speed: 300
 }, {
-    id: EWeapons.POLEARM,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.POLEARM,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 2,
     name: "polearm",
@@ -202,8 +107,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 1,
     speed: 700
 }, {
-    id: EWeapons.BAT,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.BAT,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 2,
     name: "bat",
@@ -220,8 +125,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 1,
     speed: 300
 }, {
-    id: EWeapons.DAGGERS,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.DAGGERS,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 2,
     name: "daggers",
@@ -240,8 +145,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     spdMult: 1.13,
     speed: 100
 }, {
-    id: EWeapons.STICK,
-    itemType: ItemType.PRIMARY,
+    id: EWeapon.STICK,
+    itemType: WeaponType.PRIMARY,
     type: 0,
     age: 2,
     name: "stick",
@@ -257,8 +162,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 7,
     speed: 400
 }, {
-    id: EWeapons.HUNTING_BOW,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.HUNTING_BOW,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 6,
     name: "hunting bow",
@@ -275,8 +180,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     spdMult: .75,
     speed: 600
 }, {
-    id: EWeapons.GREAT_HAMMER,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.GREAT_HAMMER,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 6,
     name: "great hammer",
@@ -293,8 +198,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 1,
     speed: 400
 }, {
-    id: EWeapons.WOODEN_SHIELD,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.WOODEN_SHIELD,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 6,
     name: "wooden shield",
@@ -307,8 +212,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     yOffset: 0,
     spdMult: .7
 }, {
-    id: EWeapons.CROSSBOW,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.CROSSBOW,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 8,
     pre: 9,
@@ -328,8 +233,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     spdMult: .7,
     speed: 700
 }, {
-    id: EWeapons.REPEATER_CROSSBOW,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.REPEATER_CROSSBOW,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 9,
     pre: 12,
@@ -349,8 +254,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     spdMult: .7,
     speed: 230
 }, {
-    id: EWeapons.MC_GRABBY,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.MC_GRABBY,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 6,
     name: "mc grabby",
@@ -368,8 +273,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     gather: 0,
     speed: 700
 }, {
-    id: EWeapons.MUSKET,
-    itemType: ItemType.SECONDARY,
+    id: EWeapon.MUSKET,
+    itemType: WeaponType.SECONDARY,
     type: 1,
     age: 9,
     pre: 12,
@@ -394,53 +299,9 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     speed: 1500
 }]
 
-interface IItem {
-    id: EItems;
-    itemType: ItemType;
-    name: string;
-    description: string;
-    cost: {
-        food?: number;
-        wood?: number;
-        stone?: number;
-        gold?: number;
-    },
-    restore?: number;
-    scale: number;
-    holdOffset: number;
-    age?: number;
-    projDmg?: boolean;
-    health?: number;
-    placeOffset?: number;
-    pre?: number;
-    damage?: number;
-    spritePadding?: number;
-    poisonDamage?: number;
-    turnSpeed?: number;
-    pps?: number;
-    iconLineMult?: number;
-    type?: number;
-    colDiv?: number;
-    trap?: boolean;
-    ignoreCollision?: boolean;
-    doUpdate?: boolean;
-    hideFromEnemy?: boolean;
-    boostSpeed?: number;
-    projectile?: number;
-    zIndex?: number;
-
-    shootRange?: number;
-    healCol?: number;
-
-    shootRate?: number;
-    spawnPoint?: boolean;
-    blocker?: number;
-    teleport?: boolean;
-}
-
 export const Items: ReadonlyArray<Readonly<IItem>> = [{
     // group: e.exports.groups[0],
-    id: EItems.APPLE,
+    id: EItem.APPLE,
     itemType: ItemType.FOOD,
     name: "apple",
     description: "restores 20 health when consumed",
@@ -453,7 +314,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 3,
     // group: e.exports.groups[0],
-    id: EItems.COOKIE,
+    id: EItem.COOKIE,
     itemType: ItemType.FOOD,
     name: "cookie",
     description: "restores 40 health when consumed",
@@ -466,7 +327,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 7,
     // group: e.exports.groups[0],
-    id: EItems.CHEESE,
+    id: EItem.CHEESE,
     itemType: ItemType.FOOD,
     name: "cheese",
     description: "restores 30 health and another 50 over 5 seconds",
@@ -478,7 +339,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 15
 }, {
     // group: e.exports.groups[1],
-    id: EItems.WOOD_WALL,
+    id: EItem.WOOD_WALL,
     itemType: ItemType.WALL,
     name: "wood wall",
     description: "provides protection for your village",
@@ -493,7 +354,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 3,
     // group: e.exports.groups[1],
-    id: EItems.STONE_WALL,
+    id: EItem.STONE_WALL,
     itemType: ItemType.WALL,
     name: "stone wall",
     description: "provides improved protection for your village",
@@ -508,7 +369,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 7,
     pre: 1,
     // group: e.exports.groups[1],
-    id: EItems.CASTLE_WALL,
+    id: EItem.CASTLE_WALL,
     itemType: ItemType.WALL,
     name: "castle wall",
     description: "provides powerful protection for your village",
@@ -521,7 +382,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     placeOffset: -5
 }, {
     // group: e.exports.groups[2],
-    id: EItems.SPIKES,
+    id: EItem.SPIKES,
     itemType: ItemType.SPIKE,
     name: "spikes",
     description: "damages enemies when they touch them",
@@ -538,7 +399,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 5,
     // group: e.exports.groups[2],
-    id: EItems.GREATER_SPIKES,
+    id: EItem.GREATER_SPIKES,
     itemType: ItemType.SPIKE,
     name: "greater spikes",
     description: "damages enemies when they touch them",
@@ -556,7 +417,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 9,
     pre: 1,
     // group: e.exports.groups[2],
-    id: EItems.POISON_SPIKES,
+    id: EItem.POISON_SPIKES,
     itemType: ItemType.SPIKE,
     name: "poison spikes",
     description: "poisons enemies when they touch them",
@@ -575,7 +436,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 9,
     pre: 2,
     // group: e.exports.groups[2],
-    id: EItems.SPINNING_SPIKES,
+    id: EItem.SPINNING_SPIKES,
     itemType: ItemType.SPIKE,
     name: "spinning spikes",
     description: "damages enemies when they touch them",
@@ -592,7 +453,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     placeOffset: -5
 }, {
     // group: e.exports.groups[3],
-    id: EItems.WINDMILL,
+    id: EItem.WINDMILL,
     itemType: ItemType.WINDMILL,
     name: "windmill",
     description: "generates gold over time",
@@ -612,7 +473,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 5,
     pre: 1,
     // group: e.exports.groups[3],
-    id: EItems.FASTER_WINDMILL,
+    id: EItem.FASTER_WINDMILL,
     itemType: ItemType.WINDMILL,
     name: "faster windmill",
     description: "generates more gold over time",
@@ -632,7 +493,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 8,
     pre: 1,
     // group: e.exports.groups[3],
-    id: EItems.POWER_MILL,
+    id: EItem.POWER_MILL,
     itemType: ItemType.WINDMILL,
     name: "power mill",
     description: "generates more gold over time",
@@ -652,7 +513,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 5,
     // group: e.exports.groups[4],
     type: 2,
-    id: EItems.MINE,
+    id: EItem.MINE,
     itemType: ItemType.FARM,
     name: "mine",
     description: "allows you to mine stone",
@@ -668,7 +529,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 5,
     // group: e.exports.groups[11],
     type: 0,
-    id: EItems.SAPLING,
+    id: EItem.SAPLING,
     itemType: ItemType.FARM,
     name: "sapling",
     description: "allows you to farm wood",
@@ -683,7 +544,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 4,
     // group: e.exports.groups[5],
-    id: EItems.PIT_TRAP,
+    id: EItem.PIT_TRAP,
     itemType: ItemType.TRAP,
     name: "pit trap",
     description: "pit that traps enemies if they walk over it",
@@ -702,7 +563,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 4,
     // group: e.exports.groups[6],
-    id: EItems.BOOST_PAD,
+    id: EItem.BOOST_PAD,
     itemType: ItemType.TRAP,
     name: "boost pad",
     description: "provides boost when stepped on",
@@ -721,7 +582,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     age: 7,
     // group: e.exports.groups[7],
     doUpdate: true,
-    id: EItems.TURRET,
+    id: EItem.TURRET,
     itemType: ItemType.TURRET,
     name: "turret",
     description: "defensive structure that shoots at enemies",
@@ -739,7 +600,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 7,
     // group: e.exports.groups[8],
-    id: EItems.PLATFORM,
+    id: EItem.PLATFORM,
     itemType: ItemType.TURRET,
     name: "platform",
     description: "platform to shoot over walls and cross over water",
@@ -755,7 +616,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 7,
     // group: e.exports.groups[9],
-    id: EItems.HEALING_PAD,
+    id: EItem.HEALING_PAD,
     itemType: ItemType.TURRET,
     name: "healing pad",
     description: "standing on it will slowly heal you",
@@ -773,7 +634,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 9,
     // group: e.exports.groups[10],
-    id: EItems.SPAWN_PAD,
+    id: EItem.SPAWN_PAD,
     itemType: ItemType.SPAWN,
     name: "spawn pad",
     description: "you will spawn here when you die but it will dissapear",
@@ -790,7 +651,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 7,
     // group: e.exports.groups[12],
-    id: EItems.BLOCKER,
+    id: EItem.BLOCKER,
     itemType: ItemType.TURRET,
     name: "blocker",
     description: "blocks building in radius",
@@ -808,7 +669,7 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
 }, {
     age: 7,
     // group: e.exports.groups[13],
-    id: EItems.TELEPORTER,
+    id: EItem.TELEPORTER,
     itemType: ItemType.TURRET,
     name: "teleporter",
     description: "teleports you to a random point on the map",
@@ -824,21 +685,6 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }];
-
-export enum EWeaponVariant {
-    STONE,
-    GOLD,
-    DIAMOND,
-    RUBY,
-}
-
-interface IEWeaponVariant {
-    id: EWeaponVariant;
-    src: string;
-    xp: number;
-    val: number;
-    poison?: boolean;
-}
 
 const weaponVariants: ReadonlyArray<Readonly<IEWeaponVariant>> = [{
     id: EWeaponVariant.STONE,

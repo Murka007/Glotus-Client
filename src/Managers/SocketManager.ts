@@ -1,28 +1,29 @@
 import Glotus from "..";
 import { Items, Weapons } from "../constants/Items";
+import { EAccessory, EHat } from "../constants/Store";
 import Player from "../data/Player";
-import { IncomingPacket, SocketServer } from "../types/WebSocket";
+import { ValueOf } from "../types/Common";
+import { TItem, TWeapon } from "../types/Items";
+import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer, Store, StoreType } from "../types/Socket";
 
-class WebSocketManager {
-    socket: WebSocket | null;
-    Encoder: null | {
+const SocketManager = new class SocketManager {
+    private socket: WebSocket | null = null;
+    private Encoder: null | {
         readonly encode: ((data: any) => Uint8Array);
-    }
-    Decoder: null | {
+    } = null;
+    private Decoder: null | {
         readonly decode: ((data: Uint8Array) => any);
-    }
+    } = null;
 
     constructor() {
-        this.socket = null;
-        this.Encoder = null;
-        this.Decoder = null;
+        this.message = this.message.bind(this);
     }
 
     init() {
         const that = this;
 
         // Intercept msgpack encoder
-        Glotus.HookManager.createRecursiveHook(
+        Glotus.Hooker.createRecursiveHook(
             Object.prototype, "initialBufferSize",
             (_this) => (
                 typeof _this === "object" &&
@@ -36,7 +37,7 @@ class WebSocketManager {
         );
 
         // Intercept msgpack decoder
-        Glotus.HookManager.createRecursiveHook(
+        Glotus.Hooker.createRecursiveHook(
             Object.prototype, "maxExtLength",
             (_this) => (
                 typeof _this === "object" &&
@@ -51,32 +52,47 @@ class WebSocketManager {
 
         window.WebSocket = new Proxy(WebSocket, {
             construct(target, args: [url: string | URL, protocols?: string | string[]]) {
-                const ws = new target(...args);
-                that.socket = ws;
+                const socket = new target(...args);
+                that.socket = socket;
 
-                ws.addEventListener("message", event => {
-                    that.message(event.data);
-                })
+                socket.addEventListener("message", that.message);
 
-                return ws;
+                // let count = 0;
+
+                // socket.send = new Proxy(socket.send, {
+                //     apply(target, _this, args: [string | ArrayBufferLike | Blob | ArrayBufferView]) {
+                //         count++;
+                //         return target.apply(_this, args);
+                //     }
+                // });
+
+                // const interval = setInterval(() => {
+                //     Glotus.log(`Packet send count: ${count}`);
+                //     count = 0;
+                // }, 1000);
+
+                return socket;
             }
         })
     }
 
-    message(data: ArrayBuffer) {
+    message(event: MessageEvent<ArrayBuffer>) {
         if (this.Decoder === null) return;
-
-        const decoded = this.Decoder.decode(new Uint8Array(data));
+        
+        const data = event.data;
         try {
+            const decoded = this.Decoder.decode(new Uint8Array(data));
             const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
             if (temp[0] === SocketServer.PING_RESPONSE) return;
             if (temp[0] === SocketServer.LOAD_AI) return;
             if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
             if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
+
             switch (temp[0]) {
 
                 case SocketServer.MY_PLAYER_SPAWN:
                     Glotus.myPlayer.id = temp[1];
+                    Glotus.myPlayer.inGame = true;
                     if (!Glotus.players.has(temp[1])) {
                         Glotus.players.set(temp[1], Glotus.myPlayer);
                     }
@@ -103,7 +119,7 @@ class WebSocketManager {
                 }
 
                 case SocketServer.CREATE_PLAYER: {
-                    const data = temp[1][0];
+                    const data = temp[1];
                     const player = Glotus.players.get(data[1]) || new Player;
                     if (!Glotus.players.has(data[1])) {
                         Glotus.players.set(data[1], player);
@@ -137,17 +153,109 @@ class WebSocketManager {
 
             }
         } catch(err) {
-            Glotus.error("Packet decode error: ", decoded);
+            Glotus.error("Packet decode error: ", data);
         }
     }
 
-    private send() {
+    private send(data: OutcomingPacket) {
         if (
             this.socket === null ||
             this.socket.readyState !== this.socket.OPEN ||
             this.Encoder === null
         ) return;
+
+        const [type, ...args] = data;
+        const encoded = this.Encoder.encode([type, args]);
+        this.socket.send(encoded);
+    }
+
+    clanRequest(id: number, accept: boolean) {
+        this.send([SocketClient.ACCEPT_CLAN_JOIN_REQUEST, id, Number(accept)]);
+    }
+
+    kick(id: number) {
+        this.send([SocketClient.KICK_FROM_CLAN, id]);
+    }
+
+    joinClan(name: string) {
+        this.send([SocketClient.JOIN_CLAN, name]);
+    }
+
+    createClan(name: string) {
+        this.send([SocketClient.CREATE_CLAN, name]);
+    }
+
+    leaveClan() {
+        this.send([SocketClient.LEAVE_CLAN]);
+    }
+
+    equip(type: ValueOf<typeof StoreType>, id: EHat | EAccessory) {
+        this.send([SocketClient.STORE, Store.EQUIP, id, type]);
+    }
+
+    buy(type: ValueOf<typeof StoreType>, id: EHat | EAccessory) {
+        this.send([SocketClient.STORE, Store.BUY, id, type]);
+    }
+
+    chat(message: string) {
+        this.send([SocketClient.CHAT, message]);
+    }
+
+    attack(angle: number | null) {
+        this.send([SocketClient.ATTACK, 1, angle]);
+    }
+
+    stopAttack(angle: number | null) {
+        this.send([SocketClient.ATTACK, 0, angle]);
+    }
+
+    resetMoveDir() {
+        this.send([SocketClient.RESET_MOVE_DIR]);
+    }
+
+    move(angle: number | null) {
+        this.send([SocketClient.MOVE, angle]);
+    }
+
+    autoAttack() {
+        this.send([SocketClient.PLAYER_CONTROL, 1]);
+    }
+
+    lockRotation() {
+        this.send([SocketClient.PLAYER_CONTROL, 0]);
+    }
+
+    pingMap() {
+        this.send([SocketClient.PING_MAP]);
+    }
+
+    selectItemByID(id: TWeapon | TItem, type: boolean) {
+        this.send([SocketClient.SELECT_ITEM, id, type]);
+    }
+
+    // selectItemByID(id: EItems) {
+    //     this.send([SocketClient.SELECT_ITEM, id, false]);
+    // }
+
+    // selectWeaponByID(id: EWeapons) {
+    //     this.send([SocketClient.SELECT_ITEM, id, true]);
+    // }
+
+    spawn(name: string, moofoll: 1 | 0, skin: number) {
+        this.send([SocketClient.SPAWN, { name, moofoll, skin }]);
+    }
+
+    upgradeItem(id: TWeapon | TItem) {
+        this.send([SocketClient.UPGRADE_ITEM, id]);
+    }
+
+    updateAngle(radians: number) {
+        this.send([SocketClient.ANGLE, radians]);
+    }
+
+    pingRequest() {
+        this.send([SocketClient.PING_REQUEST]);
     }
 }
 
-export default WebSocketManager;
+export default SocketManager;

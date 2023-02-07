@@ -1,0 +1,10 @@
+@import "Variables.scss";
+
+header {
+    display: flex;
+    align-items: center;
+
+    background: $bg-sub-color;
+    padding: $default-padding;
+    border-radius: $default-radius;
+}

@@ -15,7 +15,11 @@ const NumberSystem: ReadonlyArray<ISystem> = [
 ]
 
 type TRegex = RegExp | RegExp[] | string | string[];
-class RegexManager {
+
+/**
+ * Regexer class, significantly simplifies the work with regular expressions
+ */
+class Regexer {
     code: string;
     readonly COPY_CODE: string;
     hookCount: number
@@ -99,4 +103,4 @@ class RegexManager {
     }
 }
 
-export default RegexManager;
+export default Regexer;

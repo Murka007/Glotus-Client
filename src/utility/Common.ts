@@ -1,0 +1,62 @@
+export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
+    return Math.atan2(y2 - y1, x2 - x1);
+}
+
+export const isActiveInput = () => {
+    const active = document.activeElement || document.body;
+    return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+}
+
+export const getAngleFromBitmask = (bitmask: number, rotate: boolean): number | null => {
+    const vec = { x: 0, y: 0 };
+    if (bitmask & 0b0001) vec.y--;
+    if (bitmask & 0b0010) vec.y++;
+    if (bitmask & 0b0100) vec.x--;
+    if (bitmask & 0b1000) vec.x++;
+    if (rotate) {
+        vec.x *= -1;
+        vec.y *= -1;
+    }
+    return vec.x === 0 && vec.y === 0 ? null : Math.atan2(vec.y, vec.x);
+}
+
+export const formatCode = (code: string): string => {
+    code = code + "";
+    if (code === "Backspace") return code;
+    if (code === "Escape") return "ESC";
+    if (code === "Delete") return "DEL";
+    if (code === "Minus") return "-";
+    if (code === "Equal") return "=";
+    if (code === "BracketLeft") return "[";
+    if (code === "BracketRight") return "]";
+    if (code === "Slash") return "/";
+    if (code === "Backslash") return "\\";
+    if (code === "Quote") return "'";
+    if (code === "Backquote") return "`";
+    if (code === "Semicolon") return ";";
+    if (code === "Comma") return ",";
+    if (code === "Period") return ".";
+    if (code === "CapsLock") return "CAPS";
+    if (code === "ContextMenu") return "CTXMENU";
+    if (code === "NumLock") return "LOCK";
+    return code.replace(/^Page/, "PG")
+               .replace(/^Digit/, "")
+               .replace(/^Key/, "")
+               .replace(/^(Shift|Control|Alt)(L|R).*$/, "$2$1")
+               .replace(/Control/, "CTRL")
+               .replace(/^Arrow/, "")
+               .replace(/^Numpad/, "NUM")
+               .replace(/Decimal/, "DEC")
+               .replace(/Subtract/, "SUB")
+               .replace(/Divide/, "DIV")
+               .replace(/Multiply/, "MULT").toUpperCase();
+}
+
+export const formatButton = (button: number): string => {
+    if (button === 0) return "LBTN"; // Left Button
+    if (button === 1) return "MBTN"; // Middle Button
+    if (button === 2) return "RBTN"; // Right Button
+    if (button === 3) return "BBTN"; // Back Button
+    if (button === 4) return "FBTN"; // Forward Button
+    return "";
+}

@@ -1,0 +1,45 @@
+@import "../Variables.scss";
+
+@mixin hotkeyInput {
+    .hotkeyInput {
+        width: $default-option-width;
+        height: $default-option-height;
+
+        background: $option-bg-color;
+        border: 5px solid $option-border;
+        border-radius: $default-radius;
+
+        font-weight: 800;
+        font-size: 1.1em;
+        color: $ui-sub-color;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        &:hover {
+            background: $option-bg-color2;
+            border-color: $option-border2;
+        }
+
+        &:focus {
+            background: $option-bg-color3;
+            border-color: $option-border3;
+        }
+
+        &.red {
+            background: $red-option-bg-color;
+            border-color: $red-option-border;
+            color: $red-ui-sub-color;
+
+            &:hover {
+                background: $red-option-bg-color2;
+                border-color: $red-option-border2;
+            }
+
+            &:focus {
+                background: $red-option-bg-color3;
+                border-color: $red-option-border3;
+            }
+        }
+    }
+}

@@ -1,0 +1,36 @@
+@import "Variables.scss", "./mixins/Ripple.scss";
+
+#navbar-container {
+    display: flex;
+    flex-direction: column;
+
+    background: $bg-sub-color;
+    padding: $default-padding;
+    border-radius: $default-radius;
+
+    .open-menu {
+        position: relative;
+        width: 8.5em;
+        height: 3.5em;
+
+        background: $ui-bg-color;
+        font-weight: 800;
+        font-size: 1.3em;
+        overflow: hidden;
+
+        &:hover {
+            background: $ui-bg-sub-color;
+        }
+
+        &.active {
+            background: $ui-bg-sub-color;
+            pointer-events: none;
+        }
+    
+        &.bottom-align {
+            margin-top: auto;
+        }
+
+        @include ripple;
+    }
+}

@@ -1,0 +1,89 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap");
+@import "Variables.scss", "Header.scss", "Navbar.scss", "MenuPage.scss";
+
+html, body {
+    margin: 0;
+    padding: 0;
+
+    scrollbar-width: thin;
+    scrollbar-track-color: $option-bg-color;
+    scrollbar-face-color: $option-border;
+}
+
+* {
+    font-family: "Noto Sans", sans-serif;
+    color: #f1f1f1;
+    box-sizing: border-box;
+}
+
+h1 {
+    font-weight: 800;
+    margin: 0;
+}
+
+h2 {
+    margin: 0;
+}
+
+p {
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin: 0;
+    color: #B8B8B8;
+}
+
+button {
+    border: none;
+    outline: none;
+    cursor: pointer;
+}
+
+#menu-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 1280px;
+    height: 720px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#menu-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    row-gap: $default-padding;
+
+    width: 90%;
+    height: 90%;
+
+    padding: $default-padding;
+    border-radius: $default-radius;
+
+    background: $bg-color;
+}
+
+main {
+    display: flex;
+    column-gap: $default-padding;
+    width: 100%;
+    height: calc(100% - 72px);
+}
+
+::-webkit-scrollbar {
+    width: 12px;
+}
+  
+::-webkit-scrollbar-track {
+    background: $option-bg-color;
+    border-radius: $default-radius;
+}
+
+::-webkit-scrollbar-thumb {
+    background: $option-border;
+    border-radius: $default-radius;
+}
