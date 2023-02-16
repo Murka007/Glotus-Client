@@ -2,9 +2,28 @@
 
 header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
+    height: 45px;
 
     background: $bg-sub-color;
     padding: $default-padding;
     border-radius: $default-radius;
+
+    h1 {
+        font-size: 2.3em;
+    }
+
+    #close-button {
+        display: block;
+        fill: $close-button-color;
+        cursor: pointer;
+
+        width: auto;
+        height: 100%;
+
+        &:hover {
+            fill: $close-button-color2;
+        }
+    }
 }

@@ -1,3 +1,5 @@
+import { fixTo } from "../utility/Common";
+
 export default class Vector {
     x: number;
     y: number;
@@ -7,8 +9,8 @@ export default class Vector {
         this.y = y;
     }
 
-    static fromAngle(angle: number) {
-        return new Vector(Math.cos(angle), Math.sin(angle));
+    static fromAngle(angle: number, length = 1) {
+        return new Vector(Math.cos(angle) * length, Math.sin(angle) * length);
     }
 
     add(vec: Vector) {
@@ -17,9 +19,14 @@ export default class Vector {
         return this;
     }
 
-    sub(vec: Vector) {
-        this.x -= vec.x;
-        this.y -= vec.y;
+    sub(vec: Vector | number) {
+        if (vec instanceof Vector) {
+            this.x -= vec.x;
+            this.y -= vec.y;
+        } else {
+            this.x -= vec;
+            this.y -= vec;
+        }
         return this;
     }
 
@@ -74,7 +81,19 @@ export default class Vector {
         return Math.atan2(copy.y, copy.x);
     }
 
-    direction(angle: number, scalar: number) {
-        return this.copy().add(Vector.fromAngle(angle).mult(scalar));
+    direction(angle: number, length: number) {
+        return this.copy().add(Vector.fromAngle(angle, length));
+    }
+
+    fixTo(fraction: number) {
+        this.x = fixTo(this.x, fraction);
+        this.y = fixTo(this.y, fraction);
+        return this;
+    }
+
+    floor() {
+        this.x = Math.floor(this.x);
+        this.y = Math.floor(this.y);
+        return this;
     }
 }

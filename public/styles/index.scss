@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;800&display=swap");
-@import "Variables.scss", "Header.scss", "Navbar.scss", "MenuPage.scss";
+@import "Variables.scss", "Header.scss", "Navbar.scss", "MenuPage.scss", "Keyframes.scss";
 
 html, body {
     margin: 0;
@@ -13,7 +13,6 @@ html, body {
 * {
     font-family: "Noto Sans", sans-serif;
     color: #f1f1f1;
-    box-sizing: border-box;
 }
 
 h1 {
@@ -65,13 +64,21 @@ button {
     border-radius: $default-radius;
 
     background: $bg-color;
+
+    &.toclose {
+        animation: 150ms ease-in toclose forwards;
+    }
+
+    &.toopen {
+        animation: 150ms ease-in toopen forwards;
+    }
 }
 
 main {
     display: flex;
     column-gap: $default-padding;
     width: 100%;
-    height: calc(100% - 72px);
+    height: calc(100% - 75px);
 }
 
 ::-webkit-scrollbar {
@@ -86,4 +93,9 @@ main {
 ::-webkit-scrollbar-thumb {
     background: $option-border;
     border-radius: $default-radius;
+}
+
+.icon {
+    width: 50px;
+    height: 50px;
 }

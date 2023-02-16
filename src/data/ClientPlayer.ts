@@ -1,5 +1,7 @@
-import { Items } from "../constants/Items";
+import { Items, Weapons } from "../constants/Items";
+import PlayerManager from "../Managers/PlayerManager";
 import Controller from "../modules/Controller";
+import Vector from "../modules/Vector";
 import { EItem, EWeapon, ItemType, TItem, TItemType, TWeapon, TWeaponType, WeaponType } from "../types/Items";
 import Player from "./Player";
 
@@ -12,6 +14,7 @@ const myPlayer = new class ClientPlayer extends Player {
         gold: 100,
         kills: 0
     }
+    readonly offset = new Vector;
     inGame = false;
 
     constructor() {
@@ -72,6 +75,35 @@ const myPlayer = new class ClientPlayer extends Player {
         this.resetInventory();
         Controller.reset();
         this.inGame = false;
+    }
+
+    spawned(id: number) {
+        this.id = id;
+        this.inGame = true;
+        if (!PlayerManager.players.has(id)) {
+            PlayerManager.players.set(id, myPlayer);
+        }
+    }
+
+    updateItems(itemList: [TWeapon | TItem], isWeaponUpdate: boolean) {
+        const items = isWeaponUpdate ? Weapons : Items;
+        for (const id of itemList) {
+            const item = items[id];
+            if (item !== undefined) {
+                myPlayer.inventory[item.itemType] = id;
+            }
+        }
+    }
+
+    updateClanMembers(teammates: (string | number)[]) {
+        Controller.teammates.length = 0;
+        for (let i=0;i<teammates.length;i+=2) {
+            const id = teammates[i + 0] as number;
+            const nickname = teammates[i + 1] as string;
+            if (id !== this.id) {
+                Controller.teammates.push(id);
+            }
+        }
     }
 }
 

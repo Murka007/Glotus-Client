@@ -1,3 +1,4 @@
+import myPlayer from "../data/ClientPlayer";
 import Hooker from "./Hooker";
 import Storage from "./Storage";
 

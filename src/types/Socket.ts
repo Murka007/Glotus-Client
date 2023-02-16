@@ -1,4 +1,4 @@
-import { EAccessory, EHat } from "../constants/Store";
+import { TAccessory, THat } from "../constants/Store";
 import { ValueOf } from "./Common";
 import { TItem, TWeapon } from "./Items";
 
@@ -8,7 +8,6 @@ export enum SocketServer {
     PING_RESPONSE = "pp",
     ADD_ALLIANCE = "ac",
     REMOVE_PLAYER = "4",
-    REMOVE_ALL_OBJECTS = "13",
     MY_PLAYER_SPAWN = "1",
     MY_PLAYER_DEATH = "11",
     CREATE_PLAYER = "2",
@@ -20,6 +19,13 @@ export enum SocketServer {
     UPDATE_AGE = "15",
     UPDATE_RESOURCES = "9",
     PLAYER_CLAN_JOIN_REQUEST = "an",
+    UPDATE_CLAN_MEMBERS = "sa",
+    UPDATE_MY_CLAN = "st",
+    ATTACK_ANIMATION = "7",
+    CREATE_PROJECTILE = "18",
+    ADD_OBJECT = "6",
+    REMOVE_OBJECT = "12",
+    REMOVE_ALL_OBJECTS = "13",
 }
 
 export enum SocketClient {
@@ -50,7 +56,7 @@ interface ITeams {
     readonly teams: ITeam[];
 }
 
-type PLAYER_DATA = [
+export type PLAYER_DATA = [
     uniqueID: string,
     id: number,
     nickname: string,
@@ -75,13 +81,19 @@ export type IncomingPacket =
     [SocketServer.CREATE_PLAYER, PLAYER_DATA, boolean] |
     [SocketServer.MOVE_UPDATE, any[]] |
     [SocketServer.UPDATE_LEADERBOARD, any[]] |
-    [SocketServer.LOAD_AI] |
+    [SocketServer.LOAD_AI, [number, number, number, number, number, number, number] | undefined] |
     [SocketServer.UPDATE_MINIMAP] |
     [SocketServer.UPDATE_ITEMS, [TWeapon], 1] |
     [SocketServer.UPDATE_ITEMS, [TItem], undefined] |
     [packet: SocketServer.UPDATE_AGE, xp: number] |
     [packet: SocketServer.UPDATE_AGE, xp: number, maxXP: number, age: number] |
-    [SocketServer.UPDATE_RESOURCES, "food" | "wood" | "stone" | "points" | "kills", number, 1];
+    [SocketServer.UPDATE_RESOURCES, "food" | "wood" | "stone" | "points" | "kills", number, 1] |
+    [SocketServer.UPDATE_CLAN_MEMBERS, (number | string)[]] |
+    [SocketServer.UPDATE_MY_CLAN, string | null, boolean] |
+    [SocketServer.ATTACK_ANIMATION, number, 1 | 0, TWeapon] |
+    [SocketServer.CREATE_PROJECTILE, number, number, number, number, number, number, 0 | 1, number] |
+    [SocketServer.ADD_OBJECT, any[]] |
+    [SocketServer.REMOVE_OBJECT, number];
 
 export const Store = {
     EQUIP: 0,
@@ -105,7 +117,7 @@ export type OutcomingPacket =
     [SocketClient.JOIN_CLAN, string] |
     [SocketClient.CREATE_CLAN, string] |
     [SocketClient.LEAVE_CLAN] |
-    [SocketClient.STORE, ValueOf<typeof Store>, EHat | EAccessory, ValueOf<typeof StoreType>] |
+    [SocketClient.STORE, ValueOf<typeof Store>, THat | TAccessory, ValueOf<typeof StoreType>] |
     [SocketClient.CHAT, string] |
     [SocketClient.RESET_MOVE_DIR] |
     [SocketClient.ATTACK, 1 | 0, number | null] |

@@ -22,9 +22,42 @@ export interface ISettings {
     toggleChat: string;
     toggleShop: string;
     toggleClan: string;
+    toggleMenu: string;
+
+    // Combat
+    autoheal: boolean;
+    antiboostpad: boolean;
+
+    // Visuals
+    enemyTracers: boolean;
+    enemyTracersColor: string;
+
+    teammateTracers: boolean;
+    teammateTracersColor: string;
+
+    animalTracers: boolean;
+    animalTracersColor: string;
+
+    arrows: boolean;
+    rainbow: boolean;
+
+    itemMarkers: boolean;
+    itemMarkersColor: string;
+
+    teammateMarkers: boolean;
+    teammateMarkersColor: string;
+
+    enemyMarkers: boolean;
+    enemyMarkersColor: string;
+
+    weaponReloadBar: boolean;
+    weaponReloadBarColor: string;
+
+    turretReloadBar: boolean;
+    turretReloadBarColor: string;
 }
 
-const defaultSettings: Readonly<ISettings> = {
+export const defaultSettings: Readonly<ISettings> = {
     primary: "Digit1",
     secondary: "Digit2",
     food: "KeyQ",
@@ -44,6 +77,27 @@ const defaultSettings: Readonly<ISettings> = {
     toggleChat: "Enter",
     toggleShop: "ShiftLeft",
     toggleClan: "ControlLeft",
+    toggleMenu: "Escape",
+    autoheal: true,
+    antiboostpad: true,
+    enemyTracers: true,
+    enemyTracersColor: "#cc5151",
+    teammateTracers: true,
+    teammateTracersColor: "#8ecc51",
+    animalTracers: true,
+    animalTracersColor: "#518ccc",
+    arrows: true,
+    rainbow: false,
+    itemMarkers: true,
+    itemMarkersColor: "#84bd4b",
+    teammateMarkers: true,
+    teammateMarkersColor: "#bdb14b",
+    enemyMarkers: true,
+    enemyMarkersColor: "#ba4949",
+    weaponReloadBar: true,
+    weaponReloadBarColor: "#5155cc",
+    turretReloadBar: true,
+    turretReloadBarColor: "#cf7148",
 }
 
 const settings = { ...defaultSettings, ...Storage.get<ISettings>("Glotus") };

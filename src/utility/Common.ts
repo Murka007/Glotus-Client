@@ -2,6 +2,23 @@ export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
     return Math.atan2(y2 - y1, x2 - x1);
 }
 
+export const getDistance = (x1: number, y1: number, x2: number, y2: number) => {
+    return Math.hypot(x1 - x2, y1 - y2);
+}
+
+export const clamp = (value: number, min: number, max: number) => {
+    return Math.min(Math.max(value, min), max);
+}
+
+export const fixTo = (value: number, fraction: number) => {
+    return parseFloat(value.toFixed(fraction))
+}
+
+export const getAngleDist = (a: number, b: number) => {
+    const p = Math.abs(b - a) % (Math.PI * 2);
+    return (p > Math.PI ? (Math.PI * 2) - p : p);
+}
+
 export const isActiveInput = () => {
     const active = document.activeElement || document.body;
     return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
@@ -59,4 +76,15 @@ export const formatButton = (button: number): string => {
     if (button === 3) return "BBTN"; // Back Button
     if (button === 4) return "FBTN"; // Forward Button
     return "";
+}
+
+export const removeClass = (target: HTMLElement | NodeListOf<HTMLElement>, name: string) => {
+    if (target instanceof HTMLElement) {
+        target.classList.remove(name);
+        return;
+    }
+
+    for (const element of target) {
+        element.classList.remove(name);
+    }
 }

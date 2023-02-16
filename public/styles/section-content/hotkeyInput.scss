@@ -21,7 +21,7 @@
             border-color: $option-border2;
         }
 
-        &:focus {
+        &.active {
             background: $option-bg-color3;
             border-color: $option-border3;
         }
@@ -36,7 +36,7 @@
                 border-color: $red-option-border2;
             }
 
-            &:focus {
+            &.active {
                 background: $red-option-bg-color3;
                 border-color: $red-option-border3;
             }

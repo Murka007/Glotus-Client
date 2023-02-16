@@ -2,18 +2,22 @@ $bg-color: #080808;
 $bg-sub-color: #121212;
 
 $title-color: #999999;
+$close-button-color: #ADADAD;
+$close-button-color2: #EBEBEB;
 
 $ui-bg-color: #0D0D0D;
 $ui-bg-sub-color: #3D3D3D;
-$ui-color: #525252;
+$ui-color: #585858;
 $ui-sub-color: #7e7d7d;
 
+$option-bg-color-1: #2a2a2a;
 $option-bg-color: #303030;
 $option-border: #262626;
 
 $option-bg-color2: #383838;
 $option-border2: #2c2c2c;
 
+$option-bg-color3-1: #353535;
 $option-bg-color3: #404040;
 $option-border3: #303030;
 
@@ -31,3 +35,6 @@ $default-padding: 10px;
 $default-radius: 6px;
 $default-option-width: 90px;
 $default-option-height: 40px;
+
+$slider-size: $default-option-height;
+$slider-scale: 0.7;

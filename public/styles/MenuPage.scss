@@ -1,4 +1,4 @@
-@import "Variables.scss", "./section-content/hotkeyInput.scss";
+@import "Variables.scss", "./section-content/hotkeyInput.scss", "./section-content/checkbox.scss", "./section-content/colorPicker.scss";
 
 #page-container {
     width: 100%;
@@ -10,9 +10,14 @@
     background: $bg-sub-color;
     padding: $default-padding;
     border-radius: $default-radius;
+    display: none;
+
+    &.opened {
+        display: block;
+    }
 
     h1 {
-        font-size: 3em;
+        font-size: 2.8em;
     }
 
     > .section {
@@ -23,7 +28,7 @@
 
         .section-title {
             font-weight: 800;
-            font-size: 2em;
+            font-size: 1.8em;
             color: $title-color;
             margin-bottom: $default-padding;
         }
@@ -52,10 +57,18 @@
                     font-size: 1.4em;
                     color: $ui-color;
                 }
+
+                .option-content {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    column-gap: $default-padding;
+                }
             }
 
             @include hotkeyInput;
-
+            @include checkbox;
+            @include colorPicker;
         }
     }
 }

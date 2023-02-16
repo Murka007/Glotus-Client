@@ -1,0 +1,23 @@
+@import "../Variables.scss";
+
+@mixin colorPicker {
+    input[id][type=color] {
+        width: calc($default-option-width / 1.5);
+        height: calc($default-option-height / 1.2);
+
+        outline: none;
+        border: none;
+        padding: 3px;
+        margin: 0;
+        background: $option-bg-color;
+        border-radius: $default-radius;
+        cursor: pointer;
+    }
+
+    .reset-color {
+        background: var(--data-color);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+}

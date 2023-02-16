@@ -1,6 +1,6 @@
-import { EItem, EWeapon, EWeaponVariant, IEWeaponVariant, IItem, ItemType, IWeapon, WeaponType } from "../types/Items";
+import { EItem, EWeapon, EWeaponVariant, ItemType, WeaponType } from "../types/Items";
 
-export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
+export const Weapons = [{
     id: EWeapon.TOOL_HAMMER,
     itemType: WeaponType.PRIMARY,
     type: 0,
@@ -170,7 +170,10 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     description: "bow used for ranged combat and hunting",
     src: "bow_1",
     cost: {
-        wood: 4
+        food: 0,
+        wood: 4,
+        stone: 0,
+        gold: 0,
     },
     length: 120,
     width: 120,
@@ -210,7 +213,8 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     shield: .2,
     xOffset: 6,
     yOffset: 0,
-    spdMult: .7
+    spdMult: .7,
+    speed: 1,
 }, {
     id: EWeapon.CROSSBOW,
     itemType: WeaponType.SECONDARY,
@@ -221,7 +225,10 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     description: "deals more damage and has greater range",
     src: "crossbow_1",
     cost: {
-        wood: 5
+        food: 0,
+        wood: 5,
+        stone: 0,
+        gold: 0,
     },
     aboveHand: true,
     armS: .75,
@@ -242,7 +249,10 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     description: "high firerate crossbow with reduced damage",
     src: "crossbow_2",
     cost: {
-        wood: 10
+        food: 0,
+        wood: 10,
+        stone: 0,
+        gold: 0,
     },
     aboveHand: true,
     armS: .75,
@@ -282,7 +292,10 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     description: "slow firerate but high damage and range",
     src: "musket_1",
     cost: {
-        stone: 10
+        food: 0,
+        wood: 0,
+        stone: 10,
+        gold: 0,
     },
     aboveHand: true,
     rec: .35,
@@ -297,54 +310,62 @@ export const Weapons: ReadonlyArray<Readonly<IWeapon>> = [{
     hideProjectile: true,
     spdMult: .6,
     speed: 1500
-}]
+}] as const;
 
-export const Items: ReadonlyArray<Readonly<IItem>> = [{
-    // group: e.exports.groups[0],
+export const Items = [{
     id: EItem.APPLE,
     itemType: ItemType.FOOD,
     name: "apple",
     description: "restores 20 health when consumed",
     cost: {
-        food: 10
+        food: 10,
+        wood: 0,
+        stone: 0,
+        gold: 0,
     },
     restore: 20,
     scale: 22,
     holdOffset: 15
 }, {
     age: 3,
-    // group: e.exports.groups[0],
     id: EItem.COOKIE,
     itemType: ItemType.FOOD,
     name: "cookie",
     description: "restores 40 health when consumed",
     cost: {
-        food: 15
+        food: 15,
+        wood: 0,
+        stone: 0,
+        gold: 0,
     },
     restore: 40,
     scale: 27,
     holdOffset: 15
 }, {
     age: 7,
-    // group: e.exports.groups[0],
     id: EItem.CHEESE,
     itemType: ItemType.FOOD,
     name: "cheese",
     description: "restores 30 health and another 50 over 5 seconds",
     cost: {
-        food: 25
+        food: 25,
+        wood: 0,
+        stone: 0,
+        gold: 0,
     },
     restore: 30,
     scale: 27,
     holdOffset: 15
 }, {
-    // group: e.exports.groups[1],
     id: EItem.WOOD_WALL,
     itemType: ItemType.WALL,
     name: "wood wall",
     description: "provides protection for your village",
     cost: {
-        wood: 10
+        food: 0,
+        wood: 10,
+        stone: 0,
+        gold: 0,
     },
     projDmg: true,
     health: 380,
@@ -352,43 +373,48 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 3,
-    // group: e.exports.groups[1],
     id: EItem.STONE_WALL,
     itemType: ItemType.WALL,
     name: "stone wall",
     description: "provides improved protection for your village",
+    age: 3,
     cost: {
-        stone: 25
+        food: 0,
+        wood: 0,
+        stone: 25,
+        gold: 0,
     },
     health: 900,
     scale: 50,
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 7,
     pre: 1,
-    // group: e.exports.groups[1],
     id: EItem.CASTLE_WALL,
     itemType: ItemType.WALL,
     name: "castle wall",
     description: "provides powerful protection for your village",
+    age: 7,
     cost: {
-        stone: 35
+        food: 0,
+        wood: 0,
+        stone: 35,
+        gold: 0,
     },
     health: 1500,
     scale: 52,
     holdOffset: 20,
     placeOffset: -5
 }, {
-    // group: e.exports.groups[2],
     id: EItem.SPIKES,
     itemType: ItemType.SPIKE,
     name: "spikes",
     description: "damages enemies when they touch them",
     cost: {
+        food: 0,
         wood: 20,
-        stone: 5
+        stone: 5,
+        gold: 0,
     },
     health: 400,
     damage: 20,
@@ -397,15 +423,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 8,
     placeOffset: -5
 }, {
-    age: 5,
-    // group: e.exports.groups[2],
     id: EItem.GREATER_SPIKES,
     itemType: ItemType.SPIKE,
     name: "greater spikes",
     description: "damages enemies when they touch them",
+    age: 5,
     cost: {
+        food: 0,
         wood: 30,
-        stone: 10
+        stone: 10,
+        gold: 0,
     },
     health: 500,
     damage: 35,
@@ -414,16 +441,17 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 8,
     placeOffset: -5
 }, {
-    age: 9,
-    pre: 1,
-    // group: e.exports.groups[2],
     id: EItem.POISON_SPIKES,
     itemType: ItemType.SPIKE,
     name: "poison spikes",
     description: "poisons enemies when they touch them",
+    age: 9,
+    pre: 1,
     cost: {
+        food: 0,
         wood: 35,
-        stone: 15
+        stone: 15,
+        gold: 0,
     },
     health: 600,
     damage: 30,
@@ -433,16 +461,17 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 8,
     placeOffset: -5
 }, {
-    age: 9,
-    pre: 2,
-    // group: e.exports.groups[2],
     id: EItem.SPINNING_SPIKES,
     itemType: ItemType.SPIKE,
     name: "spinning spikes",
     description: "damages enemies when they touch them",
+    age: 9,
+    pre: 2,
     cost: {
+        food: 0,
         wood: 30,
-        stone: 20
+        stone: 20,
+        gold: 0,
     },
     health: 500,
     damage: 45,
@@ -452,14 +481,15 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 8,
     placeOffset: -5
 }, {
-    // group: e.exports.groups[3],
     id: EItem.WINDMILL,
     itemType: ItemType.WINDMILL,
     name: "windmill",
     description: "generates gold over time",
     cost: {
+        food: 0,
         wood: 50,
-        stone: 10
+        stone: 10,
+        gold: 0,
     },
     health: 400,
     pps: 1,
@@ -470,16 +500,17 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: 5
 }, {
-    age: 5,
-    pre: 1,
-    // group: e.exports.groups[3],
     id: EItem.FASTER_WINDMILL,
     itemType: ItemType.WINDMILL,
     name: "faster windmill",
     description: "generates more gold over time",
+    age: 5,
+    pre: 1,
     cost: {
+        food: 0,
         wood: 60,
-        stone: 20
+        stone: 20,
+        gold: 0,
     },
     health: 500,
     pps: 1.5,
@@ -490,16 +521,17 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: 5
 }, {
-    age: 8,
-    pre: 1,
-    // group: e.exports.groups[3],
     id: EItem.POWER_MILL,
     itemType: ItemType.WINDMILL,
     name: "power mill",
     description: "generates more gold over time",
+    age: 8,
+    pre: 1,
     cost: {
+        food: 0,
         wood: 100,
-        stone: 50
+        stone: 50,
+        gold: 0,
     },
     health: 800,
     pps: 2,
@@ -510,31 +542,34 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: 5
 }, {
-    age: 5,
-    // group: e.exports.groups[4],
-    type: 2,
     id: EItem.MINE,
     itemType: ItemType.FARM,
     name: "mine",
     description: "allows you to mine stone",
+    age: 5,
+    type: 2,
     cost: {
+        food: 0,
         wood: 20,
-        stone: 100
+        stone: 100,
+        gold: 0,
     },
     iconLineMult: 12,
     scale: 65,
     holdOffset: 20,
     placeOffset: 0
 }, {
-    age: 5,
-    // group: e.exports.groups[11],
-    type: 0,
     id: EItem.SAPLING,
     itemType: ItemType.FARM,
     name: "sapling",
     description: "allows you to farm wood",
+    age: 5,
+    type: 0,
     cost: {
-        wood: 150
+        food: 0,
+        wood: 150,
+        stone: 0,
+        gold: 0,
     },
     iconLineMult: 12,
     colDiv: .5,
@@ -542,15 +577,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 50,
     placeOffset: -15
 }, {
-    age: 4,
-    // group: e.exports.groups[5],
     id: EItem.PIT_TRAP,
     itemType: ItemType.TRAP,
     name: "pit trap",
     description: "pit that traps enemies if they walk over it",
+    age: 4,
     cost: {
+        food: 0,
         wood: 30,
-        stone: 30
+        stone: 30,
+        gold: 0,
     },
     trap: true,
     ignoreCollision: true,
@@ -561,15 +597,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 4,
-    // group: e.exports.groups[6],
     id: EItem.BOOST_PAD,
     itemType: ItemType.TRAP,
     name: "boost pad",
     description: "provides boost when stepped on",
+    age: 4,
     cost: {
+        food: 0,
+        wood: 5,
         stone: 20,
-        wood: 5
+        gold: 0,
     },
     ignoreCollision: true,
     boostSpeed: 1.5,
@@ -579,16 +616,17 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 7,
-    // group: e.exports.groups[7],
-    doUpdate: true,
     id: EItem.TURRET,
     itemType: ItemType.TURRET,
     name: "turret",
     description: "defensive structure that shoots at enemies",
+    age: 7,
+    doUpdate: true,
     cost: {
+        food: 0,
         wood: 200,
-        stone: 150
+        stone: 150,
+        gold: 0,
     },
     health: 800,
     projectile: 1,
@@ -598,14 +636,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 7,
-    // group: e.exports.groups[8],
     id: EItem.PLATFORM,
     itemType: ItemType.TURRET,
     name: "platform",
     description: "platform to shoot over walls and cross over water",
+    age: 7,
     cost: {
-        wood: 20
+        food: 0,
+        wood: 20,
+        stone: 0,
+        gold: 0,
     },
     ignoreCollision: true,
     zIndex: 1,
@@ -614,15 +654,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 7,
-    // group: e.exports.groups[9],
     id: EItem.HEALING_PAD,
     itemType: ItemType.TURRET,
     name: "healing pad",
     description: "standing on it will slowly heal you",
+    age: 7,
     cost: {
+        food: 10,
         wood: 30,
-        food: 10
+        stone: 0,
+        gold: 0,
     },
     ignoreCollision: true,
     healCol: 15,
@@ -632,15 +673,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 9,
-    // group: e.exports.groups[10],
     id: EItem.SPAWN_PAD,
     itemType: ItemType.SPAWN,
     name: "spawn pad",
     description: "you will spawn here when you die but it will dissapear",
+    age: 9,
     cost: {
+        food: 0,
         wood: 100,
-        stone: 100
+        stone: 100,
+        gold: 0,
     },
     health: 400,
     ignoreCollision: true,
@@ -649,15 +691,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 7,
-    // group: e.exports.groups[12],
     id: EItem.BLOCKER,
     itemType: ItemType.TURRET,
     name: "blocker",
     description: "blocks building in radius",
+    age: 7,
     cost: {
+        food: 0,
         wood: 30,
-        stone: 25
+        stone: 25,
+        gold: 0,
     },
     ignoreCollision: true,
     blocker: 300,
@@ -667,15 +710,16 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     holdOffset: 20,
     placeOffset: -5
 }, {
-    age: 7,
-    // group: e.exports.groups[13],
     id: EItem.TELEPORTER,
     itemType: ItemType.TURRET,
     name: "teleporter",
     description: "teleports you to a random point on the map",
+    age: 7,
     cost: {
+        food: 0,
         wood: 60,
-        stone: 60
+        stone: 60,
+        gold: 0,
     },
     ignoreCollision: true,
     teleport: true,
@@ -684,9 +728,9 @@ export const Items: ReadonlyArray<Readonly<IItem>> = [{
     scale: 45,
     holdOffset: 20,
     placeOffset: -5
-}];
+}] as const;
 
-const weaponVariants: ReadonlyArray<Readonly<IEWeaponVariant>> = [{
+const weaponVariants = [{
     id: EWeaponVariant.STONE,
     src: "",
     xp: 0,
@@ -707,4 +751,52 @@ const weaponVariants: ReadonlyArray<Readonly<IEWeaponVariant>> = [{
     poison: true,
     xp: 12000,
     val: 1.18
-}];
+}] as const;
+
+export const Projectiles = [{
+    name: "Hunting bow",
+    index: 0,
+    layer: 0,
+    src: "arrow_1",
+    damage: 25,
+    scale: 103,
+    range: 1000,
+    speed: 1.6,
+}, {
+    index: 1,
+    layer: 1,
+    damage: 25,
+    scale: 20
+}, {
+    name: "Crossbow",
+    index: 0,
+    layer: 0,
+    src: "arrow_1",
+    damage: 35,
+    scale: 103,
+    range: 1200,
+    speed: 2.5,
+}, {
+    name: "Repeater crossbow",
+    index: 0,
+    layer: 0,
+    src: "arrow_1",
+    damage: 30,
+    scale: 103,
+    range: 1200,
+    speed: 2,
+}, {
+    index: 1,
+    layer: 1,
+    damage: 16,
+    scale: 20
+}, {
+    name: "Musket",
+    index: 0,
+    layer: 0,
+    src: "bullet_1",
+    damage: 50,
+    scale: 160,
+    range: 1400,
+    speed: 3.6,
+}] as const;

@@ -1,10 +1,12 @@
 import Glotus from "..";
+import { Weapons } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
-import { ItemType, TItemType, TWeaponType, WeaponType } from "../types/Items";
-import { getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
+import { ItemType, TItemType, TWeapon, TWeaponType, WeaponType } from "../types/Items";
+import { fixTo, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
 import GameUI from "./GameUI";
 import settings from "./Settings";
+import UI from "./UI";
 
 const Controller = new class Controller {
     private readonly hotkeys: Map<string, TItemType>;
@@ -13,8 +15,10 @@ const Controller = new class Controller {
         y: number;
         _angle: number;
         angle: number;
+        sentAngle: number;
     }
 
+    readonly teammates: number[] = [];
     private weapon!: TWeaponType;
     private currentType!: TItemType | null;
     private autoattack!: boolean;
@@ -27,9 +31,9 @@ const Controller = new class Controller {
             x: 0,
             y: 0,
             _angle: 0,
-            angle: 0
+            angle: 0,
+            sentAngle: 0
         }
-
         
         this.reset();
         this.placement = this.placement.bind(this);
@@ -45,6 +49,14 @@ const Controller = new class Controller {
 
     init() {
         this.attachMouse();
+
+        setInterval(() => {
+            const angle = this.mouse.angle;
+            if (angle !== this.mouse.sentAngle) {
+                this.mouse.sentAngle = angle;
+                SocketManager.updateAngle(angle);
+            }
+        }, 200);
     }
 
     private attachMouse() {
@@ -58,6 +70,30 @@ const Controller = new class Controller {
                 this.mouse.angle = angle;
             }
         })
+    }
+
+    isMyPlayer(id: number) {
+        return id === myPlayer.id;
+    }
+
+    isTeammate(id: number) {
+        return this.teammates.includes(id);
+    }
+
+    isEnemy(id: number) {
+        return !this.isMyPlayer(id) && !this.isTeammate(id);
+    }
+
+    isPrimary(id: TWeapon) {
+        return Weapons[id].itemType === WeaponType.PRIMARY;
+    }
+
+    isSecondary(id: TWeapon) {
+        return Weapons[id].itemType === WeaponType.SECONDARY;
+    }
+
+    isShootable(id: TWeapon) {
+        return "projectile" in Weapons[id];
     }
 
     private whichWeapon(type: TWeaponType = this.weapon) {
@@ -85,7 +121,7 @@ const Controller = new class Controller {
         if (myPlayer.hasResourcesForType(this.currentType)) {
             this.place(this.currentType);
         }
-        setTimeout(this.placement, 75);
+        setTimeout(this.placement, 150);
     }
 
     private placementHandler(type: TItemType, code: string) {
@@ -109,13 +145,19 @@ const Controller = new class Controller {
 
     handleKeydown(event: KeyboardEvent) {
         if (event.repeat) return;
-        if (!myPlayer.inGame) return;
+        if (UI.activeHotkeyInput !== null) return;
 
+        const isInput = isActiveInput();
+        if (event.code === settings.toggleMenu && !isInput) {
+            UI.toggleMenu();
+        }
+
+        if (!myPlayer.inGame) return;
         if (event.code === settings.toggleChat) {
             GameUI.toggleChat();
         }
 
-        if (isActiveInput()) return;
+        if (isInput) return;
 
         if (event.code === settings.primary) this.whichWeapon(WeaponType.PRIMARY);
         if (event.code === settings.secondary) this.whichWeapon(WeaponType.SECONDARY);

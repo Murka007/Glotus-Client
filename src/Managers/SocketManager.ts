@@ -1,10 +1,14 @@
 import Glotus from "..";
-import { Items, Weapons } from "../constants/Items";
-import { EAccessory, EHat } from "../constants/Store";
-import Player from "../data/Player";
+import { Hats, TAccessory, THat } from "../constants/Store";
+import myPlayer from "../data/ClientPlayer";
+import Projectile from "../data/Projectile";
+import Controller from "../modules/Controller";
 import { ValueOf } from "../types/Common";
-import { TItem, TWeapon } from "../types/Items";
+import { TItem, TWeapon, WeaponType } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer, Store, StoreType } from "../types/Socket";
+import ObjectManager from "./ObjectManager";
+import PlayerManager from "./PlayerManager";
+import ProjectileManager from "./ProjectileManager";
 
 const SocketManager = new class SocketManager {
     private socket: WebSocket | null = null;
@@ -21,15 +25,11 @@ const SocketManager = new class SocketManager {
 
     init() {
         const that = this;
-
+        
         // Intercept msgpack encoder
         Glotus.Hooker.createRecursiveHook(
             Object.prototype, "initialBufferSize",
-            (_this) => (
-                typeof _this === "object" &&
-                typeof _this.encode === "function" &&
-                _this.encode.length === 1
-            ),
+            (_this) => true,
             (_this) => {
                 this.Encoder = _this;
                 return true;
@@ -39,11 +39,7 @@ const SocketManager = new class SocketManager {
         // Intercept msgpack decoder
         Glotus.Hooker.createRecursiveHook(
             Object.prototype, "maxExtLength",
-            (_this) => (
-                typeof _this === "object" &&
-                typeof _this.decode === "function" &&
-                _this.decode.length === 1
-            ),
+            (_this) => true,
             (_this) => {
                 this.Decoder = _this;
                 return true;
@@ -52,24 +48,21 @@ const SocketManager = new class SocketManager {
 
         window.WebSocket = new Proxy(WebSocket, {
             construct(target, args: [url: string | URL, protocols?: string | string[]]) {
-                const socket = new target(...args);
+                const socket: WebSocket = new target(...args);
                 that.socket = socket;
 
                 socket.addEventListener("message", that.message);
 
-                // let count = 0;
-
+                // let start = Date.now();
                 // socket.send = new Proxy(socket.send, {
                 //     apply(target, _this, args: [string | ArrayBufferLike | Blob | ArrayBufferView]) {
-                //         count++;
+                //         if (args[0] instanceof Uint8Array) {
+                //             const decoded = that.Decoder?.decode(new Uint8Array(args[0]));
+                //             const temp = [decoded[0], ...decoded[1]] as OutcomingPacket;
+                //         }
                 //         return target.apply(_this, args);
                 //     }
                 // });
-
-                // const interval = setInterval(() => {
-                //     Glotus.log(`Packet send count: ${count}`);
-                //     count = 0;
-                // }, 1000);
 
                 return socket;
             }
@@ -84,76 +77,103 @@ const SocketManager = new class SocketManager {
             const decoded = this.Decoder.decode(new Uint8Array(data));
             const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
             if (temp[0] === SocketServer.PING_RESPONSE) return;
-            if (temp[0] === SocketServer.LOAD_AI) return;
             if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
             if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
 
             switch (temp[0]) {
 
                 case SocketServer.MY_PLAYER_SPAWN:
-                    Glotus.myPlayer.id = temp[1];
-                    Glotus.myPlayer.inGame = true;
-                    if (!Glotus.players.has(temp[1])) {
-                        Glotus.players.set(temp[1], Glotus.myPlayer);
-                    }
+                    myPlayer.spawned(temp[1]);
                     break;
 
                 case SocketServer.MY_PLAYER_DEATH:
-                    Glotus.myPlayer.reset();
+                    myPlayer.reset();
                     break;
 
                 case SocketServer.UPDATE_ITEMS: {
-                    const isWeaponUpdate = temp[2] === 1;
-                    const InventoryItems = isWeaponUpdate ? Weapons : Items;
-                    for (const id of temp[1]) {
-                        const item = InventoryItems[id];
-                        Glotus.myPlayer.inventory[item.itemType] = id;
-                    }
+                    myPlayer.updateItems(temp[1], temp[2] === 1);
                     break;
                 }
 
                 case SocketServer.UPDATE_RESOURCES: {
                     const type = temp[1] === "points" ? "gold" : temp[1];
-                    Glotus.myPlayer.resources[type] = temp[2];
+                    myPlayer.resources[type] = temp[2];
                     break;
                 }
 
                 case SocketServer.CREATE_PLAYER: {
-                    const data = temp[1];
-                    const player = Glotus.players.get(data[1]) || new Player;
-                    if (!Glotus.players.has(data[1])) {
-                        Glotus.players.set(data[1], player);
-                    }
-                    player.nickname = data[2];
-                    player.skinID = data[9];
+                    PlayerManager.createPlayer({
+                        id: temp[1][1],
+                        nickname: temp[1][2],
+                        skinID: temp[1][9],
+                    })
+                    break;
+                }
+
+                case SocketServer.ADD_OBJECT: {
+                    ObjectManager.createObjects(temp[1]);
+                    break;
+                }
+
+                case SocketServer.REMOVE_OBJECT: {
+                    ObjectManager.removeObjectByID(temp[1]);
+                    break;
+                }
+
+                case SocketServer.REMOVE_ALL_OBJECTS: {
+                    ObjectManager.removePlayerObjects(temp[1]);
+                    break;
                 }
 
                 case SocketServer.MOVE_UPDATE: {
-                    const buffer = temp[1];
-                    for (let i=0;i<buffer.length;i+=13) {
-                        const player = Glotus.players.get(buffer[i]);
-                        if (!player) continue;
-                        player.update(
-                            buffer[i],
-                            buffer[i + 1],
-                            buffer[i + 2],
-                            buffer[i + 3],
-                            buffer[i + 4],
-                            buffer[i + 5],
-                            buffer[i + 6],
-                            buffer[i + 7],
-                            buffer[i + 8],
-                            buffer[i + 9],
-                            buffer[i + 10],
-                            buffer[i + 11]
+                    PlayerManager.updatePosition(temp[1]);
+                    break;
+                }
+
+                case SocketServer.ATTACK_ANIMATION: {
+                    PlayerManager.attackPlayer(temp[1], temp[3]);
+                    break;
+                }
+
+                case SocketServer.CREATE_PROJECTILE: {
+                    ProjectileManager.createProjectile(
+                        new Projectile(
+                            temp[1],
+                            temp[2],
+                            temp[3],
+                            temp[4],
+                            temp[5],
+                            temp[6],
+                            temp[7] === 1,
+                            temp[8]
                         )
+                    )
+                    break;
+                }
+
+                case SocketServer.UPDATE_CLAN_MEMBERS: {
+                    myPlayer.updateClanMembers(temp[1]);
+                    break;
+                }
+
+                case SocketServer.UPDATE_MY_CLAN: {
+                    if (typeof temp[1] !== "string") {
+                        Controller.teammates.length = 0;
                     }
                     break;
                 }
 
+                case SocketServer.LOAD_AI: {
+                    PlayerManager.updateAnimal(temp[1] || []);
+                }
+
+                default:
+                    // Glotus.log(temp);
+                    break;
+
             }
         } catch(err) {
-            Glotus.error("Packet decode error: ", data);
+            Glotus.error("Packet decode error: ", data, err);
         }
     }
 
@@ -189,11 +209,11 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.LEAVE_CLAN]);
     }
 
-    equip(type: ValueOf<typeof StoreType>, id: EHat | EAccessory) {
+    equip(type: ValueOf<typeof StoreType>, id: THat | TAccessory) {
         this.send([SocketClient.STORE, Store.EQUIP, id, type]);
     }
 
-    buy(type: ValueOf<typeof StoreType>, id: EHat | EAccessory) {
+    buy(type: ValueOf<typeof StoreType>, id: THat | TAccessory) {
         this.send([SocketClient.STORE, Store.BUY, id, type]);
     }
 
