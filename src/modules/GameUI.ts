@@ -6,6 +6,7 @@ const GameUI = new class GameUI {
 
     getElements() {
         const querySelector = document.querySelector.bind(document);
+        const querySelectorAll = document.querySelectorAll.bind(document);
         return {
             gameCanvas: querySelector<HTMLCanvasElement>("#gameCanvas")!,
             chatHolder: querySelector<HTMLInputElement>("#chatHolder")!,
@@ -14,10 +15,25 @@ const GameUI = new class GameUI {
             clanMenu: querySelector<HTMLInputElement>("#allianceMenu")!,
             storeButton: querySelector<HTMLInputElement>("#storeButton")!,
             clanButton: querySelector<HTMLInputElement>("#allianceButton")!,
+            setupCard: querySelector<HTMLDivElement>("#setupCard")!,
+            serverBrowser: querySelector<HTMLSelectElement>("#serverBrowser")!,
+            skinColorHolder: querySelector<HTMLDivElement>("#skinColorHolder")!,
+            settingRadio: querySelectorAll<HTMLDivElement>(".settingRadio")!,
         } as const;
     }
 
+    private formatMainMenu() {
+        const { setupCard, serverBrowser, skinColorHolder, settingRadio } = this.getElements();
+        setupCard.appendChild(serverBrowser);
+        setupCard.appendChild(skinColorHolder);
+        for (const radio of settingRadio) {
+            setupCard.appendChild(radio);
+        }
+    }
+
     init() {
+        this.formatMainMenu();
+
         const { chatHolder, chatBox } = this.getElements();
         chatBox.onblur = () => {
             chatHolder.style.display = "none";

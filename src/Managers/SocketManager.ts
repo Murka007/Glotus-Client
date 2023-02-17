@@ -18,6 +18,7 @@ const SocketManager = new class SocketManager {
     private Decoder: null | {
         readonly decode: ((data: Uint8Array) => any);
     } = null;
+    private readonly PacketQueue: (() => void)[] = [];
 
     constructor() {
         this.message = this.message.bind(this);
@@ -127,11 +128,17 @@ const SocketManager = new class SocketManager {
 
                 case SocketServer.MOVE_UPDATE: {
                     PlayerManager.updatePosition(temp[1]);
+                    for (let i=0;i<this.PacketQueue.length;i++) {
+                        this.PacketQueue[i]();
+                    }
+                    this.PacketQueue.length = 0;
                     break;
                 }
 
                 case SocketServer.ATTACK_ANIMATION: {
-                    PlayerManager.attackPlayer(temp[1], temp[3]);
+                    this.PacketQueue.push(
+                        () => PlayerManager.attackPlayer(temp[1], temp[3])
+                    )
                     break;
                 }
 

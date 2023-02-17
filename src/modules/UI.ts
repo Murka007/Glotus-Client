@@ -1,4 +1,5 @@
 import CSS from "../../public/styles/index.scss";
+import GameCSS from "../../public/styles/Game.scss";
 import Header from "../../public/Header.html";
 import Navbar from "../../public/Navbar.html";
 import Keybinds from "../../public/menu-pages/Keybinds.html";
@@ -44,25 +45,9 @@ const UI = new class UI {
         `
     }
 
-    private getFrameStyles() {
-        return `
-            #iframe-page-container {
-                position: absolute;
-                z-index: 10;
-                top: 0;
-                left: 0;
-                bottom: 0;
-                right: 0;
-                width: 100%;
-                height: 100%;
-                border: none;
-            }
-        `
-    }
-
     private createStyles() {
         const style = document.createElement("style");
-        style.innerHTML = this.getFrameStyles();
+        style.innerHTML = GameCSS;
         document.head.appendChild(style);
     }
 

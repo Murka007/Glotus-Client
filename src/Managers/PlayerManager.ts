@@ -21,7 +21,7 @@ const PlayerManager = new class PlayerManager {
     readonly animals: Map<number, Animal> = new Map;
     readonly visibleAnimals: Animal[] = [];
 
-    private start = Date.now();
+    start = Date.now();
     step = 0;
 
     createPlayer({ id, nickname, skinID }: IPlayerData) {
@@ -39,8 +39,9 @@ const PlayerManager = new class PlayerManager {
 
         const weapon = Weapons[weaponID];
         const type = Controller.isPrimary(weaponID) ? "primary" : "secondary";
-        player.reload[type].current = -this.step;
-        player.reload[type].max = weapon.speed;
+        const target = player.reload[type];
+        target.current = 0;
+        target.max = weapon.speed;
     }
 
     updatePosition(buffer: any[]) {
@@ -69,6 +70,7 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 11]
             )
         }
+
         ProjectileManager.projectiles.clear();
         ProjectileManager.turrets.clear();
     }

@@ -17,6 +17,7 @@ interface IReload {
     max: number;
 }
 
+let maxDistance = 0;
 class Player extends Entity {
     
     // private weaponVariant: TWeaponVariant = 0;
@@ -102,10 +103,14 @@ class Player extends Entity {
             const type = Controller.isPrimary(currentWeapon) ? "primary" : "secondary";
             const target = this.reload[type];
             const weapon = Weapons[currentWeapon];
+
+            // Set default reload based on current weapon
             if (target.max === -1) {
                 target.current = weapon.speed;
                 target.max = weapon.speed;
             }
+            target.current = Math.min(target.current + PlayerManager.step, target.max);
+            this.weapon[type] = currentWeapon;
 
             if ("projectile" in weapon) {
                 const speedMult = hatID === 1 ? Hats[hatID].aMlt : 1;
@@ -119,40 +124,28 @@ class Player extends Entity {
                         range === projectile.range &&
                         speed === projectile.speed &&
                         angle === projectile.angle &&
-                        this.position.future.distance(projectile.position) < 65 &&
-                        this.checkCollision(EItem.PLATFORM) === projectile.onPlatform
+                        this.position.current.distance(projectile.position) < 2
                     ) {
                         ProjectileManager.projectiles.delete(id);
-                        target.current = -PlayerManager.step;
+                        target.current = 0;
                         target.max = weapon.speed;
                         break;
                     }
                 }
             }
-
-            target.current = Math.min(target.current + PlayerManager.step, target.max);
-            this.weapon[type] = currentWeapon;
         }
 
         const target = this.reload.turret;
+        target.current = Math.min(target.current + PlayerManager.step, target.max);
         if (hatID === EHat.TURRET_GEAR) {
-            const future = this.position.future;
-            const nearest = PlayerManager.getNearestEntity(this);
-            if (nearest !== null && future.distance(nearest.position.future) < 800) {
-                for (const [id, turret] of ProjectileManager.turrets) {
-                    const angle = fixTo(future.angle(nearest.position.future), 2);
-                    if (
-                        future.distance(turret.position) < 70 &&
-                        getAngleDist(angle, turret.angle) < 0.5
-                    ) {
-                        ProjectileManager.turrets.delete(id);
-                        target.current = -PlayerManager.step;
-                        break;
-                    }
+            for (const [id, turret] of ProjectileManager.turrets) {
+                if (this.position.current.distance(turret.position) < 2) {
+                    ProjectileManager.turrets.delete(id);
+                    target.current = 0;
+                    break;
                 }
             }
         }
-        target.current = Math.min(target.current + PlayerManager.step, target.max);
     }
 
     checkCollision(type: TItem): boolean {
