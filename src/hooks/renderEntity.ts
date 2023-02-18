@@ -26,7 +26,7 @@ const renderEntity = (
     if (entity.isPlayer) {
         Renderer.renderBar(ctx, entity);
     }
-
+    Renderer.renderHP(ctx, entity);
     if (isMyPlayer) return;
     Renderer.renderTracer(ctx, entity, player);
 }

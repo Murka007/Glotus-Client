@@ -6,5 +6,9 @@ declare global {
         readonly vultr: {
             readonly scheme: "mm_prod" | "mm_exp" | "mm_beta";
         }
+
+        readonly config: {
+            nameY: number;
+        }
     }
 }

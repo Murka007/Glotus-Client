@@ -139,8 +139,8 @@ class Renderer {
         fill: number,
         color: string,
     ) {
-        const { barWidth, barPad, nameY } = Config;
-
+        const { barWidth, barPad } = Config;
+        const nameY = window.config.nameY;
         x -= barWidth + barPad;
         y += scale + nameY;
 
@@ -197,7 +197,32 @@ class Renderer {
                 clamp(turret.current / turret.max, 0, 1),
                 settings.turretReloadBarColor
             );
+            height += barHeight - 3;
         }
+
+        window.config.nameY = height !== barHeight ? 45 : 34;
+    }
+
+    static renderHP(ctx: TCTX, entity: IRenderEntity) {
+        if (!settings.renderHP) return;
+
+        const nameY = window.config.nameY;
+        const { barHeight, barPad } = Config;
+        const text = `HP ${entity.health}/${entity.maxHealth}`;
+        const offset = entity.scale + barHeight + barPad;
+        const x = entity.x - myPlayer.offset.x;
+        const y = entity.y - myPlayer.offset.y + nameY + offset;
+
+        ctx.save();
+        ctx.fillStyle = "#fff";
+        ctx.strokeStyle = "#3d3f42";
+        ctx.lineWidth = 8;
+        ctx.lineJoin = "round";
+        ctx.textBaseline = "top";
+        ctx.font = `19px Hammersmith One`;
+        ctx.strokeText(text, x, y);
+        ctx.fillText(text, x, y);
+        ctx.restore();
     }
 }
 

@@ -26,6 +26,7 @@ const GameUI = new class GameUI {
         const { setupCard, serverBrowser, skinColorHolder, settingRadio } = this.getElements();
         setupCard.appendChild(serverBrowser);
         setupCard.appendChild(skinColorHolder);
+
         for (const radio of settingRadio) {
             setupCard.appendChild(radio);
         }

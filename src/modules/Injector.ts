@@ -42,7 +42,6 @@ class Injector {
         const element = document.createElement("script");
         element.src = URL.createObjectURL(blob);
         document.body.appendChild(element);
-        Glotus.log("CREATED BLOB");
     }
 
     // Modify bundle using regular expressions

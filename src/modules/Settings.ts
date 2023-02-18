@@ -55,6 +55,8 @@ export interface ISettings {
 
     turretReloadBar: boolean;
     turretReloadBarColor: string;
+
+    renderHP: boolean;
 }
 
 export const defaultSettings: Readonly<ISettings> = {
@@ -98,6 +100,7 @@ export const defaultSettings: Readonly<ISettings> = {
     weaponReloadBarColor: "#5155cc",
     turretReloadBar: true,
     turretReloadBarColor: "#cf7148",
+    renderHP: true,
 }
 
 const settings = { ...defaultSettings, ...Storage.get<ISettings>("Glotus") };

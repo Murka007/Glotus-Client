@@ -3,6 +3,8 @@ export interface IRenderEntity {
     x: number;
     y: number;
     scale: number;
+    health: number;
+    maxHealth: number;
     isPlayer?: boolean;
     isAI?: boolean;
 }
