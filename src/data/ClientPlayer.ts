@@ -1,12 +1,14 @@
-import { Items, Weapons } from "../constants/Items";
+import { ItemGroups, Items, Weapons } from "../constants/Items";
 import PlayerManager from "../Managers/PlayerManager";
 import Controller from "../modules/Controller";
+import GameUI from "../modules/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemType, TItem, TItemType, TWeapon, TWeaponType, WeaponType } from "../types/Items";
+import { EItem, EWeapon, ItemType, TItem, TItemGroup, TItemType, TWeapon, TWeaponType, WeaponType } from "../types/Items";
 import Player from "./Player";
 
 const myPlayer = new class ClientPlayer extends Player {
     readonly inventory: (TWeapon | TItem | null)[] = [];
+    readonly itemCount: Map<TItemGroup, number> = new Map;
     readonly resources = {
         food: 100,
         wood: 100,
@@ -22,11 +24,11 @@ const myPlayer = new class ClientPlayer extends Player {
         this.reset();
     }
 
-    hasItem(type: TWeaponType | TItemType) {
+    hasItemType(type: TWeaponType | TItemType) {
         return this.inventory[type] !== null;
     }
 
-    getItem(type: TWeaponType | TItemType) {
+    getItemType(type: TWeaponType | TItemType) {
         return this.inventory[type]!;
     }
 
@@ -45,8 +47,25 @@ const myPlayer = new class ClientPlayer extends Player {
     }
 
     hasResourcesForType(type: TItemType) {
-        const item = this.getItem(type);
-        return this.isSandbox || this.hasResources(item);
+        const id = this.getItemType(type);
+        return this.isSandbox || this.hasResources(id);
+    }
+
+    getItemCount(group: TItemGroup) {
+        return {
+            count: this.itemCount.get(group) || 0,
+            limit: this.isSandbox ? 99 : ItemGroups[group].limit
+        } as const;
+    }
+
+    hasItemCountForType(type: TItemType): boolean {
+        const id = this.getItemType(type);
+        const item = Items[id];
+        if ("itemGroup" in item) {
+            const { count, limit } = this.getItemCount(item.itemGroup);
+            return count < limit;
+        }
+        return true;
     }
 
     private resetResources() {
@@ -75,6 +94,10 @@ const myPlayer = new class ClientPlayer extends Player {
         this.resetInventory();
         Controller.reset();
         this.inGame = false;
+
+        const { primary, secondary } = this.reload;
+        primary.max = primary.current = -1;
+        secondary.max = secondary.current = -1;
     }
 
     spawned(id: number) {
@@ -104,6 +127,11 @@ const myPlayer = new class ClientPlayer extends Player {
                 Controller.teammates.push(id);
             }
         }
+    }
+
+    updateItemCount(group: TItemGroup, count: number) {
+        this.itemCount.set(group, count);
+        GameUI.updateItemCount(group);
     }
 }
 

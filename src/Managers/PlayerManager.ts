@@ -1,6 +1,7 @@
 import Glotus from "..";
 import Animals from "../constants/Animals";
 import { Weapons } from "../constants/Items";
+import { EHat, Hats } from "../constants/Store";
 import Animal from "../data/Animal";
 import myPlayer from "../data/ClientPlayer";
 import Player from "../data/Player";
@@ -34,14 +35,14 @@ const PlayerManager = new class PlayerManager {
     }
 
     attackPlayer(id: number, weaponID: TWeapon) {
-        const player = this.players.get(id);
-        if (!player) return;
+        if (!this.players.has(id)) return;
+        const { hatID, reload } = this.players.get(id)!;
 
-        const weapon = Weapons[weaponID];
+        const reloadSpeed = hatID === EHat.SAMURAI_ARMOR ? Hats[hatID].atkSpd : 1;
         const type = Controller.isPrimary(weaponID) ? "primary" : "secondary";
-        const target = player.reload[type];
-        target.current = 0;
-        target.max = weapon.speed;
+        
+        reload[type].current = 0;
+        reload[type].max = Weapons[weaponID].speed * reloadSpeed;
     }
 
     updatePosition(buffer: any[]) {

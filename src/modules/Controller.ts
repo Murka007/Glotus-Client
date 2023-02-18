@@ -97,15 +97,15 @@ const Controller = new class Controller {
     }
 
     private whichWeapon(type: TWeaponType = this.weapon) {
-        if (!myPlayer.hasItem(type)) return;
+        if (!myPlayer.hasItemType(type)) return;
         this.weapon = type;
 
-        const weapon = myPlayer.getItem(this.weapon);
+        const weapon = myPlayer.getItemType(this.weapon);
         SocketManager.selectItemByID(weapon, true);
     }
 
     private selectItemByType(type: TItemType) {
-        const item = myPlayer.getItem(type);
+        const item = myPlayer.getItemType(type);
         SocketManager.selectItemByID(item, false);
     }
 
@@ -118,14 +118,17 @@ const Controller = new class Controller {
 
     private placement() {
         if (this.currentType === null) return;
-        if (myPlayer.hasResourcesForType(this.currentType)) {
+        if (
+            myPlayer.hasResourcesForType(this.currentType) &&
+            myPlayer.hasItemCountForType(this.currentType)
+        ) {
             this.place(this.currentType);
         }
         setTimeout(this.placement, 150);
     }
 
     private placementHandler(type: TItemType, code: string) {
-        if (!myPlayer.hasItem(type)) return;
+        if (!myPlayer.hasItemType(type)) return;
         if (!myPlayer.hasResourcesForType(type)) return;
 
         // this.selectItemByType(type);

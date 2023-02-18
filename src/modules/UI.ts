@@ -11,6 +11,7 @@ import settings, { defaultSettings, ISettings } from "./Settings";
 import Storage from "./Storage";
 import Controller from "./Controller";
 import { KeysOfType } from "../types/Common";
+import GameUI from "./GameUI";
 
 interface IFrame {
     readonly target: HTMLIFrameElement;
@@ -190,6 +191,12 @@ const UI = new class UI {
         )
     }
 
+    private handleCheckboxToggle(id: KeysOfType<ISettings, boolean>, checked: boolean) {
+        if (id === "itemCounter") {
+            GameUI.toggleItemCount();
+        }
+    }
+
     private attachCheckboxes() {
         const { checkboxes } = this.getElements();
         for (const checkbox of checkboxes) {
@@ -205,6 +212,7 @@ const UI = new class UI {
                 if (id in settings) {
                     settings[id] = checkbox.checked;
                     Storage.set("Glotus", settings);
+                    this.handleCheckboxToggle(id, checkbox.checked);
                 } else {
                     Glotus.error(`attachCheckboxes Error: Property "${id}" was deleted from settings`);
                 }

@@ -41,7 +41,6 @@ Injector.init();
 
 window.addEventListener("load", () => {
     Controller.init();
-    GameUI.init();
     UI.createMenu();
 });
 

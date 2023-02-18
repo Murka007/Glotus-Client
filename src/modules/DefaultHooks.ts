@@ -42,6 +42,15 @@ const DefaultHooks = () => {
             that.checkTrusted = (event: Event) => event;
             return true;
         }
+    );
+
+    Hooker.createRecursiveHook(
+        Object.prototype, "maxPlayers",
+        () => true,
+        (that, value) => {
+            that.maxPlayers = value + 10;
+            return true; 
+        }
     )
 }
 

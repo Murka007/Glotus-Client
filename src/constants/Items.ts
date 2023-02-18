@@ -1,4 +1,4 @@
-import { EItem, EWeapon, EWeaponVariant, ItemType, WeaponType } from "../types/Items";
+import { EItem, EWeapon, EWeaponVariant, ItemGroup, ItemType, WeaponType } from "../types/Items";
 
 export const Weapons = [{
     id: EWeapon.TOOL_HAMMER,
@@ -312,6 +312,61 @@ export const Weapons = [{
     speed: 1500
 }] as const;
 
+export const ItemGroups = {
+    [ItemGroup.WALL]: {
+        name: "Wall",
+        limit: 30,
+    },
+    [ItemGroup.SPIKE]: {
+        name: "Spike",
+        limit: 15,
+    },
+    [ItemGroup.WINDMILL]: {
+        name: "Windmill",
+        limit: 7,
+    },
+    [ItemGroup.MINE]: {
+        name: "Mine",
+        limit: 1,
+    },
+    [ItemGroup.TRAP]: {
+        name: "Trap",
+        limit: 6,
+    },
+    [ItemGroup.BOOST]: {
+        name: "Boost",
+        limit: 12,
+    },
+    [ItemGroup.TURRET]: {
+        name: "Turret",
+        limit: 2,
+    },
+    [ItemGroup.PLATFORM]: {
+        name: "Plaftorm",
+        limit: 12,
+    },
+    [ItemGroup.HEAL_PAD]: {
+        name: "Healing pad",
+        limit: 4,
+    },
+    [ItemGroup.SPAWN]: {
+        name: "Spawn",
+        limit: 1,
+    },
+    [ItemGroup.SAPLING]: {
+        name: "Sapling",
+        limit: 2,
+    },
+    [ItemGroup.BLOCKER]: {
+        name: "Blocker",
+        limit: 3,
+    },
+    [ItemGroup.TELEPORTER]: {
+        name: "Teleporter",
+        limit: 2,
+    },
+} as const;
+
 export const Items = [{
     id: EItem.APPLE,
     itemType: ItemType.FOOD,
@@ -359,6 +414,7 @@ export const Items = [{
 }, {
     id: EItem.WOOD_WALL,
     itemType: ItemType.WALL,
+    itemGroup: ItemGroup.WALL,
     name: "wood wall",
     description: "provides protection for your village",
     cost: {
@@ -375,6 +431,7 @@ export const Items = [{
 }, {
     id: EItem.STONE_WALL,
     itemType: ItemType.WALL,
+    itemGroup: ItemGroup.WALL,
     name: "stone wall",
     description: "provides improved protection for your village",
     age: 3,
@@ -392,6 +449,7 @@ export const Items = [{
     pre: 1,
     id: EItem.CASTLE_WALL,
     itemType: ItemType.WALL,
+    itemGroup: ItemGroup.WALL,
     name: "castle wall",
     description: "provides powerful protection for your village",
     age: 7,
@@ -408,6 +466,7 @@ export const Items = [{
 }, {
     id: EItem.SPIKES,
     itemType: ItemType.SPIKE,
+    itemGroup: ItemGroup.SPIKE,
     name: "spikes",
     description: "damages enemies when they touch them",
     cost: {
@@ -425,6 +484,7 @@ export const Items = [{
 }, {
     id: EItem.GREATER_SPIKES,
     itemType: ItemType.SPIKE,
+    itemGroup: ItemGroup.SPIKE,
     name: "greater spikes",
     description: "damages enemies when they touch them",
     age: 5,
@@ -443,6 +503,7 @@ export const Items = [{
 }, {
     id: EItem.POISON_SPIKES,
     itemType: ItemType.SPIKE,
+    itemGroup: ItemGroup.SPIKE,
     name: "poison spikes",
     description: "poisons enemies when they touch them",
     age: 9,
@@ -463,6 +524,7 @@ export const Items = [{
 }, {
     id: EItem.SPINNING_SPIKES,
     itemType: ItemType.SPIKE,
+    itemGroup: ItemGroup.SPIKE,
     name: "spinning spikes",
     description: "damages enemies when they touch them",
     age: 9,
@@ -483,6 +545,7 @@ export const Items = [{
 }, {
     id: EItem.WINDMILL,
     itemType: ItemType.WINDMILL,
+    itemGroup: ItemGroup.WINDMILL,
     name: "windmill",
     description: "generates gold over time",
     cost: {
@@ -502,6 +565,7 @@ export const Items = [{
 }, {
     id: EItem.FASTER_WINDMILL,
     itemType: ItemType.WINDMILL,
+    itemGroup: ItemGroup.WINDMILL,
     name: "faster windmill",
     description: "generates more gold over time",
     age: 5,
@@ -523,6 +587,7 @@ export const Items = [{
 }, {
     id: EItem.POWER_MILL,
     itemType: ItemType.WINDMILL,
+    itemGroup: ItemGroup.WINDMILL,
     name: "power mill",
     description: "generates more gold over time",
     age: 8,
@@ -544,6 +609,7 @@ export const Items = [{
 }, {
     id: EItem.MINE,
     itemType: ItemType.FARM,
+    itemGroup: ItemGroup.MINE,
     name: "mine",
     description: "allows you to mine stone",
     age: 5,
@@ -561,6 +627,7 @@ export const Items = [{
 }, {
     id: EItem.SAPLING,
     itemType: ItemType.FARM,
+    itemGroup: ItemGroup.SAPLING,
     name: "sapling",
     description: "allows you to farm wood",
     age: 5,
@@ -579,6 +646,7 @@ export const Items = [{
 }, {
     id: EItem.PIT_TRAP,
     itemType: ItemType.TRAP,
+    itemGroup: ItemGroup.TRAP,
     name: "pit trap",
     description: "pit that traps enemies if they walk over it",
     age: 4,
@@ -599,6 +667,7 @@ export const Items = [{
 }, {
     id: EItem.BOOST_PAD,
     itemType: ItemType.TRAP,
+    itemGroup: ItemGroup.BOOST,
     name: "boost pad",
     description: "provides boost when stepped on",
     age: 4,
@@ -618,6 +687,7 @@ export const Items = [{
 }, {
     id: EItem.TURRET,
     itemType: ItemType.TURRET,
+    itemGroup: ItemGroup.TURRET,
     name: "turret",
     description: "defensive structure that shoots at enemies",
     age: 7,
@@ -638,6 +708,7 @@ export const Items = [{
 }, {
     id: EItem.PLATFORM,
     itemType: ItemType.TURRET,
+    itemGroup: ItemGroup.PLATFORM,
     name: "platform",
     description: "platform to shoot over walls and cross over water",
     age: 7,
@@ -656,6 +727,7 @@ export const Items = [{
 }, {
     id: EItem.HEALING_PAD,
     itemType: ItemType.TURRET,
+    itemGroup: ItemGroup.HEAL_PAD,
     name: "healing pad",
     description: "standing on it will slowly heal you",
     age: 7,
@@ -675,6 +747,7 @@ export const Items = [{
 }, {
     id: EItem.SPAWN_PAD,
     itemType: ItemType.SPAWN,
+    itemGroup: ItemGroup.SPAWN,
     name: "spawn pad",
     description: "you will spawn here when you die but it will dissapear",
     age: 9,
@@ -693,6 +766,7 @@ export const Items = [{
 }, {
     id: EItem.BLOCKER,
     itemType: ItemType.TURRET,
+    itemGroup: ItemGroup.BLOCKER,
     name: "blocker",
     description: "blocks building in radius",
     age: 7,
@@ -712,6 +786,7 @@ export const Items = [{
 }, {
     id: EItem.TELEPORTER,
     itemType: ItemType.TURRET,
+    itemGroup: ItemGroup.TELEPORTER,
     name: "teleporter",
     description: "teleports you to a random point on the map",
     age: 7,

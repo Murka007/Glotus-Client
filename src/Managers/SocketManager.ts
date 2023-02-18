@@ -3,6 +3,7 @@ import { Hats, TAccessory, THat } from "../constants/Store";
 import myPlayer from "../data/ClientPlayer";
 import Projectile from "../data/Projectile";
 import Controller from "../modules/Controller";
+import GameUI from "../modules/GameUI";
 import { ValueOf } from "../types/Common";
 import { TItem, TWeapon, WeaponType } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer, Store, StoreType } from "../types/Socket";
@@ -82,6 +83,11 @@ const SocketManager = new class SocketManager {
             if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
 
             switch (temp[0]) {
+
+                case SocketServer.CONNECTION_ESTABLISHED: {
+                    GameUI.init();
+                    break;
+                }
 
                 case SocketServer.MY_PLAYER_SPAWN:
                     myPlayer.spawned(temp[1]);
@@ -172,6 +178,12 @@ const SocketManager = new class SocketManager {
 
                 case SocketServer.LOAD_AI: {
                     PlayerManager.updateAnimal(temp[1] || []);
+                    break;
+                }
+
+                case SocketServer.ITEM_COUNT: {
+                    myPlayer.updateItemCount(temp[1], temp[2]);
+                    break;
                 }
 
                 default:

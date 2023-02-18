@@ -32,9 +32,9 @@ class Player extends Entity {
     scale = 35;
 
     readonly weapon: {
-        current: TWeapon | -1;
-        primary: TWeapon | -1;
-        secondary: TWeapon | -1;
+        current: TWeapon;
+        primary: TWeapon;
+        secondary: TWeapon;
     }
 
     readonly reload: {
@@ -49,9 +49,9 @@ class Player extends Entity {
         super();
 
         this.weapon = {
-            current: -1,
-            primary: -1,
-            secondary: -1
+            current: 0,
+            primary: 0,
+            secondary: 0,
         }
 
         this.reload = {
@@ -76,7 +76,7 @@ class Player extends Entity {
         y: number,
         angle: number,
         currentItem: TItem | -1,
-        currentWeapon: TWeapon | -1,
+        currentWeapon: TWeapon,
         weaponVariant: TWeaponVariant,
         clanName: string | null,
         isLeader: 1 | 0,
@@ -99,15 +99,18 @@ class Player extends Entity {
         this.accessoryID = accessoryID;
         // this.isSkull = Boolean(isSkull);
 
-        if (currentWeapon !== -1) {
+        // We should not reload if player is holding item
+        if (currentItem === -1) {
             const type = Controller.isPrimary(currentWeapon) ? "primary" : "secondary";
             const target = this.reload[type];
             const weapon = Weapons[currentWeapon];
+            const reloadSpeed = hatID === EHat.SAMURAI_ARMOR ? Hats[hatID].atkSpd : 1;
+            const weaponSpeed = weapon.speed * reloadSpeed;
 
             // Set default reload based on current weapon
             if (target.max === -1) {
-                target.current = weapon.speed;
-                target.max = weapon.speed;
+                target.current = weaponSpeed;
+                target.max = weaponSpeed;
             }
             target.current = Math.min(target.current + PlayerManager.step, target.max);
             this.weapon[type] = currentWeapon;
@@ -128,7 +131,7 @@ class Player extends Entity {
                     ) {
                         ProjectileManager.projectiles.delete(id);
                         target.current = 0;
-                        target.max = weapon.speed;
+                        target.max = weaponSpeed;
                         break;
                     }
                 }

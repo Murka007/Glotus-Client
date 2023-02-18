@@ -57,6 +57,7 @@ export interface ISettings {
     turretReloadBarColor: string;
 
     renderHP: boolean;
+    itemCounter: boolean;
 }
 
 export const defaultSettings: Readonly<ISettings> = {
@@ -101,6 +102,7 @@ export const defaultSettings: Readonly<ISettings> = {
     turretReloadBar: true,
     turretReloadBarColor: "#cf7148",
     renderHP: true,
+    itemCounter: true,
 }
 
 const settings = { ...defaultSettings, ...Storage.get<ISettings>("Glotus") };

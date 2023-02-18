@@ -26,6 +26,24 @@ export const ItemType = {
 
 export type TItemType = ValueOf<typeof ItemType>;
 
+export const ItemGroup = {
+    WALL: 1,
+    SPIKE: 2,
+    WINDMILL: 3,
+    MINE: 4,
+    TRAP: 5,
+    BOOST: 6,
+    TURRET: 7,
+    PLATFORM: 8,
+    HEAL_PAD: 9,
+    SPAWN: 10,
+    SAPLING: 11,
+    BLOCKER: 12,
+    TELEPORTER: 13,
+} as const;
+
+export type TItemGroup = ValueOf<typeof ItemGroup>;
+
 /**
  * Default weapon ID's
  */
@@ -78,89 +96,6 @@ export const EItem = {
 
 export type TItem = ValueOf<typeof EItem>;
 
-// export interface IWeapon {
-//     id: TWeapon;
-//     itemType: TWeaponType;
-//     type?: 1 | 0;
-//     name: string;
-//     description: string;
-//     src: string;
-//     age?: number;
-//     spdMult?: number;
-//     pre?: number;
-//     iPad?: number;
-//     knock?: number;
-//     hitSlow?: number;
-//     cost?: {
-//         food?: number;
-//         wood?: number;
-//         stone?: number;
-//         gold?: number;
-//     }
-//     projectile?: number;
-//     sDmg?: number;
-//     shield?: number;
-//     length: number;
-//     width: number;
-//     xOffset: number;
-//     yOffset: number;
-//     damage?: number;
-//     range?: number;
-//     gather?: number;
-//     speed?: number;
-//     aboveHand?: boolean;
-//     armS?: number;
-//     steal?: number;
-//     rec?: number;
-//     hndS?: number;
-//     hndD?: number;
-//     hideProjectile?: boolean;
-// }
-
-// export interface IItem {
-//     id: TItem;
-//     itemType: TItemType;
-//     name: string;
-//     description: string;
-//     cost: {
-//         food?: number;
-//         wood?: number;
-//         stone?: number;
-//         gold?: number;
-//     },
-//     restore?: number;
-//     scale: number;
-//     holdOffset: number;
-//     age?: number;
-//     projDmg?: boolean;
-//     health?: number;
-//     placeOffset?: number;
-//     pre?: number;
-//     damage?: number;
-//     spritePadding?: number;
-//     poisonDamage?: number;
-//     turnSpeed?: number;
-//     pps?: number;
-//     iconLineMult?: number;
-//     type?: number;
-//     colDiv?: number;
-//     trap?: boolean;
-//     ignoreCollision?: boolean;
-//     doUpdate?: boolean;
-//     hideFromEnemy?: boolean;
-//     boostSpeed?: number;
-//     projectile?: number;
-//     zIndex?: number;
-
-//     shootRange?: number;
-//     healCol?: number;
-
-//     shootRate?: number;
-//     spawnPoint?: boolean;
-//     blocker?: number;
-//     teleport?: boolean;
-// }
-
 export const EWeaponVariant = {
     STONE: 0,
     GOLD: 1,
@@ -169,11 +104,3 @@ export const EWeaponVariant = {
 } as const;
 
 export type TWeaponVariant = ValueOf<typeof EWeaponVariant>;
-
-// export interface IEWeaponVariant {
-//     id: TWeaponVariant;
-//     src: string;
-//     xp: number;
-//     val: number;
-//     poison?: boolean;
-// }
