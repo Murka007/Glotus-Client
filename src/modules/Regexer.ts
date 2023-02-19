@@ -1,19 +1,5 @@
 import Glotus from "..";
 
-const ANY_LETTER = "(?:[^\\x00-\\x7F-]|\\$|\\w)";
-
-interface ISystem {
-    readonly radix: number;
-    readonly prefix: string;
-}
-
-const NumberSystem: ReadonlyArray<ISystem> = [
-    { radix: 2, prefix: "0b0*" },
-    { radix: 8, prefix: "0+" },
-    { radix: 10, prefix: "" },
-    { radix: 16, prefix: "0x0*" },
-]
-
 type TRegex = RegExp | RegExp[] | string | string[];
 
 /**
@@ -23,11 +9,20 @@ class Regexer {
     code: string;
     readonly COPY_CODE: string;
     hookCount: number
+    private readonly ANY_LETTER: string;
+    private readonly NumberSystem: ReadonlyArray<{radix: number, prefix: string}>;
 
     constructor(code: string) {
         this.code = code;
         this.COPY_CODE = code;
         this.hookCount = 0;
+        this.ANY_LETTER = "(?:[^\\x00-\\x7F-]|\\$|\\w)";
+        this.NumberSystem = [
+            { radix: 2, prefix: "0b0*" },
+            { radix: 8, prefix: "0+" },
+            { radix: 10, prefix: "" },
+            { radix: 16, prefix: "0x0*" },
+        ];
     }
 
     private isRegExp(regex: RegExp | string): regex is RegExp {
@@ -35,7 +30,7 @@ class Regexer {
     }
 
     private generateNumberSystem(int: number) {
-        const template = NumberSystem.map(({ radix, prefix }) => prefix + int.toString(radix));
+        const template = this.NumberSystem.map(({ radix, prefix }) => prefix + int.toString(radix));
         return `(?:${ template.join("|") })`;
     }
 
@@ -45,7 +40,7 @@ class Regexer {
         regex = regex.replace(/NUM\{(\d+)\}/g, (...args) => {
             return this.generateNumberSystem(Number(args[1]));
         });
-        regex = regex.replace(/\\w/g, ANY_LETTER);
+        regex = regex.replace(/\\w/g, this.ANY_LETTER);
         return regex;
     }
 

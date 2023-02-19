@@ -1,6 +1,7 @@
 import myPlayer from "../data/ClientPlayer";
 import Hooker from "./Hooker";
-import Storage from "./Storage";
+import Storage from "../utility/Storage";
+import Glotus from "..";
 
 const DefaultHooks = () => {
 
@@ -52,6 +53,19 @@ const DefaultHooks = () => {
             return true; 
         }
     )
+
+    const proto = HTMLCanvasElement.prototype;
+    proto.addEventListener = new Proxy(proto.addEventListener, {
+        apply(target, _this, args: [string, EventListenerOrEventListenerObject, boolean | AddEventListenerOptions | undefined]) {
+            if (/^mouse/.test(args[0]) && args[2] === false) {
+                if (/up$/.test(args[0])) {
+                    proto.addEventListener = target;
+                }
+                return null;
+            }
+            return target.apply(_this, args);
+        }
+    }) 
 }
 
 export default DefaultHooks;

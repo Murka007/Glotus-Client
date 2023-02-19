@@ -1,13 +1,15 @@
 import Glotus from "..";
 import { Items, Projectiles, Weapons } from "../constants/Items";
-import { EHat, Hats, TAccessory, THat } from "../constants/Store";
+import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
 import Controller from "../modules/Controller";
 import Vector from "../modules/Vector";
 import { EItem, TItem, TWeapon, TWeaponVariant } from "../types/Items";
+import { EHat, TAccessory, THat } from "../types/Store";
 import { fixTo, getAngleDist } from "../utility/Common";
+import DataHandler from "../utility/DataHandler";
 import myPlayer from "./ClientPlayer";
 import Entity from "./Entity";
 import ObjectItem from "./ObjectItem";
@@ -26,7 +28,9 @@ class Player extends Entity {
     hatID: THat | 0 = 0;
     private accessoryID: TAccessory | 0 = 0;
     // private isSkull = false;
-    private health = 100;
+    previousHealth = 100;
+    currentHealth = 100;
+    maxHealth = 100;
     nickname = "unknown";
     skinID = 0;
     scale = 35;
@@ -101,7 +105,7 @@ class Player extends Entity {
 
         // We should not reload if player is holding item
         if (currentItem === -1) {
-            const type = Controller.isPrimary(currentWeapon) ? "primary" : "secondary";
+            const type = DataHandler.isPrimary(currentWeapon) ? "primary" : "secondary";
             const target = this.reload[type];
             const weapon = Weapons[currentWeapon];
             const reloadSpeed = hatID === EHat.SAMURAI_ARMOR ? Hats[hatID].atkSpd : 1;

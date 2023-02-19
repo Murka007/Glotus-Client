@@ -3,7 +3,7 @@ import Config from "../constants/Config";
 import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
 import Controller from "../modules/Controller";
-import settings from "../modules/Settings";
+import settings from "./Settings";
 import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";
 import { IRenderEntity, IRenderObject } from "../types/RenderTargets";
@@ -208,7 +208,7 @@ class Renderer {
 
         const nameY = window.config.nameY;
         const { barHeight, barPad } = Config;
-        const text = `HP ${entity.health}/${entity.maxHealth}`;
+        const text = `HP ${Math.floor(entity.health)}/${entity.maxHealth}`;
         const offset = entity.scale + barHeight + barPad;
         const x = entity.x - myPlayer.offset.x;
         const y = entity.y - myPlayer.offset.y + nameY + offset;

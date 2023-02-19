@@ -1,3 +1,4 @@
+import { Items, Weapons } from "../constants/Items";
 import { ValueOf } from "./Common";
 
 /**
@@ -104,3 +105,31 @@ export const EWeaponVariant = {
 } as const;
 
 export type TWeaponVariant = ValueOf<typeof EWeaponVariant>;
+
+export type TItems = typeof Items;
+export type TWeapons = typeof Weapons;
+
+export type ExtractType<
+    T extends TWeapons | TItems,
+    K extends TWeaponType | TItemType
+> = Extract<T[number], { itemType: K }>
+
+export type TWeaponData = {
+    [WeaponType.PRIMARY]: ExtractType<TWeapons, 0>["id"],
+    [WeaponType.SECONDARY]: ExtractType<TWeapons, 1>["id"] | null,
+}
+
+export type TItemData = {
+    [ItemType.FOOD]: ExtractType<TItems, 2>["id"],
+    [ItemType.WALL]: ExtractType<TItems, 3>["id"],
+    [ItemType.SPIKE]: ExtractType<TItems, 4>["id"],
+    [ItemType.WINDMILL]: ExtractType<TItems, 5>["id"],
+    [ItemType.FARM]: ExtractType<TItems, 6>["id"] | null,
+    [ItemType.TRAP]: ExtractType<TItems, 7>["id"] | null,
+    [ItemType.TURRET]: ExtractType<TItems, 8>["id"] | null,
+    [ItemType.SPAWN]: ExtractType<TItems, 9>["id"] | null,
+};
+
+export type TData<T> = T extends TWeaponType ? TWeaponData[T] : T extends TItemType ? TItemData[T] : never;
+
+export type TShootable = Extract<TWeapons[TWeapon], { projectile: number }>["id"];

@@ -1,5 +1,4 @@
 import Glotus from "..";
-import { Hats, TAccessory, THat } from "../constants/Store";
 import myPlayer from "../data/ClientPlayer";
 import Projectile from "../data/Projectile";
 import Controller from "../modules/Controller";
@@ -7,6 +6,7 @@ import GameUI from "../modules/GameUI";
 import { ValueOf } from "../types/Common";
 import { TItem, TWeapon, WeaponType } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer, Store, StoreType } from "../types/Socket";
+import { TAccessory, THat } from "../types/Store";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
@@ -90,7 +90,7 @@ const SocketManager = new class SocketManager {
                 }
 
                 case SocketServer.MY_PLAYER_SPAWN:
-                    myPlayer.spawned(temp[1]);
+                    myPlayer.playerSpawn(temp[1]);
                     break;
 
                 case SocketServer.MY_PLAYER_DEATH:
@@ -132,8 +132,15 @@ const SocketManager = new class SocketManager {
                     break;
                 }
 
+                case SocketServer.UPDATE_PLAYER_HEALTH: {
+                    if (Controller.isMyPlayer(temp[1])) {
+                        myPlayer.updateHealth(temp[2]);
+                    }
+                    break;
+                }
+
                 case SocketServer.MOVE_UPDATE: {
-                    PlayerManager.updatePosition(temp[1]);
+                    PlayerManager.updatePlayer(temp[1]);
                     for (let i=0;i<this.PacketQueue.length;i++) {
                         this.PacketQueue[i]();
                     }
@@ -271,14 +278,6 @@ const SocketManager = new class SocketManager {
     selectItemByID(id: TWeapon | TItem, type: boolean) {
         this.send([SocketClient.SELECT_ITEM, id, type]);
     }
-
-    // selectItemByID(id: EItems) {
-    //     this.send([SocketClient.SELECT_ITEM, id, false]);
-    // }
-
-    // selectWeaponByID(id: EWeapons) {
-    //     this.send([SocketClient.SELECT_ITEM, id, true]);
-    // }
 
     spawn(name: string, moofoll: 1 | 0, skin: number) {
         this.send([SocketClient.SPAWN, { name, moofoll, skin }]);

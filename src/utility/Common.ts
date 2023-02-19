@@ -69,13 +69,13 @@ export const formatCode = (code: string): string => {
                .replace(/Multiply/, "MULT").toUpperCase();
 }
 
-export const formatButton = (button: number): string => {
+export const formatButton = (button: number) => {
     if (button === 0) return "LBTN"; // Left Button
     if (button === 1) return "MBTN"; // Middle Button
     if (button === 2) return "RBTN"; // Right Button
     if (button === 3) return "BBTN"; // Back Button
     if (button === 4) return "FBTN"; // Forward Button
-    return "";
+    throw new Error(`formatButton Error: "${button}" is not valid button`);
 }
 
 export const removeClass = (target: HTMLElement | NodeListOf<HTMLElement>, name: string) => {

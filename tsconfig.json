@@ -12,6 +12,7 @@
         // "isolatedModules": true,
         "esModuleInterop": true,
         "noImplicitReturns": true,
+        // "noErrorTruncation": true,
     },
     "include": ["src", "index.d.ts", "./src/types.d.ts"]
 }

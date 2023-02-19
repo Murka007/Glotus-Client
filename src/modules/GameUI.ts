@@ -3,7 +3,7 @@ import { Items } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
 import { TItemGroup } from "../types/Items";
-import settings from "./Settings";
+import settings from "../utility/Settings";
 
 
 const GameUI = new class GameUI {

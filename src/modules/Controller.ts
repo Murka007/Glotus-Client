@@ -3,10 +3,11 @@ import { Weapons } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
 import { ItemType, TItemType, TWeapon, TWeaponType, WeaponType } from "../types/Items";
-import { fixTo, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
+import { fixTo, formatButton, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
 import GameUI from "./GameUI";
-import settings from "./Settings";
+import settings from "../utility/Settings";
 import UI from "./UI";
+import DataHandler from "../utility/DataHandler";
 
 const Controller = new class Controller {
     private readonly hotkeys: Map<string, TItemType>;
@@ -23,6 +24,7 @@ const Controller = new class Controller {
     private currentType!: TItemType | null;
     private autoattack!: boolean;
     private rotation!: boolean;
+    private attacking!: boolean;
     private move!: number;
 
     constructor() {
@@ -45,6 +47,7 @@ const Controller = new class Controller {
         this.autoattack = false;
         this.rotation = true;
         this.move = 0;
+        this.attacking = false;
     }
 
     init() {
@@ -61,7 +64,9 @@ const Controller = new class Controller {
 
     private attachMouse() {
         const { gameCanvas } = GameUI.getElements();
-        gameCanvas.addEventListener("mousemove", event => {
+        window.addEventListener("mousemove", event => {
+            if (myPlayer.inGame && event.target !== gameCanvas) return;
+            
             this.mouse.x = event.clientX;
             this.mouse.y = event.clientY;
             const angle = getAngle(innerWidth / 2, innerHeight / 2, this.mouse.x, this.mouse.y);
@@ -70,6 +75,9 @@ const Controller = new class Controller {
                 this.mouse.angle = angle;
             }
         })
+
+        gameCanvas.addEventListener("mousedown", event => this.handleMousedown(event));
+        window.addEventListener("mouseup", event => this.handleMouseup(event));
     }
 
     isMyPlayer(id: number) {
@@ -84,28 +92,16 @@ const Controller = new class Controller {
         return !this.isMyPlayer(id) && !this.isTeammate(id);
     }
 
-    isPrimary(id: TWeapon) {
-        return Weapons[id].itemType === WeaponType.PRIMARY;
-    }
-
-    isSecondary(id: TWeapon) {
-        return Weapons[id].itemType === WeaponType.SECONDARY;
-    }
-
-    isShootable(id: TWeapon) {
-        return "projectile" in Weapons[id];
-    }
-
     private whichWeapon(type: TWeaponType = this.weapon) {
         if (!myPlayer.hasItemType(type)) return;
         this.weapon = type;
 
-        const weapon = myPlayer.getItemType(this.weapon);
+        const weapon = myPlayer.getItemByType(this.weapon);
         SocketManager.selectItemByID(weapon, true);
     }
 
     private selectItemByType(type: TItemType) {
-        const item = myPlayer.getItemType(type);
+        const item = myPlayer.getItemByType(type);
         SocketManager.selectItemByID(item, false);
     }
 
@@ -114,6 +110,21 @@ const Controller = new class Controller {
         SocketManager.attack(angle);
         SocketManager.stopAttack(angle);
         this.whichWeapon();
+        if (this.attacking) {
+            SocketManager.attack(angle);
+        }
+    }
+
+    heal(lastHeal: boolean) {
+        this.selectItemByType(ItemType.FOOD);
+        SocketManager.attack(null);
+        if (lastHeal) {
+            SocketManager.stopAttack(null);
+            this.whichWeapon();
+            if (this.attacking) {
+                SocketManager.attack(this.mouse.angle);
+            }
+        }
     }
 
     private placement() {
@@ -214,6 +225,22 @@ const Controller = new class Controller {
             if (this.currentType === null) {
                 this.whichWeapon();
             }
+        }
+    }
+
+    private handleMousedown(event: MouseEvent) {
+        const button = formatButton(event.button);
+        if (button === "LBTN" && !this.attacking) {
+            this.attacking = true;
+            SocketManager.attack(this.mouse.angle);
+        }
+    }
+
+    private handleMouseup(event: MouseEvent) {
+        const button = formatButton(event.button);
+        if (button === "LBTN" && this.attacking) {
+            this.attacking = false;
+            SocketManager.stopAttack(this.mouse.angle);
         }
     }
 }

@@ -1,7 +1,6 @@
 import { Items } from "../constants/Items";
 import Vector from "../modules/Vector";
-import { GetValues } from "../types/Common";
-import { TItem } from "../types/Items";
+import { TItem, TItems } from "../types/Items";
 
 const resourceType = {
     WOOD: 0,
@@ -40,7 +39,7 @@ class ObjectItem {
         this.objectItemType = objectItemType;
         this.ownerID = ownerID;
         this.isItem = resType === null;
-        const item: GetValues<typeof Items, TItem> | {} = objectItemType !== null ? Items[objectItemType] : {};
+        const item: TItems[number] | {} = objectItemType !== null ? Items[objectItemType] : {};
         this.colDiv = "colDiv" in item ? item.colDiv : 1;
     }
 

@@ -1,6 +1,6 @@
-import { TAccessory, THat } from "../constants/Store";
 import { ValueOf } from "./Common";
 import { TItem, TItemGroup, TWeapon } from "./Items";
+import { TAccessory, THat } from "./Store";
 
 export enum SocketServer {
     CONNECTION_ESTABLISHED = "io-init",
@@ -27,6 +27,7 @@ export enum SocketServer {
     REMOVE_OBJECT = "12",
     REMOVE_ALL_OBJECTS = "13",
     ITEM_COUNT = "14",
+    UPDATE_PLAYER_HEALTH = "h",
 }
 
 export enum SocketClient {
@@ -95,7 +96,8 @@ export type IncomingPacket =
     [SocketServer.CREATE_PROJECTILE, number, number, number, number, number, number, 0 | 1, number] |
     [SocketServer.ADD_OBJECT, any[]] |
     [SocketServer.REMOVE_OBJECT, number] |
-    [SocketServer.ITEM_COUNT, TItemGroup, number];
+    [SocketServer.ITEM_COUNT, TItemGroup, number] |
+    [SocketServer.UPDATE_PLAYER_HEALTH, number, number];
 
 export const Store = {
     EQUIP: 0,

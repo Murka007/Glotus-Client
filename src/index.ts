@@ -10,7 +10,7 @@ import DefaultHooks from "./modules/DefaultHooks";
 import GameUI from "./modules/GameUI";
 import Hooker from "./modules/Hooker";
 import Injector from "./modules/Injector";
-import settings from "./modules/Settings";
+import settings from "./utility/Settings";
 import UI from "./modules/UI";
 import Renderer from "./utility/Renderer";
 

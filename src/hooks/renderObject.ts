@@ -14,7 +14,6 @@ const renderObject = (ctx: TCTX) => {
             ctx.save();
             const x = object.x + object.xWiggle - myPlayer.offset.x;
             const y = object.y + object.yWiggle - myPlayer.offset.y;
-            // ctx.translate(x, y);
             ctx.strokeStyle = "red";
             ctx.lineWidth = 3;
             ctx.beginPath();
