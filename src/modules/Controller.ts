@@ -2,16 +2,54 @@ import Glotus from "..";
 import { Weapons } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
-import { ItemType, TItemType, TWeapon, TWeaponType, WeaponType } from "../types/Items";
+import { EWeapon, ItemType, TItemType, TWeapon, TWeaponData, TWeaponType, WeaponType } from "../types/Items";
 import { fixTo, formatButton, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
 import GameUI from "./GameUI";
 import settings from "../utility/Settings";
 import UI from "./UI";
 import DataHandler from "../utility/DataHandler";
+import { EHat, EStoreType, TAccessory, TEquipType, THat, TStoreType } from "../types/Store";
+import { Accessories, Hats } from "../constants/Store";
+
+
+interface IStore {
+    readonly [EStoreType.HAT]: {
+        utility: THat;
+        biome: THat;
+        current: THat;
+        actual: THat;
+    }
+
+    readonly [EStoreType.ACCESSORY]: {
+        utility: TAccessory;
+        current: TAccessory;
+        actual: TAccessory;
+    }
+}
 
 const Controller = new class Controller {
     private readonly hotkeys: Map<string, TItemType>;
-    private readonly mouse: {
+    private readonly bought = {
+        [EStoreType.HAT]: new Set<THat>,
+        [EStoreType.ACCESSORY]: new Set<TAccessory>
+    } as const;
+
+    readonly store: IStore = {
+        [EStoreType.HAT]: {
+            utility: 0,
+            biome: 0,
+            current: 0,
+            actual: 0,
+        },
+    
+        [EStoreType.ACCESSORY]: {
+            utility: 0,
+            current: 0,
+            actual: 0,
+        }
+    }
+
+    readonly mouse: {
         x: number;
         y: number;
         _angle: number;
@@ -25,6 +63,8 @@ const Controller = new class Controller {
     private autoattack!: boolean;
     private rotation!: boolean;
     private attacking!: boolean;
+    breaking!: boolean;
+    wasBreaking!: boolean;
     private move!: number;
 
     constructor() {
@@ -46,8 +86,10 @@ const Controller = new class Controller {
         this.currentType = null;
         this.autoattack = false;
         this.rotation = true;
-        this.move = 0;
         this.attacking = false;
+        this.breaking = false;
+        this.wasBreaking = false;
+        this.move = 0;
     }
 
     init() {
@@ -92,6 +134,42 @@ const Controller = new class Controller {
         return !this.isMyPlayer(id) && !this.isTeammate(id);
     }
 
+    getBestDestroyingWeapon(): TWeaponType | null {
+        const secondaryID = myPlayer.getItemByType(WeaponType.SECONDARY);
+        if (secondaryID === EWeapon.GREAT_HAMMER) return WeaponType.SECONDARY;
+
+        const primary = DataHandler.getWeaponByType(WeaponType.PRIMARY);
+        if (primary.damage !== 1) return WeaponType.PRIMARY;
+        return null;
+    }
+
+    buy(type: TStoreType, id: THat | TAccessory): boolean {
+        const store = type === EStoreType.HAT ? Hats : Accessories;
+        const price = store[id as keyof typeof store].price;
+        const bought = this.bought[type] as Set<THat | TAccessory>;
+
+        if (!bought.has(id) && myPlayer.resources.gold >= price) {
+            bought.add(id);
+            SocketManager.buy(type, id);
+        }
+        return bought.has(id);
+    }
+
+    equip(type: TStoreType, id: THat | TAccessory, equipType: TEquipType) {
+        if (!this.buy(type, id) || !myPlayer.inGame) return;
+
+        SocketManager.equip(type, id);
+
+        const store = this.store[type];
+        if (equipType === "CURRENT") {
+            store.current = id;
+        } else if (equipType === "ACTUAL") {
+            store.actual = id;
+        } else if (equipType === "UTILITY") {
+            store.utility = id;
+        }
+    }
+
     private whichWeapon(type: TWeaponType = this.weapon) {
         if (!myPlayer.hasItemType(type)) return;
         this.weapon = type;
@@ -110,7 +188,7 @@ const Controller = new class Controller {
         SocketManager.attack(angle);
         SocketManager.stopAttack(angle);
         this.whichWeapon();
-        if (this.attacking) {
+        if (this.attacking || this.breaking) {
             SocketManager.attack(angle);
         }
     }
@@ -121,7 +199,7 @@ const Controller = new class Controller {
         if (lastHeal) {
             SocketManager.stopAttack(null);
             this.whichWeapon();
-            if (this.attacking) {
+            if (this.attacking || this.breaking) {
                 SocketManager.attack(this.mouse.angle);
             }
         }
@@ -234,6 +312,10 @@ const Controller = new class Controller {
             this.attacking = true;
             SocketManager.attack(this.mouse.angle);
         }
+
+        if (button === "RBTN" && !this.breaking) {
+            this.breaking = true;
+        }
     }
 
     private handleMouseup(event: MouseEvent) {
@@ -241,6 +323,10 @@ const Controller = new class Controller {
         if (button === "LBTN" && this.attacking) {
             this.attacking = false;
             SocketManager.stopAttack(this.mouse.angle);
+        }
+
+        if (button === "RBTN" && this.breaking) {
+            this.breaking = false;
         }
     }
 }

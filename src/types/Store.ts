@@ -1,6 +1,7 @@
 import { ValueOf } from "./Common";
 
 export const EHat = {
+    UNEQUIP: 0,
     SHAME: 45,
     MOO_CAP: 51,
     APPLE_CAP: 50,
@@ -48,10 +49,10 @@ export const EHat = {
     BLOODTHIRSTER: 55,
     ASSASSIN_GEAR: 56,
 } as const;
-
 export type THat = ValueOf<typeof EHat>;
 
 export const EAccessory = {
+    UNEQUIP: 0,
     SNOWBALL: 12,
     TREE_CAPE: 9,
     STONE_CAPE: 10,
@@ -74,5 +75,23 @@ export const EAccessory = {
     BLOOD_WINGS: 18,
     CORRUPT_X_WINGS: 21,
 } as const;
-
 export type TAccessory = ValueOf<typeof EAccessory>;
+
+export const EStoreAction = {
+    EQUIP: 0,
+    BUY: 1
+} as const;
+export type TStoreAction = ValueOf<typeof EStoreAction>;
+
+export const EStoreType = {
+    HAT: 0,
+    ACCESSORY: 1
+} as const;
+export type TStoreType = ValueOf<typeof EStoreType>;
+
+export const EEquipType = {
+    UTILITY: "UTILITY",
+    CURRENT: "CURRENT",
+    ACTUAL: "ACTUAL",
+} as const;
+export type TEquipType = ValueOf<typeof EEquipType>;

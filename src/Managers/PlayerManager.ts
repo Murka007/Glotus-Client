@@ -3,13 +3,14 @@ import Animals from "../constants/Animals";
 import { Weapons } from "../constants/Items";
 import { Hats } from "../constants/Store";
 import Animal from "../data/Animal";
-import myPlayer from "../data/ClientPlayer";
+import { ClientPlayer } from "../data/ClientPlayer";
 import Player from "../data/Player";
 import Controller from "../modules/Controller";
 import { TWeapon } from "../types/Items";
-import { EHat } from "../types/Store";
+import { EHat, EStoreType } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
 import ProjectileManager from "./ProjectileManager";
+import SocketManager from "./SocketManager";
 
 interface IPlayerData {
     readonly id: number;
@@ -45,6 +46,15 @@ const PlayerManager = new class PlayerManager {
         
         reload[type].current = 0;
         reload[type].max = Weapons[weaponID].speed * reloadSpeed;
+
+        if (Controller.isMyPlayer(id) && Controller.wasBreaking) {
+            Controller.wasBreaking = false;
+            SocketManager.stopAttack(Controller.mouse.angle);
+
+            const store = Controller.store[EStoreType.HAT];
+            Controller.equip(EStoreType.HAT, store.current, "CURRENT");
+            store.utility = 0;
+        }
     }
 
     updatePlayer(buffer: any[]) {
@@ -54,9 +64,16 @@ const PlayerManager = new class PlayerManager {
         this.step = now - this.start;
         this.start = now;
 
+        let myPlayerCopy: ClientPlayer | null = null;
+
         for (let i=0;i<buffer.length;i+=13) {
             const player = this.players.get(buffer[i]);
             if (!player) continue;
+
+            if (myPlayerCopy === null && Controller.isMyPlayer(buffer[i])) {
+                myPlayerCopy = player as ClientPlayer;
+            }
+
             this.visiblePlayers.push(player);
             player.update(
                 buffer[i],
@@ -71,9 +88,10 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 9],
                 buffer[i + 10],
                 buffer[i + 11]
-            )
+            );
         }
 
+        if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
         ProjectileManager.projectiles.clear();
         ProjectileManager.turrets.clear();
     }
@@ -101,7 +119,11 @@ const PlayerManager = new class PlayerManager {
     }
 
     isEnemy(target1: Player, target2: Player) {
-        return target1.clanName === null || target1.clanName !== target2.clanName;
+        return (
+            target1.clanName === null ||
+            target2.clanName === null ||
+            target1.clanName !== target2.clanName
+        )
     }
 
     getNearestEntity(target: Player): Player | Animal | null {

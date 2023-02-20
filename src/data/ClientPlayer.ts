@@ -1,14 +1,17 @@
 import Glotus from "..";
 import { ItemGroups, Items, Weapons } from "../constants/Items";
 import PlayerManager from "../Managers/PlayerManager";
+import SocketManager from "../Managers/SocketManager";
 import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TWeapon, TWeaponData, TWeaponType, WeaponType } from "../types/Items";
+import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TWeapon, TWeaponData, TWeaponType, TWeaponVariant, WeaponType } from "../types/Items";
+import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
+import settings from "../utility/Settings";
 import Player from "./Player";
 
-const myPlayer = new class ClientPlayer extends Player {
+export class ClientPlayer extends Player {
     readonly weaponData = {} as TWeaponData;
     readonly itemData = {} as TItemData;
 
@@ -22,6 +25,7 @@ const myPlayer = new class ClientPlayer extends Player {
     }
     readonly offset = new Vector;
     inGame = false;
+    private platformActivated = false;
 
     constructor() {
         super();
@@ -116,9 +120,74 @@ const myPlayer = new class ClientPlayer extends Player {
         GameUI.updateItemCount(group);
     }
 
+    private getBestCurrentHat(): THat {
+        const { current, future } = this.position;
+
+        const inRiver = current.y > 6837 && current.y < 7562;
+        if (inRiver) {
+            const platformActivated = this.checkCollision(EItem.PLATFORM, 30);
+            const stillStandingOnPlatform = this.checkCollision(EItem.PLATFORM, -15);
+
+            if (!this.platformActivated && platformActivated) {
+                this.platformActivated = true;
+            }
+
+            if (this.platformActivated && !stillStandingOnPlatform) {
+                this.platformActivated = false;
+            }
+
+            if (!this.platformActivated) {
+                return EHat.FLIPPER_HAT;
+            }
+        }
+
+        // Add turret detection
+
+
+        const nearestEntity = PlayerManager.getNearestEntity(this);
+        if (
+            nearestEntity !== null &&
+            nearestEntity.position.future.distance(future) < 300
+        ) return EHat.SOLDIER_HELMET;
+
+        const inWinter = current.y <= 2400;
+        if (inWinter) return EHat.WINTER_CAP;
+        return Controller.store[EStoreType.HAT].actual;
+    }
+
+    tickUpdate() {
+        const type = DataHandler.isPrimary(this.weapon.current) ? "primary" : "secondary";
+        const target = this.reload[type];
+        if (
+            this.currentItem === -1 &&
+            Controller.breaking &&
+            !Controller.wasBreaking &&
+            target.current === target.max
+        ) {
+            Controller.wasBreaking = true;
+            Controller.equip(EStoreType.HAT, EHat.TANK_GEAR, "UTILITY");
+            SocketManager.attack(Controller.mouse.angle);
+        }
+
+        const store = Controller.store[EStoreType.HAT];
+        const hat = this.getBestCurrentHat();
+
+        if (store.current !== hat && store.utility === 0) {
+            Controller.equip(EStoreType.HAT, hat, "CURRENT");
+        }
+    }
+
     updateHealth(health: number) {
         this.previousHealth = this.currentHealth;
         this.currentHealth = health;
+
+        if (settings.autoheal && health < 100) {
+            const difference = Math.abs(health - this.previousHealth);
+            const delay = difference <= 10 ? 150 : 80;
+            setTimeout(() => {
+                Controller.heal(true);
+            }, delay);
+        }
 
         // const item = DataHandler.getItemByType(ItemType.FOOD);
         // item.name
@@ -165,4 +234,5 @@ const myPlayer = new class ClientPlayer extends Player {
     }
 }
 
+const myPlayer = new ClientPlayer();
 export default myPlayer;

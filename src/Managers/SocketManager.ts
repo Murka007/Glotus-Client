@@ -5,8 +5,8 @@ import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
 import { ValueOf } from "../types/Common";
 import { TItem, TWeapon, WeaponType } from "../types/Items";
-import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer, Store, StoreType } from "../types/Socket";
-import { TAccessory, THat } from "../types/Store";
+import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
+import { EStoreAction, TAccessory, THat, TStoreType } from "../types/Store";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
@@ -235,12 +235,12 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.LEAVE_CLAN]);
     }
 
-    equip(type: ValueOf<typeof StoreType>, id: THat | TAccessory) {
-        this.send([SocketClient.STORE, Store.EQUIP, id, type]);
+    equip(type: TStoreType, id: THat | TAccessory) {
+        this.send([SocketClient.STORE, EStoreAction.EQUIP, id, type]);
     }
 
-    buy(type: ValueOf<typeof StoreType>, id: THat | TAccessory) {
-        this.send([SocketClient.STORE, Store.BUY, id, type]);
+    buy(type: TStoreType, id: THat | TAccessory) {
+        this.send([SocketClient.STORE, EStoreAction.BUY, id, type]);
     }
 
     chat(message: string) {

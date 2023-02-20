@@ -1,6 +1,6 @@
 import { ValueOf } from "./Common";
 import { TItem, TItemGroup, TWeapon } from "./Items";
-import { TAccessory, THat } from "./Store";
+import { TAccessory, THat, TStoreAction, TStoreType } from "./Store";
 
 export enum SocketServer {
     CONNECTION_ESTABLISHED = "io-init",
@@ -99,16 +99,6 @@ export type IncomingPacket =
     [SocketServer.ITEM_COUNT, TItemGroup, number] |
     [SocketServer.UPDATE_PLAYER_HEALTH, number, number];
 
-export const Store = {
-    EQUIP: 0,
-    BUY: 1
-} as const;
-
-export const StoreType = {
-    HAT: 0,
-    ACCESSORY: 1
-} as const;
-
 interface ISpawn {
     readonly name: string;
     readonly moofoll: 1 | 0;
@@ -121,7 +111,7 @@ export type OutcomingPacket =
     [SocketClient.JOIN_CLAN, string] |
     [SocketClient.CREATE_CLAN, string] |
     [SocketClient.LEAVE_CLAN] |
-    [SocketClient.STORE, ValueOf<typeof Store>, THat | TAccessory, ValueOf<typeof StoreType>] |
+    [SocketClient.STORE, TStoreAction, THat | TAccessory, TStoreType] |
     [SocketClient.CHAT, string] |
     [SocketClient.RESET_MOVE_DIR] |
     [SocketClient.ATTACK, 1 | 0, number | null] |

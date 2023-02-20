@@ -9,19 +9,19 @@ const renderObject = (ctx: TCTX) => {
     
     for (const object of Renderer.objects) {
         Renderer.renderMarker(ctx, object);
-        const obj = ObjectManager.objects.get(object.sid);
-        if (obj !== undefined) {
-            ctx.save();
-            const x = object.x + object.xWiggle - myPlayer.offset.x;
-            const y = object.y + object.yWiggle - myPlayer.offset.y;
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(x, y, obj.formatScale(), 0, 2 * Math.PI);
-            ctx.stroke();
-            ctx.closePath();
-            ctx.restore();
-        }
+        // const obj = ObjectManager.objects.get(object.sid);
+        // if (obj !== undefined) {
+        //     ctx.save();
+        //     const x = object.x + object.xWiggle - myPlayer.offset.x;
+        //     const y = object.y + object.yWiggle - myPlayer.offset.y;
+        //     ctx.strokeStyle = "red";
+        //     ctx.lineWidth = 3;
+        //     ctx.beginPath();
+        //     ctx.arc(x, y, obj.formatScale(), 0, 2 * Math.PI);
+        //     ctx.stroke();
+        //     ctx.closePath();
+        //     ctx.restore();
+        // }
     }
     Renderer.objects.length = 0;
 }

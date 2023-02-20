@@ -95,6 +95,18 @@ class Injector {
             /clientSendRate\)/,
             `&&false`
         );
+
+        Hook.replace(
+            "handleEquip",
+            /\w+\.send\("13c",0,(\w+),(\w+)\)/,
+            `Glotus.Controller.equip($2,$1,"ACTUAL")`
+        );
+
+        Hook.replace(
+            "handleBuy",
+            /\w+\.send\("13c",1,(\w+),(\w+)\)/,
+            `Glotus.Controller.buy($2,$1)`
+        );
         
         return Hook.code;
     }

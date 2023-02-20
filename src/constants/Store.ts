@@ -1,6 +1,13 @@
 import { EAccessory, EHat } from "../types/Store";
 
 export const Hats = {
+    [EHat.UNEQUIP]: {
+        id: EHat.UNEQUIP,
+        name: "Unequip",
+        price: 0,
+        scale: 0,
+        description: "None",
+    },
     [EHat.SHAME]: {
         id: EHat.SHAME,
         name: "Shame!",
@@ -370,6 +377,14 @@ export const Hats = {
 export type THats = typeof Hats;
 
 export const Accessories = {
+    [EAccessory.UNEQUIP]: {
+        id: EAccessory.UNEQUIP,
+        name: "Unequip",
+        price: 0,
+        scale: 0,
+        xOffset: 0,
+        description: "None"
+    },
     [EAccessory.SNOWBALL]: {
         id: EAccessory.SNOWBALL,
         name: "Snowball",
