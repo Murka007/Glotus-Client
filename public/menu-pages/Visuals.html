@@ -118,11 +118,22 @@
 
 
     <div class="section">
-        <h2 class="section-title">Reload bars</h2>
+        <h2 class="section-title">Player</h2>
 
         <div class="section-content split">
-
             <div class="content-split">
+
+                <div class="content-option">
+                    <span class="option-title">Turret Reload Bar</span>
+                    <div class="option-content">
+                        <button class="reset-color" title="Reset Color"></button>
+                        <input id="playerTurretReloadBarColor" type="color" title="Select Color">
+                        <label class="switch-checkbox">
+                            <input id="playerTurretReloadBar" type="checkbox"></input>
+                            <span></span>
+                        </label>
+                    </div>
+                </div>
 
                 <div class="content-option">
                     <span class="option-title">Weapon Reload Bar</span>
@@ -135,29 +146,6 @@
                         </label>
                     </div>
                 </div>
-
-                <div class="content-option">
-                    <span class="option-title">Turret Reload Bar</span>
-                    <div class="option-content">
-                        <button class="reset-color" title="Reset Color"></button>
-                        <input id="turretReloadBarColor" type="color" title="Select Color">
-                        <label class="switch-checkbox">
-                            <input id="turretReloadBar" type="checkbox"></input>
-                            <span></span>
-                        </label>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-
-    <div class="section">
-        <h2 class="section-title">Player</h2>
-
-        <div class="section-content split">
-            <div class="content-split">
 
                 <div class="content-option">
                     <span class="option-title">Render HP</span>
@@ -174,6 +162,42 @@
 
     
     <div class="section">
+        <h2 class="section-title">Object</h2>
+
+        <div class="section-content split">
+
+            <div class="content-split">
+                <div class="content-option">
+                    <span class="option-title">Turret Reload Bar</span>
+                    <div class="option-content">
+                        <button class="reset-color" title="Reset Color"></button>
+                        <input id="objectTurretReloadBarColor" type="color" title="Select Color">
+                        <label class="switch-checkbox">
+                            <input id="objectTurretReloadBar" type="checkbox"></input>
+                            <span></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="content-option">
+                    <span class="option-title">Item Health Bar</span>
+                    <div class="option-content">
+                        <button class="reset-color" title="Reset Color"></button>
+                        <input id="itemHealthBarColor" type="color" title="Select Color">
+                        <label class="switch-checkbox">
+                            <input id="itemHealthBar" type="checkbox"></input>
+                            <span></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+
+    <div class="section">
         <h2 class="section-title">Other</h2>
 
         <div class="section-content split">
@@ -183,6 +207,14 @@
                     <span class="option-title">Item counter</span>
                     <label class="switch-checkbox">
                         <input id="itemCounter" type="checkbox"></input>
+                        <span></span>
+                    </label>
+                </div>
+
+                <div class="content-option">
+                    <span class="option-title">Render grid</span>
+                    <label class="switch-checkbox">
+                        <input id="renderGrid" type="checkbox"></input>
                         <span></span>
                     </label>
                 </div>

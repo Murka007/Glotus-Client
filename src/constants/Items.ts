@@ -316,54 +316,67 @@ export const ItemGroups = {
     [ItemGroup.WALL]: {
         name: "Wall",
         limit: 30,
+        layer: 0,
     },
     [ItemGroup.SPIKE]: {
         name: "Spike",
         limit: 15,
+        layer: 0,
     },
     [ItemGroup.WINDMILL]: {
         name: "Windmill",
         limit: 7,
+        layer: 1,
     },
     [ItemGroup.MINE]: {
         name: "Mine",
         limit: 1,
+        layer: 0,
     },
     [ItemGroup.TRAP]: {
         name: "Trap",
         limit: 6,
+        layer: -1,
     },
     [ItemGroup.BOOST]: {
         name: "Boost",
         limit: 12,
+        layer: -1,
     },
     [ItemGroup.TURRET]: {
         name: "Turret",
         limit: 2,
+        layer: 1,
     },
     [ItemGroup.PLATFORM]: {
         name: "Plaftorm",
         limit: 12,
+        layer: -1,
     },
     [ItemGroup.HEAL_PAD]: {
         name: "Healing pad",
         limit: 4,
+        layer: -1,
     },
     [ItemGroup.SPAWN]: {
         name: "Spawn",
         limit: 1,
+        layer: -1,
     },
     [ItemGroup.SAPLING]: {
         name: "Sapling",
         limit: 2,
+        layer: 0,
     },
     [ItemGroup.BLOCKER]: {
         name: "Blocker",
         limit: 3,
+        layer: -1,
     },
     [ItemGroup.TELEPORTER]: {
         name: "Teleporter",
         limit: 2,
+        layer: -1,
     },
 } as const;
 
@@ -805,7 +818,7 @@ export const Items = [{
     placeOffset: -5
 }] as const;
 
-const weaponVariants = [{
+export const weaponVariants = [{
     id: EWeaponVariant.STONE,
     src: "",
     xp: 0,

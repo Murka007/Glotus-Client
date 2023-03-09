@@ -8,7 +8,7 @@ import SocketManager from "./Managers/SocketManager";
 import Controller from "./modules/Controller";
 import DefaultHooks from "./modules/DefaultHooks";
 import GameUI from "./modules/GameUI";
-import Hooker from "./modules/Hooker";
+import Hooker from "./utility/Hooker";
 import Injector from "./modules/Injector";
 import settings from "./utility/Settings";
 import UI from "./modules/UI";
@@ -26,8 +26,6 @@ const Glotus = new class Glotus {
     readonly myPlayer = myPlayer;
     readonly settings = settings;
     readonly Renderer = Renderer;
-    readonly log = console.log;
-    readonly error = console.error;
     readonly hooks = {
         renderEntity,
         renderObject,

@@ -12,6 +12,7 @@ import Storage from "../utility/Storage";
 import Controller from "./Controller";
 import { KeysOfType } from "../types/Common";
 import GameUI from "./GameUI";
+import Logger from "../utility/Logger";
 
 interface IFrame {
     readonly target: HTMLIFrameElement;
@@ -129,7 +130,7 @@ const UI = new class UI {
             if (id in settings && typeof value === "string") {
                 hotkeyInput.textContent = formatCode(value);
             } else {
-                Glotus.error(`attachHotkeyInputs Error: Property "${id}" does not exist in settings`);
+                Logger.error(`attachHotkeyInputs Error: Property "${id}" does not exist in settings`);
             }
         }
     }
@@ -146,7 +147,7 @@ const UI = new class UI {
                 list.set(value, [(count || 0) + 1, [ ...inputs, hotkeyInput ]]);
                 hotkeyInput.classList.remove("red");
             } else {
-                Glotus.error(`checkForRepeats Error: Property "${id}" does not exist in settings`);
+                Logger.error(`checkForRepeats Error: Property "${id}" does not exist in settings`);
             }
         }
 
@@ -173,7 +174,7 @@ const UI = new class UI {
             settings[id] = deleting ? "..." : keySetting;
             Storage.set("Glotus", settings);
         } else {
-            Glotus.error(`applyCode Error: Property "${id}" does not exist in settings`);
+            Logger.error(`applyCode Error: Property "${id}" does not exist in settings`);
         }
 
         this.activeHotkeyInput.textContent = deleting ? "..." : keyText;
@@ -203,7 +204,7 @@ const UI = new class UI {
             const id = checkbox.id as KeysOfType<ISettings, boolean>;
             
             if (!(id in settings)) {
-                Glotus.error(`attachCheckboxes Error: Property "${id}" does not exist in settings`);
+                Logger.error(`attachCheckboxes Error: Property "${id}" does not exist in settings`);
                 continue;
             }
 
@@ -214,7 +215,7 @@ const UI = new class UI {
                     Storage.set("Glotus", settings);
                     this.handleCheckboxToggle(id, checkbox.checked);
                 } else {
-                    Glotus.error(`attachCheckboxes Error: Property "${id}" was deleted from settings`);
+                    Logger.error(`attachCheckboxes Error: Property "${id}" was deleted from settings`);
                 }
             }
         }
@@ -226,7 +227,7 @@ const UI = new class UI {
             const id = picker.id as KeysOfType<ISettings, string>;
 
             if (!(id in settings)) {
-                Glotus.error(`attachColorPickers Error: Property "${id}" does not exist in settings`);
+                Logger.error(`attachColorPickers Error: Property "${id}" does not exist in settings`);
                 continue;
             }
 
@@ -237,7 +238,7 @@ const UI = new class UI {
                     Storage.set("Glotus", settings);
                     picker.blur();
                 } else {
-                    Glotus.error(`attachColorPickers Error: Property "${id}" was deleted from settings`);
+                    Logger.error(`attachColorPickers Error: Property "${id}" was deleted from settings`);
                 }
             }
 
@@ -250,7 +251,7 @@ const UI = new class UI {
                         settings[id] = defaultSettings[id];
                         Storage.set("Glotus", settings);
                     } else {
-                        Glotus.error(`resetColor Error: Property "${id}" was deleted from settings`);
+                        Logger.error(`resetColor Error: Property "${id}" was deleted from settings`);
                     }
                 }
             }
@@ -304,7 +305,7 @@ const UI = new class UI {
                     removeClass(menuPages, "opened");
                     menuPage.classList.add("opened");
                 } else {
-                    Glotus.error(`attachOpenMenu Error: Cannot find "${button.textContent}" menu`);
+                    Logger.error(`attachOpenMenu Error: Cannot find "${button.textContent}" menu`);
                 }
             }
         }

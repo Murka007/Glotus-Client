@@ -1,5 +1,5 @@
 import { ValueOf } from "./Common";
-import { TItem, TItemGroup, TWeapon } from "./Items";
+import { TItem, TItemGroup, TMelee, TWeapon } from "./Items";
 import { TAccessory, THat, TStoreAction, TStoreType } from "./Store";
 
 export enum SocketServer {
@@ -23,11 +23,14 @@ export enum SocketServer {
     UPDATE_MY_CLAN = "st",
     ATTACK_ANIMATION = "7",
     CREATE_PROJECTILE = "18",
+    REMOVE_PROJECTILE = "19",
     ADD_OBJECT = "6",
     REMOVE_OBJECT = "12",
     REMOVE_ALL_OBJECTS = "13",
     ITEM_COUNT = "14",
     UPDATE_PLAYER_HEALTH = "h",
+    HIT_OBJECT = "8",
+    SHOOT_TURRET = "sp",
 }
 
 export enum SocketClient {
@@ -71,7 +74,7 @@ export type PLAYER_DATA = [
     skinID: number
 ];
 
-export type IncomingPacket = 
+export type IncomingPacket =
     [SocketServer.CONNECTION_ESTABLISHED, string] |
     [SocketServer.CLAN_INFO_INIT, ITeams] |
     [SocketServer.PING_RESPONSE] |
@@ -87,17 +90,19 @@ export type IncomingPacket =
     [SocketServer.UPDATE_MINIMAP] |
     [SocketServer.UPDATE_ITEMS, [TWeapon], 1] |
     [SocketServer.UPDATE_ITEMS, [TItem], undefined] |
-    [packet: SocketServer.UPDATE_AGE, xp: number] |
-    [packet: SocketServer.UPDATE_AGE, xp: number, maxXP: number, age: number] |
+    [SocketServer.UPDATE_AGE, number, number?, number?] |
     [SocketServer.UPDATE_RESOURCES, "food" | "wood" | "stone" | "points" | "kills", number, 1] |
     [SocketServer.UPDATE_CLAN_MEMBERS, (number | string)[]] |
     [SocketServer.UPDATE_MY_CLAN, string | null, boolean] |
-    [SocketServer.ATTACK_ANIMATION, number, 1 | 0, TWeapon] |
+    [SocketServer.ATTACK_ANIMATION, number, 1 | 0, TMelee] |
     [SocketServer.CREATE_PROJECTILE, number, number, number, number, number, number, 0 | 1, number] |
+    [SocketServer.REMOVE_PROJECTILE, number, number] |
     [SocketServer.ADD_OBJECT, any[]] |
     [SocketServer.REMOVE_OBJECT, number] |
     [SocketServer.ITEM_COUNT, TItemGroup, number] |
-    [SocketServer.UPDATE_PLAYER_HEALTH, number, number];
+    [SocketServer.UPDATE_PLAYER_HEALTH, number, number] |
+    [SocketServer.HIT_OBJECT, number, number] |
+    [SocketServer.SHOOT_TURRET, number, number];
 
 interface ISpawn {
     readonly name: string;

@@ -1,4 +1,5 @@
 import Glotus from "..";
+import Logger from "../utility/Logger";
 
 type TRegex = RegExp | RegExp[] | string | string[];
 
@@ -56,7 +57,7 @@ class Regexer {
         regex = this.parseVariables(regex);
         const expression = new RegExp(regex, flags);
         const match = this.code.match(expression);
-        if (match === null) Glotus.error("Failed to find: " + name);
+        if (match === null) Logger.error("Failed to find: " + name);
         this.hookCount++;
         return expression;
     }

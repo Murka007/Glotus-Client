@@ -37,6 +37,12 @@ const Hooker = new class Hooker {
             configurable: true
         })
     }
+
+    linker(value: any) {
+        const hook = [value] as [any];
+        hook.valueOf = () => hook[0];
+        return hook;
+    }
 }
 
 export default Hooker;

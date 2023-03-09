@@ -1,14 +1,37 @@
 import Glotus from "..";
 import myPlayer from "../data/ClientPlayer";
+import { PlayerObject } from "../data/ObjectItem";
 import ObjectManager from "../Managers/ObjectManager";
 import { TCTX } from "../types/Common";
+import { EItem } from "../types/Items";
+import { clamp } from "../utility/Common";
 import Renderer from "../utility/Renderer";
+import settings from "../utility/Settings";
 
 const renderObject = (ctx: TCTX) => {
     if (Renderer.objects.length === 0) return;
     
     for (const object of Renderer.objects) {
+        const playerObject = ObjectManager.objects.get(object.sid);
+
         Renderer.renderMarker(ctx, object);
+
+        if (
+            playerObject instanceof PlayerObject &&
+            playerObject.isDestroyable()
+        ) {
+            let scale = 0;
+            if (settings.itemHealthBar && playerObject.seenPlacement) {
+                const perc = clamp(playerObject.health / playerObject.maxHealth, 0, 1);
+                scale += Renderer.circularBar(ctx, object, perc, settings.itemHealthBarColor);
+            }
+
+            if (settings.objectTurretReloadBar && playerObject.type === EItem.TURRET) {
+                const perc = clamp(playerObject.reload / playerObject.maxReload, 0, 1);
+                Renderer.circularBar(ctx, object, perc, settings.objectTurretReloadBarColor, scale);
+                Renderer.circle(ctx, object.x, object.y, 700, "red", 0.5);
+            }
+        }
         // const obj = ObjectManager.objects.get(object.sid);
         // if (obj !== undefined) {
         //     ctx.save();

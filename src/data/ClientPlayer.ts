@@ -1,14 +1,17 @@
 import Glotus from "..";
 import { ItemGroups, Items, Weapons } from "../constants/Items";
+import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
 import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TWeapon, TWeaponData, TWeaponType, TWeaponVariant, WeaponType } from "../types/Items";
-import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
+import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
+import { EHat, EStoreType, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
+import Logger from "../utility/Logger";
 import settings from "../utility/Settings";
+import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
 
 export class ClientPlayer extends Player {
@@ -24,6 +27,7 @@ export class ClientPlayer extends Player {
         kills: 0
     }
     readonly offset = new Vector;
+    delta = 0;
     inGame = false;
     private platformActivated = false;
 
@@ -142,7 +146,26 @@ export class ClientPlayer extends Player {
         }
 
         // Add turret detection
-
+        let turretCount = 0;
+        const maxTurretCount = 5;
+        const turret = Items[EItem.TURRET];
+        const range = turret.shootRange + turret.scale;
+        const objects = ObjectManager.getObjects(future, range);
+        for (const object of objects) {
+            const distance = future.distance(object.position.current);
+            if (
+                object instanceof PlayerObject &&
+                object.type === EItem.TURRET &&
+                ObjectManager.isEnemyObject(object) &&
+                distance <= turret.shootRange &&
+                ObjectManager.isTurretReloaded(object)
+            ) {
+                turretCount += 1;
+                if (turretCount === maxTurretCount) {
+                    return EHat.EMP_HELMET;
+                }
+            }
+        }
 
         const nearestEntity = PlayerManager.getNearestEntity(this);
         if (
@@ -158,22 +181,41 @@ export class ClientPlayer extends Player {
     tickUpdate() {
         const type = DataHandler.isPrimary(this.weapon.current) ? "primary" : "secondary";
         const target = this.reload[type];
+
+        const isReloaded = (
+                SocketManager.ping > 125 ?
+                PlayerManager.tickStep >= target.max : target.current === target.max
+            );
+
         if (
             this.currentItem === -1 &&
             Controller.breaking &&
             !Controller.wasBreaking &&
-            target.current === target.max
+            isReloaded
         ) {
+            PlayerManager.tickStep = -(SocketManager.ping / 2);
             Controller.wasBreaking = true;
             Controller.equip(EStoreType.HAT, EHat.TANK_GEAR, "UTILITY");
             SocketManager.attack(Controller.mouse.angle);
+        } else if (Controller.wasBreaking) {
+            Controller.wasBreaking = false;
+            SocketManager.stopAttack(Controller.mouse.angle);
+
+            const store = Controller.store[EStoreType.HAT];
+            Controller.equip(EStoreType.HAT, store.current, "CURRENT");
+            store.utility = 0;
+        }
+
+        if (!Controller.breakingState) {
+            Controller.breaking = false;
         }
 
         const store = Controller.store[EStoreType.HAT];
-        const hat = this.getBestCurrentHat();
-
-        if (store.current !== hat && store.utility === 0) {
-            Controller.equip(EStoreType.HAT, hat, "CURRENT");
+        if (store.utility === 0) {
+            const hat = this.getBestCurrentHat();
+            if (store.current !== hat) {
+                Controller.equip(EStoreType.HAT, hat, "CURRENT");
+            }
         }
     }
 

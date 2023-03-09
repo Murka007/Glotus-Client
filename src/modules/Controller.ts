@@ -10,6 +10,8 @@ import UI from "./UI";
 import DataHandler from "../utility/DataHandler";
 import { EHat, EStoreType, TAccessory, TEquipType, THat, TStoreType } from "../types/Store";
 import { Accessories, Hats } from "../constants/Store";
+import Logger from "../utility/Logger";
+import ZoomHandler from "./ZoomHandler";
 
 
 interface IStore {
@@ -64,6 +66,7 @@ const Controller = new class Controller {
     private rotation!: boolean;
     private attacking!: boolean;
     breaking!: boolean;
+    breakingState!: boolean;
     wasBreaking!: boolean;
     private move!: number;
 
@@ -84,10 +87,12 @@ const Controller = new class Controller {
     reset() {
         this.weapon = WeaponType.PRIMARY;
         this.currentType = null;
+        this.hotkeys.clear();
         this.autoattack = false;
         this.rotation = true;
         this.attacking = false;
         this.breaking = false;
+        this.breakingState = false;
         this.wasBreaking = false;
         this.move = 0;
     }
@@ -101,7 +106,7 @@ const Controller = new class Controller {
                 this.mouse.sentAngle = angle;
                 SocketManager.updateAngle(angle);
             }
-        }, 200);
+        }, 150);
     }
 
     private attachMouse() {
@@ -120,6 +125,7 @@ const Controller = new class Controller {
 
         gameCanvas.addEventListener("mousedown", event => this.handleMousedown(event));
         window.addEventListener("mouseup", event => this.handleMouseup(event));
+        window.addEventListener("wheel", event => ZoomHandler.handler(event));
     }
 
     isMyPlayer(id: number) {
@@ -313,8 +319,9 @@ const Controller = new class Controller {
             SocketManager.attack(this.mouse.angle);
         }
 
-        if (button === "RBTN" && !this.breaking) {
+        if (button === "RBTN") {
             this.breaking = true;
+            this.breakingState = true;
         }
     }
 
@@ -325,8 +332,8 @@ const Controller = new class Controller {
             SocketManager.stopAttack(this.mouse.angle);
         }
 
-        if (button === "RBTN" && this.breaking) {
-            this.breaking = false;
+        if (button === "RBTN") {
+            this.breakingState = false;
         }
     }
 }

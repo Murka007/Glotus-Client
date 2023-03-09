@@ -1,5 +1,5 @@
 import Glotus from "..";
-import { Items, Projectiles, Weapons } from "../constants/Items";
+import { Items, Projectiles, Weapons, weaponVariants } from "../constants/Items";
 import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
@@ -8,13 +8,13 @@ import SocketManager from "../Managers/SocketManager";
 import Controller from "../modules/Controller";
 import Vector from "../modules/Vector";
 import { ReplaceWithType } from "../types/Common";
-import { EItem, TItem, TWeapon, TWeaponVariant } from "../types/Items";
+import { EItem, EWeapon, TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant } from "../types/Items";
 import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
 import { fixTo, getAngleDist } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import myPlayer from "./ClientPlayer";
 import Entity from "./Entity";
-import ObjectItem from "./ObjectItem";
+import { PlayerObject } from "./ObjectItem";
 
 interface IReload {
     current: number;
@@ -24,7 +24,7 @@ interface IReload {
 class Player extends Entity {
     
     currentItem: TItem | -1 = -1;
-    // private weaponVariant: TWeaponVariant = 0;
+    private weaponVariant: TWeaponVariant = 0;
     clanName: string | null = null;
     // private isLeader = false;
     hatID: THat = 0;
@@ -49,7 +49,7 @@ class Player extends Entity {
         readonly turret: IReload;
     }
 
-    readonly objects: ObjectItem[] = [];
+    readonly objects: PlayerObject[] = [];
 
     constructor() {
         super();
@@ -99,7 +99,7 @@ class Player extends Entity {
         this.angle = angle;
         this.currentItem = currentItem;
         this.weapon.current = currentWeapon;
-        // this.weaponVariant = weaponVariant;
+        this.weaponVariant = weaponVariant;
         this.clanName = clanName;
         // this.isLeader = Boolean(isLeader);
         this.hatID = hatID;
@@ -109,11 +109,13 @@ class Player extends Entity {
     }
 
     private updateReloads() {
+        const current = this.position.current;
+
         const turretReload = this.reload.turret;
         turretReload.current = Math.min(turretReload.current + PlayerManager.step, turretReload.max);
         if (this.hatID === EHat.TURRET_GEAR) {
             for (const [id, turret] of ProjectileManager.turrets) {
-                if (this.position.current.distance(turret.position) < 2) {
+                if (current.distance(turret.position.current) < 2) {
                     ProjectileManager.turrets.delete(id);
                     turretReload.current = 0;
                     break;
@@ -152,7 +154,7 @@ class Player extends Entity {
                     range === projectile.range &&
                     speed === projectile.speed &&
                     this.angle === projectile.angle &&
-                    this.position.current.distance(projectile.position) < 2
+                    current.distance(projectile.position.current) < 2
                 ) {
                     ProjectileManager.projectiles.delete(id);
                     targetReload.current = 0;
@@ -163,11 +165,27 @@ class Player extends Entity {
         }
     }
 
-    checkCollision(type: TItem, subRadius = 0): boolean {
+    getWeaponDamage(id: TMelee): number {
+        const weapon = Weapons[id];
+        const variant = weaponVariants[this.weaponVariant];
+
+        let damage = weapon.damage * variant.val;
+        if ("sDmg" in weapon) {
+            damage *= weapon.sDmg;
+        }
+
+        const hat = Hats[this.hatID];
+        if ("bDmg" in hat) {
+            damage *= hat.bDmg;
+        }
+        return damage;
+    }
+
+    checkCollision(type: TPlaceable, subRadius = 0): boolean {
         const objects = ObjectManager.getObjects(this.position.future, this.scale);
         for (const object of objects) {
-            if (object.objectItemType !== type) continue;
-            const distance = this.position.future.distance(object.position);
+            if (object.type !== type) continue;
+            const distance = this.position.future.distance(object.position.current);
             const radius = this.scale + object.formatScale() - subRadius;
             if (distance <= radius) return true;
         }

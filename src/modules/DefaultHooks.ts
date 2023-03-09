@@ -1,7 +1,6 @@
-import myPlayer from "../data/ClientPlayer";
-import Hooker from "./Hooker";
+import Hooker from "../utility/Hooker";
 import Storage from "../utility/Storage";
-import Glotus from "..";
+import ZoomHandler from "./ZoomHandler";
 
 const DefaultHooks = () => {
 
@@ -65,7 +64,17 @@ const DefaultHooks = () => {
             }
             return target.apply(_this, args);
         }
-    }) 
+    })
+
+    Hooker.createRecursiveHook(
+        Object.prototype, "maxScreenHeight",
+        () => true,
+        (that) => {
+            that.maxScreenWidth = ZoomHandler.scale.current.w;
+            that.maxScreenHeight = ZoomHandler.scale.current.h;
+            return true;
+        }
+    )
 }
 
 export default DefaultHooks;

@@ -1,12 +1,14 @@
 import Glotus from "..";
 import myPlayer from "../data/ClientPlayer";
+import { PlayerObject } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
-import { ValueOf } from "../types/Common";
-import { TItem, TWeapon, WeaponType } from "../types/Items";
+import { TItem, TWeapon } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
 import { EStoreAction, TAccessory, THat, TStoreType } from "../types/Store";
+import { getUniqueID } from "../utility/Common";
+import Logger from "../utility/Logger";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
@@ -20,6 +22,9 @@ const SocketManager = new class SocketManager {
         readonly decode: ((data: Uint8Array) => any);
     } = null;
     private readonly PacketQueue: (() => void)[] = [];
+    startPing = Date.now();
+    ping = 0;
+    readonly TICK = 1000 / 9;
 
     constructor() {
         this.message = this.message.bind(this);
@@ -52,154 +57,173 @@ const SocketManager = new class SocketManager {
             construct(target, args: [url: string | URL, protocols?: string | string[]]) {
                 const socket: WebSocket = new target(...args);
                 that.socket = socket;
-
                 socket.addEventListener("message", that.message);
-
-                // let start = Date.now();
-                // socket.send = new Proxy(socket.send, {
-                //     apply(target, _this, args: [string | ArrayBufferLike | Blob | ArrayBufferView]) {
-                //         if (args[0] instanceof Uint8Array) {
-                //             const decoded = that.Decoder?.decode(new Uint8Array(args[0]));
-                //             const temp = [decoded[0], ...decoded[1]] as OutcomingPacket;
-                //         }
-                //         return target.apply(_this, args);
-                //     }
-                // });
-
                 return socket;
             }
         })
+    }
+
+    private handlePing() {
+        this.ping = Date.now() - this.startPing;
+        GameUI.updatePing(this.ping);
+
+        setTimeout(() => {
+            this.pingRequest();
+        }, 2000);
     }
 
     message(event: MessageEvent<ArrayBuffer>) {
         if (this.Decoder === null) return;
         
         const data = event.data;
-        try {
-            const decoded = this.Decoder.decode(new Uint8Array(data));
-            const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
-            if (temp[0] === SocketServer.PING_RESPONSE) return;
-            if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
-            if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
+        const decoded = this.Decoder.decode(new Uint8Array(data));
+        const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
+        if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
+        if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
+        if (temp[0] === SocketServer.UPDATE_AGE) return;
 
-            switch (temp[0]) {
+        switch (temp[0]) {
 
-                case SocketServer.CONNECTION_ESTABLISHED: {
-                    GameUI.init();
-                    break;
-                }
-
-                case SocketServer.MY_PLAYER_SPAWN:
-                    myPlayer.playerSpawn(temp[1]);
-                    break;
-
-                case SocketServer.MY_PLAYER_DEATH:
-                    myPlayer.reset();
-                    break;
-
-                case SocketServer.UPDATE_ITEMS: {
-                    myPlayer.updateItems(temp[1], temp[2] === 1);
-                    break;
-                }
-
-                case SocketServer.UPDATE_RESOURCES: {
-                    const type = temp[1] === "points" ? "gold" : temp[1];
-                    myPlayer.resources[type] = temp[2];
-                    break;
-                }
-
-                case SocketServer.CREATE_PLAYER: {
-                    PlayerManager.createPlayer({
-                        id: temp[1][1],
-                        nickname: temp[1][2],
-                        skinID: temp[1][9],
-                    })
-                    break;
-                }
-
-                case SocketServer.ADD_OBJECT: {
-                    ObjectManager.createObjects(temp[1]);
-                    break;
-                }
-
-                case SocketServer.REMOVE_OBJECT: {
-                    ObjectManager.removeObjectByID(temp[1]);
-                    break;
-                }
-
-                case SocketServer.REMOVE_ALL_OBJECTS: {
-                    ObjectManager.removePlayerObjects(temp[1]);
-                    break;
-                }
-
-                case SocketServer.UPDATE_PLAYER_HEALTH: {
-                    if (Controller.isMyPlayer(temp[1])) {
-                        myPlayer.updateHealth(temp[2]);
-                    }
-                    break;
-                }
-
-                case SocketServer.MOVE_UPDATE: {
-                    PlayerManager.updatePlayer(temp[1]);
-                    for (let i=0;i<this.PacketQueue.length;i++) {
-                        this.PacketQueue[i]();
-                    }
-                    this.PacketQueue.length = 0;
-                    break;
-                }
-
-                case SocketServer.ATTACK_ANIMATION: {
-                    this.PacketQueue.push(
-                        () => PlayerManager.attackPlayer(temp[1], temp[3])
-                    )
-                    break;
-                }
-
-                case SocketServer.CREATE_PROJECTILE: {
-                    ProjectileManager.createProjectile(
-                        new Projectile(
-                            temp[1],
-                            temp[2],
-                            temp[3],
-                            temp[4],
-                            temp[5],
-                            temp[6],
-                            temp[7] === 1,
-                            temp[8]
-                        )
-                    )
-                    break;
-                }
-
-                case SocketServer.UPDATE_CLAN_MEMBERS: {
-                    myPlayer.updateClanMembers(temp[1]);
-                    break;
-                }
-
-                case SocketServer.UPDATE_MY_CLAN: {
-                    if (typeof temp[1] !== "string") {
-                        Controller.teammates.length = 0;
-                    }
-                    break;
-                }
-
-                case SocketServer.LOAD_AI: {
-                    PlayerManager.updateAnimal(temp[1] || []);
-                    break;
-                }
-
-                case SocketServer.ITEM_COUNT: {
-                    myPlayer.updateItemCount(temp[1], temp[2]);
-                    break;
-                }
-
-                default:
-                    // Glotus.log(temp);
-                    break;
-
+            case SocketServer.PING_RESPONSE: {
+                this.handlePing();
+                break;
             }
-        } catch(err) {
-            Glotus.error("Packet decode error: ", data, err);
+
+            case SocketServer.CONNECTION_ESTABLISHED: {
+                this.pingRequest();
+                GameUI.init();
+                break;
+            }
+
+            case SocketServer.MY_PLAYER_SPAWN:
+                myPlayer.playerSpawn(temp[1]);
+                break;
+
+            case SocketServer.MY_PLAYER_DEATH:
+                myPlayer.reset();
+                break;
+
+            case SocketServer.UPDATE_ITEMS: {
+                myPlayer.updateItems(temp[1], temp[2] === 1);
+                break;
+            }
+
+            case SocketServer.UPDATE_RESOURCES: {
+                const type = temp[1] === "points" ? "gold" : temp[1];
+                myPlayer.resources[type] = temp[2];
+                break;
+            }
+
+            case SocketServer.CREATE_PLAYER: {
+                PlayerManager.createPlayer({
+                    id: temp[1][1],
+                    nickname: temp[1][2],
+                    skinID: temp[1][9],
+                })
+                break;
+            }
+
+            case SocketServer.ADD_OBJECT: {
+                ObjectManager.createObjects(temp[1]);
+                break;
+            }
+
+            case SocketServer.REMOVE_OBJECT: {
+                ObjectManager.removeObjectByID(temp[1]);
+                break;
+            }
+
+            case SocketServer.REMOVE_ALL_OBJECTS: {
+                ObjectManager.removePlayerObjects(temp[1]);
+                break;
+            }
+
+            case SocketServer.UPDATE_PLAYER_HEALTH: {
+                if (Controller.isMyPlayer(temp[1])) {
+                    myPlayer.updateHealth(temp[2]);
+                }
+                break;
+            }
+
+            case SocketServer.MOVE_UPDATE: {
+                PlayerManager.updatePlayer(temp[1]);
+                for (let i=0;i<this.PacketQueue.length;i++) {
+                    this.PacketQueue[i]();
+                }
+                this.PacketQueue.length = 0;
+                ObjectManager.attackedObjects.clear();
+                break;
+            }
+
+            case SocketServer.ATTACK_ANIMATION: {
+                this.PacketQueue.push(
+                    () => PlayerManager.attackPlayer(temp[1], temp[2], temp[3])
+                )
+                break;
+            }
+
+            case SocketServer.CREATE_PROJECTILE: {
+                ProjectileManager.createProjectile(
+                    new Projectile(
+                        temp[1],
+                        temp[2],
+                        temp[3],
+                        temp[4],
+                        temp[5],
+                        temp[6],
+                        temp[7],
+                        temp[8]
+                    )
+                )
+                break;
+            }
+
+            case SocketServer.UPDATE_CLAN_MEMBERS: {
+                myPlayer.updateClanMembers(temp[1]);
+                break;
+            }
+
+            case SocketServer.UPDATE_MY_CLAN: {
+                if (typeof temp[1] !== "string") {
+                    Controller.teammates.length = 0;
+                }
+                break;
+            }
+
+            case SocketServer.LOAD_AI: {
+                PlayerManager.updateAnimal(temp[1] || []);
+                break;
+            }
+
+            case SocketServer.ITEM_COUNT: {
+                myPlayer.updateItemCount(temp[1], temp[2]);
+                break;
+            }
+
+            case SocketServer.SHOOT_TURRET: {
+                this.PacketQueue.push(
+                    () => ObjectManager.updateTurret(temp[1])
+                )
+                break;
+            }
+
+            case SocketServer.HIT_OBJECT: {
+                const object = ObjectManager.objects.get(temp[2]);
+                if (object instanceof PlayerObject) {
+                    ObjectManager.attackedObjects.set(getUniqueID(), object);
+                }
+                break;
+            }
+
+            // case SocketServer.REMOVE_PROJECTILE: {
+            //     ProjectileManager.removeProjectile(temp[1], temp[2]);
+            //     break;
+            // }
+
+            default:
+                // Logger.log(temp);
+                break;
+
         }
     }
 
@@ -292,6 +316,8 @@ const SocketManager = new class SocketManager {
     }
 
     pingRequest() {
+        // Glotus.log("PING REQUEST");
+        this.startPing = Date.now();
         this.send([SocketClient.PING_REQUEST]);
     }
 }

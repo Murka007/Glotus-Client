@@ -1,6 +1,6 @@
 import Vector from "../modules/Vector";
 
-class Entity {
+abstract class Entity {
     id = -1;
 
     readonly position = {
@@ -10,12 +10,17 @@ class Entity {
     } as const
 
     angle = 0;
+    scale = 0;
 
     protected setFuturePosition() {
         const { previous, current, future } = this.position;
         const distance = previous.distance(current);
         const angle = previous.angle(current);
         future.setVec(current.direction(angle, distance));
+    }
+
+    get arrowScale() {
+        return this.scale;
     }
 }
 

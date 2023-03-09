@@ -1,6 +1,6 @@
-import { Items, Weapons } from "../constants/Items";
+import { Items, Projectiles, Weapons } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
-import { ItemType, TItemType, TShootable, TWeapon, TWeaponData, TWeapons, TWeaponType, WeaponType } from "../types/Items";
+import { ItemType, TDestroyable, TItemType, TPlaceable, TShootable, TWeapon, TWeaponData, TWeapons, TWeaponType, WeaponType } from "../types/Items";
 
 /**
  * Used in order to optimize management with constant data
@@ -19,14 +19,19 @@ class DataHandler {
     }
 
     static isSecondary(id: TWeapon): id is NonNullable<TWeaponData[1]> {
-        if (this.isShootable(id)) {
-            const gg = Weapons[id];
-        }
         return Weapons[id].itemType === WeaponType.SECONDARY;
     }
 
     static isShootable(id: TWeapon): id is TShootable {
-        return "projectile" in Weapons[id];
+        return id !== null && "projectile" in Weapons[id];
+    }
+
+    static isDestroyable(id: TPlaceable | null): id is TDestroyable {
+        return id !== null && "health" in Items[id];
+    }
+
+    static getProjectile(id: TShootable) {
+        return Projectiles[Weapons[id].projectile];
     }
 }
 

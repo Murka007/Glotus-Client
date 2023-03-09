@@ -31,33 +31,33 @@ export interface ISettings {
     // Visuals
     enemyTracers: boolean;
     enemyTracersColor: string;
-
     teammateTracers: boolean;
     teammateTracersColor: string;
-
     animalTracers: boolean;
     animalTracersColor: string;
-
     arrows: boolean;
     rainbow: boolean;
 
     itemMarkers: boolean;
     itemMarkersColor: string;
-
     teammateMarkers: boolean;
     teammateMarkersColor: string;
-
     enemyMarkers: boolean;
     enemyMarkersColor: string;
 
+    playerTurretReloadBar: boolean;
+    playerTurretReloadBarColor: string;
     weaponReloadBar: boolean;
     weaponReloadBarColor: string;
-
-    turretReloadBar: boolean;
-    turretReloadBarColor: string;
-
     renderHP: boolean;
+
+    objectTurretReloadBar: boolean;
+    objectTurretReloadBarColor: string;
+    itemHealthBar: boolean;
+    itemHealthBarColor: string;
+
     itemCounter: boolean;
+    renderGrid: boolean;
 }
 
 export const defaultSettings: Readonly<ISettings> = {
@@ -97,12 +97,17 @@ export const defaultSettings: Readonly<ISettings> = {
     teammateMarkersColor: "#bdb14b",
     enemyMarkers: true,
     enemyMarkersColor: "#ba4949",
+    playerTurretReloadBar: true,
+    playerTurretReloadBarColor: "#cf7148",
     weaponReloadBar: true,
     weaponReloadBarColor: "#5155cc",
-    turretReloadBar: true,
-    turretReloadBarColor: "#cf7148",
     renderHP: true,
+    objectTurretReloadBar: true,
+    objectTurretReloadBarColor: "#66d9af",
+    itemHealthBar: true,
+    itemHealthBarColor: "#6b449e",
     itemCounter: true,
+    renderGrid: false,
 }
 
 const settings = { ...defaultSettings, ...Storage.get<ISettings>("Glotus") };

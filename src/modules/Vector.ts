@@ -1,4 +1,4 @@
-import { fixTo } from "../utility/Common";
+import { fixTo, clamp } from "../utility/Common";
 
 export default class Vector {
     x: number;
@@ -13,9 +13,14 @@ export default class Vector {
         return new Vector(Math.cos(angle) * length, Math.sin(angle) * length);
     }
 
-    add(vec: Vector) {
-        this.x += vec.x;
-        this.y += vec.y;
+    add(vec: Vector | number) {
+        if (vec instanceof Vector) {
+            this.x += vec.x;
+            this.y += vec.y;
+        } else {
+            this.x += vec;
+            this.y += vec;
+        }
         return this;
     }
 
@@ -94,6 +99,12 @@ export default class Vector {
     floor() {
         this.x = Math.floor(this.x);
         this.y = Math.floor(this.y);
+        return this;
+    }
+
+    clamp(min: number, max: number) {
+        this.x = clamp(this.x, min, max);
+        this.y = clamp(this.y, min, max);
         return this;
     }
 }

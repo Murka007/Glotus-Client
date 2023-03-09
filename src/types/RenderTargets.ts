@@ -13,6 +13,7 @@ export interface IRenderObject {
     sid: number;
     x: number;
     y: number;
+    dir: number;
     xWiggle: number;
     yWiggle: number;
     owner?: {

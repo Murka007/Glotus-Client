@@ -1,4 +1,3 @@
-import Glotus from "..";
 import Config from "../constants/Config";
 import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
@@ -7,7 +6,6 @@ import settings from "./Settings";
 import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";
 import { IRenderEntity, IRenderObject } from "../types/RenderTargets";
-import { clamp } from "./Common";
 
 class Renderer {
     static HSL = 0;
@@ -15,6 +13,19 @@ class Renderer {
 
     static updateHSL() {
         this.HSL = (this.HSL + 0.5) % 360;
+    }
+
+    static rect(ctx: TCTX, pos: Vector, scale: number, color: string) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
+        ctx.translate(pos.x, pos.y);
+        ctx.rect(-scale, -scale, scale*2, scale*2);
+        ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
     }
 
     static roundRect(ctx: TCTX, x: number, y: number, w: number, h: number, r: number) {
@@ -30,21 +41,36 @@ class Renderer {
         ctx.closePath();
     }
 
-    static line(ctx: TCTX, x1: number, y1: number, x2: number, y2: number, color: string) {
+    static circle(ctx: TCTX, x: number, y: number, radius: number, color: string, opacity = 1) {
         ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.closePath();
+        ctx.restore();
+    }
+
+    static line(ctx: TCTX, start: Vector, end: Vector, color: string) {
+        ctx.save();
+        ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
         ctx.globalAlpha = 0.75;
         ctx.strokeStyle = color;
         ctx.lineCap = "round";
         ctx.lineWidth = 5;
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
         ctx.stroke();
         ctx.restore();
     }
 
     static arrow(ctx: TCTX, length: number, x: number, y: number, angle: number, color: string) {
         ctx.save();
+        ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
         ctx.translate(x, y);
         ctx.rotate(Math.PI / 4);
         ctx.rotate(angle);
@@ -59,17 +85,6 @@ class Renderer {
         ctx.stroke();
         ctx.closePath();
         ctx.restore();
-    }
-
-    static marker(ctx: TCTX, color: string) {
-        ctx.strokeStyle = "#3b3b3b";
-        ctx.lineWidth = 3;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(0, 0, 10, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-        ctx.closePath();
     }
 
     static getTracerColor(entity: IRenderEntity): string | null {
@@ -95,8 +110,8 @@ class Renderer {
         if (colorValue === null) return;
         const color = settings.rainbow ? `hsl(${this.HSL}, 100%, 50%)` : colorValue;
 
-        const pos1 = new Vector(player.x, player.y).sub(myPlayer.offset);
-        const pos2 = new Vector(entity.x, entity.y).sub(myPlayer.offset);
+        const pos1 = new Vector(player.x, player.y);//.sub(myPlayer.offset);
+        const pos2 = new Vector(entity.x, entity.y);//.sub(myPlayer.offset);
 
         if (settings.arrows) {
             const w = 8;
@@ -105,7 +120,7 @@ class Renderer {
             const pos = pos1.direction(angle, distance);
             this.arrow(ctx, w, pos.x, pos.y, angle, color);
         } else {
-            this.line(ctx, pos1.x, pos1.y, pos2.x, pos2.y, color);
+            this.line(ctx, pos1, pos2, color);
         }
     }
 
@@ -121,11 +136,17 @@ class Renderer {
     static renderMarker(ctx: TCTX, object: IRenderObject) {
         const color = this.getMarkerColor(object);
         if (color === null) return;
-        ctx.save();
         const x = object.x + object.xWiggle - myPlayer.offset.x;
         const y = object.y + object.yWiggle - myPlayer.offset.y;
-        ctx.translate(x, y);
-        this.marker(ctx, color);
+        ctx.save();
+        ctx.strokeStyle = "#3b3b3b";
+        ctx.lineWidth = 4;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
         ctx.restore();
     }
 
@@ -172,7 +193,7 @@ class Renderer {
                 x, y - height,
                 barWidth + barPad, barHeight,
                 scale,
-                clamp(primary.current / primary.max, 0, 1),
+                primary.current / primary.max,
                 settings.weaponReloadBarColor
             );
 
@@ -181,23 +202,23 @@ class Renderer {
                 x + barWidth + barPad, y - height,
                 barWidth + barPad, barHeight,
                 scale,
-                clamp(secondary.current / secondary.max, 0, 1),
+                secondary.current / secondary.max,
                 settings.weaponReloadBarColor
             );
 
             height += barHeight;
         }
 
-        if (settings.turretReloadBar) {
+        if (settings.playerTurretReloadBar) {
             this.bar(
                 ctx,
-                x, y - height + 3,
-                barWidth * 2 + barPad * 2, barHeight - 3,
+                x, y - height + 4,
+                barWidth * 2 + barPad * 2, barHeight - 4,
                 scale,
-                clamp(turret.current / turret.max, 0, 1),
-                settings.turretReloadBarColor
+                turret.current / turret.max,
+                settings.playerTurretReloadBarColor
             );
-            height += barHeight - 3;
+            height += barHeight - 4;
         }
 
         window.config.nameY = height !== barHeight ? 45 : 34;
@@ -223,6 +244,40 @@ class Renderer {
         ctx.strokeText(text, x, y);
         ctx.fillText(text, x, y);
         ctx.restore();
+    }
+
+    static circularBar(
+        ctx: TCTX,
+        object: IRenderObject,
+        perc: number,
+        color: string,
+        offset = 0
+    ): number {
+        const x = object.x + object.xWiggle - myPlayer.offset.x;
+        const y = object.y + object.yWiggle - myPlayer.offset.y;
+        const height = Config.barHeight * 0.7;
+        const defaultScale = 10 + height / 2;
+        const scale = defaultScale + 3 + offset;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(object.dir);
+
+        ctx.strokeStyle = "#3b3b3b";
+        ctx.lineWidth = height;
+        ctx.beginPath();
+        ctx.arc(0, 0, scale, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.closePath();
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = height / 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, scale, 0, perc * 2 * Math.PI);
+        ctx.stroke();
+        ctx.closePath();
+
+        ctx.restore();
+        return defaultScale - 3;
     }
 }
 

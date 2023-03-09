@@ -1,3 +1,5 @@
+import Vector from "../modules/Vector";
+
 export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
     return Math.atan2(y2 - y1, x2 - x1);
 }
@@ -17,6 +19,78 @@ export const fixTo = (value: number, fraction: number) => {
 export const getAngleDist = (a: number, b: number) => {
     const p = Math.abs(b - a) % (Math.PI * 2);
     return (p > Math.PI ? (Math.PI * 2) - p : p);
+}
+
+export const removeFast = (array: unknown[], index: number) => {
+    if (index < 0 || index >= array.length) throw new RangeError("removeFast: Index out of range");
+    
+    if (index === array.length - 1) {
+        array.pop();
+    } else {
+        array[index] = array.pop();
+    }
+}
+
+let uniqueID = 0;
+export const getUniqueID = () => {
+    return uniqueID++;
+}
+
+export const pointInsideRect = (
+    point: Vector,
+    rectStart: Vector,
+    rectEnd: Vector
+): boolean => {
+    return (
+        point.x >= rectStart.x &&
+        point.x <= rectEnd.x &&
+        point.y >= rectStart.y &&
+        point.y <= rectEnd.y
+    )
+}
+
+export const circleInsideSquare = (
+    x1: number, y1: number, r1: number,
+    x2: number, y2: number, r2: number
+) => {
+    return (
+        x1 + r1 >= x2 &&
+        x1 - r1 <= x2 + r2 &&
+        y1 + r1 >= y2 &&
+        y1 - r1 <= y2 + r2
+    )
+}
+
+export const lineIntersectsLine = (
+    start1: Vector,
+    end1: Vector,
+    start2: Vector,
+    end2: Vector
+): boolean => {
+    const line1 = end1.copy().sub(start1);
+    const line2 = end2.copy().sub(start2);
+  
+    const diff = start1.copy().sub(start2);
+    const a = (-line2.x * line1.y + line1.x * line2.y);
+    const s = (-line1.y * diff.x + line1.x * diff.y) / a;
+    const t = ( line2.x * diff.y - line2.y * diff.x) / a;
+    return s >= 0 && s <= 1 && t >= 0 && t <= 1;
+}
+
+export const lineIntersectsRect = (
+    lineStart: Vector,
+    lineEnd: Vector,
+    rectStart: Vector,
+    rectEnd: Vector
+): boolean => {
+    return (
+        pointInsideRect(lineStart, rectStart, rectEnd) ||
+        pointInsideRect(lineEnd, rectStart, rectEnd) ||
+        lineIntersectsLine(lineStart, lineEnd, rectStart, new Vector(rectEnd.x, rectStart.y)) ||
+        lineIntersectsLine(lineStart, lineEnd, new Vector(rectEnd.x, rectStart.y), rectEnd) ||
+        lineIntersectsLine(lineStart, lineEnd, rectEnd, new Vector(rectStart.x, rectEnd.y)) ||
+        lineIntersectsLine(lineStart, lineEnd, new Vector(rectStart.x, rectEnd.y), rectStart)
+    )
 }
 
 export const isActiveInput = () => {

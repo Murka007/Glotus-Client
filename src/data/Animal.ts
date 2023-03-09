@@ -1,3 +1,4 @@
+import Animals from "../constants/Animals";
 import Vector from "../modules/Vector";
 import Entity from "./Entity";
 
@@ -29,6 +30,7 @@ class Animal extends Entity {
         this.angle = angle;
         this.health = health;
         this.nameIndex = nameIndex;
+        this.scale = Animals[type].scale;
     }
 }
 

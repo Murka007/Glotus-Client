@@ -1,79 +1,101 @@
 import Glotus from "..";
 import Config from "../constants/Config";
 import { Items } from "../constants/Items";
-import ObjectItem from "../data/ObjectItem";
+import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
+import Player from "../data/Player";
 import Vector from "../modules/Vector";
 import { GetValues } from "../types/Common";
 import { TItem } from "../types/Items";
+import { circleInsideSquare, removeFast } from "../utility/Common";
+import Logger from "../utility/Logger";
 import PlayerManager from "./PlayerManager";
+import Controller from "../modules/Controller";
 
-const circleInsideSquare = (
-    x1: number, y1: number, r1: number,
-    x2: number, y2: number, r2: number
-) => {
-    return (
-        x1 + r1 >= x2 &&
-        x1 - r1 <= x2 + r2 &&
-        y1 + r1 >= y2 &&
-        y1 - r1 <= y2 + r2
-    )
-}
-
-const tempScale = Config.mapScale / Config.colGrid;
 const ObjectManager = new class ObjectManager {
-    readonly objects: Map<number, ObjectItem> = new Map;
-    private readonly grids: Record<string, ObjectItem[]>;
 
-    constructor() {
-        this.grids = {};
+    /**
+     * A Map that stores all the game objects
+     */
+    readonly objects: Map<number, TObject> = new Map;
+    private readonly grids: Record<string, TObject[]> = {};
+
+    /**
+     * A Map which stores all turret objects that are currently reloading
+     */
+    readonly reloadingTurrets: Map<number, PlayerObject> = new Map;
+
+    /**
+     * A Map of attacked objects at current tick
+     */
+    readonly attackedObjects: Map<number, PlayerObject> = new Map;
+    private readonly gridSize = 16;
+    private readonly gridCellSize = Config.mapScale / this.gridSize;
+
+    updateTurret(id: number) {
+        const object = this.objects.get(id);
+        if (object instanceof PlayerObject) {
+            object.reload = 0;
+            this.reloadingTurrets.set(id, object);
+        }
     }
 
-    private addObject(object: ObjectItem) {
-        const { id, position, scale } = object;
+    isEnemyObject(object: TObject): boolean {
+        if (object instanceof PlayerObject && !Controller.isEnemy(object.ownerID)) {
+            return false;
+        }
+        return true;
+    }
+
+    isTurretReloaded(object: TObject): boolean {
+        return this.reloadingTurrets.has(object.id) === false;
+    }
+
+    postTick() {
+        for (const [id, turret] of this.reloadingTurrets) {
+            turret.reload = Math.min(turret.reload + PlayerManager.step, turret.maxReload);
+            if (turret.reload === turret.maxReload) {
+                this.reloadingTurrets.delete(id);
+            }
+        }
+    }
+
+    private addObject(object: TObject) {
+        const { id, position } = object;
+        const pos = position.current.copy().div(this.gridCellSize).floor().clamp(0, this.gridSize);
+        const key = pos.x + "_" + pos.y;
+        if (!this.grids[key]) {
+            this.grids[key] = [];
+        }
+        object.location = key;
+        this.grids[key].push(object);
         this.objects.set(id, object);
 
-        const owner = PlayerManager.players.get(object.ownerID);
-        if (owner !== undefined) {
-            owner.objects.push(object);
-        }
-
-        for (let x=0;x<Config.colGrid;x++) {
-            const tempX = x * tempScale;
-            for (let y=0;y<Config.colGrid;y++) {
-                const tempY = y * tempScale;
-                if (circleInsideSquare(position.x, position.y, scale, tempX, tempY, tempScale)) {
-                    const key = x + "_" + y;
-                    if (!this.grids[key]) {
-                        this.grids[key] = [];
-                    }
-
-                    this.grids[key].push(object);
-                    object.gridLocations.push(key);
-                }
+        if (object instanceof PlayerObject) {
+            const owner = PlayerManager.players.get(object.ownerID);
+            if (owner !== undefined) {
+                owner.objects.push(object);
             }
         }
     }
 
     createObjects(buffer: any[]) {
         for (let i=0;i<buffer.length;i+=8) {
-            this.addObject(new ObjectItem(
-                buffer[i + 0],
-                buffer[i + 1],
-                buffer[i + 2],
-                buffer[i + 3],
-                buffer[i + 4],
-                buffer[i + 5],
-                buffer[i + 6],
-                buffer[i + 7]
-            ))
+            const isResource = buffer[i + 5] !== null;
+            const data = [buffer[i + 0], buffer[i + 1], buffer[i + 2], buffer[i + 3], buffer[i + 4]] as const;
+
+            this.addObject(
+                isResource ?
+                    new Resource(...data, buffer[i + 5]) :
+                    new PlayerObject(...data, buffer[i + 6], buffer[i + 7])
+            )
         }
     }
 
-    private removeObject(object: ObjectItem) {
-        const grids = object.gridLocations;
-        for (const location of grids) {
-            const index = this.grids[location].indexOf(object);
-            this.grids[location].splice(index, 1);
+    private removeObject(object: TObject) {
+        const objects = this.grids[object.location];
+        const index = objects.indexOf(object);
+        if (index >= 0) {
+            removeFast(objects, index);
         }
         this.objects.delete(object.id);
     }
@@ -95,47 +117,20 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
-    getObjects(pos: Vector, scale: number): ObjectItem[] {
-        const temp = pos.copy().div(tempScale).floor();
-        const objects: ObjectItem[] = [];
-        const grids = this.grids;
-        let grid: ObjectItem[];
-        try {
-            grid = grids[temp.x + "_" + temp.y]
-            if (grid) objects.push(...grid);
-            if (pos.x + scale >= (temp.x + 1) * tempScale) {
-                grid = grids[(temp.x + 1) + "_" + temp.y];
-                if (grid)  objects.push(...grid);
-                if (temp.y && pos.y - scale <= temp.y * tempScale) {
-                    grid = grids[(temp.x + 1) + "_" + (temp.y - 1)];
-                    if (grid) objects.push(...grid);
-                } else if (pos.y + scale >= (temp.y + 1) * tempScale) {
-                    grid = grids[(temp.x + 1) + "_" + (temp.y + 1)];
-                    if (grid) objects.push(...grid);
-                }
-            }
+    getObjects(pos: Vector, range: number): TObject[] {
+        const topLeft = pos.copy().direction(Math.atan2(-1,-1),range).div(this.gridCellSize).floor().clamp(0, this.gridSize);
+        const bottomRight = pos.copy().direction(Math.atan2(1,1),range).div(this.gridCellSize).floor().clamp(0, this.gridSize);
+        const objects: TObject[] = [];
 
-            if (temp.x && pos.x - scale <= temp.x * tempScale) {
-                grid = grids[(temp.x - 1) + "_" + temp.y];
-                if (grid) objects.push(...grid);
-                if (temp.y && pos.y - scale <= temp.y * tempScale) {
-                    grid = grids[(temp.x - 1) + "_" + (temp.y - 1)];
-                    if (grid) objects.push(...grid);
-                } else if (pos.y + scale >= (temp.y + 1) * tempScale) {
-                    grid = grids[(temp.x - 1) + "_" + (temp.y + 1)];
-                    if (grid) objects.push(...grid);
+        for (let x=topLeft.x-1;x<=bottomRight.x+1;x++) {
+            for (let y=topLeft.y-1;y<=bottomRight.y+1;y++) {
+                const key = x + "_" + y;
+                if (this.grids[key] !== undefined) {
+                    objects.push(...this.grids[key]);
                 }
             }
-            if (pos.y + scale >= (temp.y + 1) * tempScale) {
-                grid = grids[temp.x + "_" + (temp.y + 1)];
-                if (grid) objects.push(...grid);
-            }
-            if (temp.y && pos.y - scale <= temp.y * tempScale) {
-                grid = grids[temp.x + "_" + (temp.y - 1)];
-                if (grid) objects.push(...grid);
-            }
-        } catch(err){}
-        return [...new Set(objects)];
+        }
+        return objects;
     }
 }
 

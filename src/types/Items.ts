@@ -132,4 +132,7 @@ export type TItemData = {
 
 export type TData<T> = T extends TWeaponType ? TWeaponData[T] : T extends TItemType ? TItemData[T] : never;
 
+export type TMelee = Extract<TWeapons[TWeapon], { damage: number }>["id"];
 export type TShootable = Extract<TWeapons[TWeapon], { projectile: number }>["id"];
+export type TPlaceable = Extract<TItems[TItem], { itemGroup: number }>["id"];
+export type TDestroyable = Extract<TItems[TItem], { health: number }>["id"];

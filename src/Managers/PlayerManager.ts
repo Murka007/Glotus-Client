@@ -1,14 +1,21 @@
 import Glotus from "..";
 import Animals from "../constants/Animals";
+import Config from "../constants/Config";
 import { Weapons } from "../constants/Items";
 import { Hats } from "../constants/Store";
 import Animal from "../data/Animal";
-import { ClientPlayer } from "../data/ClientPlayer";
+import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
+import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Controller from "../modules/Controller";
-import { TWeapon } from "../types/Items";
+import Vector from "../modules/Vector";
+import { TTarget } from "../types/Common";
+import { TMelee, TWeapon } from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
+import { getAngleDist, lineIntersectsRect } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
+import Logger from "../utility/Logger";
+import ObjectManager from "./ObjectManager";
 import ProjectileManager from "./ProjectileManager";
 import SocketManager from "./SocketManager";
 
@@ -27,6 +34,7 @@ const PlayerManager = new class PlayerManager {
 
     start = Date.now();
     step = 0;
+    tickStep = 0;
 
     createPlayer({ id, nickname, skinID }: IPlayerData) {
         const player = this.players.get(id) || new Player;
@@ -37,9 +45,10 @@ const PlayerManager = new class PlayerManager {
         player.skinID = skinID;
     }
 
-    attackPlayer(id: number, weaponID: TWeapon) {
-        if (!this.players.has(id)) return;
-        const { hatID, reload } = this.players.get(id)!;
+    attackPlayer(id: number, gathering: 0 | 1, weaponID: TMelee) {
+        const player = this.players.get(id);
+        if (player === undefined) return;
+        const { position, hatID, reload } = player;
 
         const reloadSpeed = hatID === EHat.SAMURAI_ARMOR ? Hats[hatID].atkSpd : 1;
         const type = DataHandler.isPrimary(weaponID) ? "primary" : "secondary";
@@ -47,13 +56,23 @@ const PlayerManager = new class PlayerManager {
         reload[type].current = 0;
         reload[type].max = Weapons[weaponID].speed * reloadSpeed;
 
-        if (Controller.isMyPlayer(id) && Controller.wasBreaking) {
-            Controller.wasBreaking = false;
-            SocketManager.stopAttack(Controller.mouse.angle);
+        if (gathering === 1) {
+            const weapon = Weapons[weaponID];
+            for (const [id, object] of ObjectManager.attackedObjects) {
+                if (!(object instanceof PlayerObject && object.isDestroyable())) continue;
 
-            const store = Controller.store[EStoreType.HAT];
-            Controller.equip(EStoreType.HAT, store.current, "CURRENT");
-            store.utility = 0;
+                const pos = object.position.current;
+                const distance = position.current.distance(pos) - object.scale;
+                const angle = position.current.angle(pos);
+                if (
+                    distance <= weapon.range &&
+                    getAngleDist(angle, player.angle) <= Config.gatherAngle
+                ) {
+                    ObjectManager.attackedObjects.delete(id);
+                    const damage = player.getWeaponDamage(weaponID);
+                    object.health -= damage;
+                }
+            }
         }
     }
 
@@ -63,6 +82,7 @@ const PlayerManager = new class PlayerManager {
         const now = Date.now();
         this.step = now - this.start;
         this.start = now;
+        this.tickStep += this.step;
 
         let myPlayerCopy: ClientPlayer | null = null;
 
@@ -92,8 +112,8 @@ const PlayerManager = new class PlayerManager {
         }
 
         if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
-        ProjectileManager.projectiles.clear();
-        ProjectileManager.turrets.clear();
+        ProjectileManager.postTick();
+        ObjectManager.postTick();
     }
 
     updateAnimal(buffer: any[]) {
@@ -120,14 +140,23 @@ const PlayerManager = new class PlayerManager {
 
     isEnemy(target1: Player, target2: Player) {
         return (
+            target1 !== target2 && (
             target1.clanName === null ||
             target2.clanName === null ||
-            target1.clanName !== target2.clanName
+            target1.clanName !== target2.clanName)
         )
     }
 
+    canShoot(target: Player | Animal) {
+        return target instanceof Player && this.isEnemy(myPlayer, target) || target instanceof Animal;
+    }
+
+    getEntities(): (Player | Animal)[] {
+        return [...this.visiblePlayers, ...this.visibleAnimals];
+    }
+
     getNearestEntity(target: Player): Player | Animal | null {
-        const entities = [...this.visiblePlayers, ...this.visibleAnimals];
+        const entities = this.getEntities();
         return entities.filter(a => {
             const notTarget = a !== target;
             const isEnemy = a instanceof Player && this.isEnemy(target, a);
@@ -138,6 +167,57 @@ const PlayerManager = new class PlayerManager {
             const dist2 = target.position.future.distance(b.position.future);
             return dist1 - dist2;
         })[0] || null;
+    }
+
+    getCurrentShootTarget(
+        start: Vector,
+        end: Vector,
+        range: number,
+        layer: 1 | 0,
+    ): TTarget | null {
+
+        const targets: TTarget[] = [];
+        const entities = this.getEntities();
+        for (const entity of entities) {
+            const s = entity.arrowScale;
+            const { x, y } = entity.position.current;
+            if (
+                this.canShoot(entity) &&
+                lineIntersectsRect(
+                    start, end,
+                    new Vector(x - s, y - s),
+                    new Vector(x + s, y + s)
+                )
+            ) {
+                targets.push(entity);
+            }
+        }
+
+        const objects = ObjectManager.getObjects(start, range);
+        for (const object of objects) {
+            const s = object.arrowScale;
+            const { x, y } = object.position.current;
+            if (
+                layer <= object.layer &&
+                lineIntersectsRect(
+                    start, end,
+                    new Vector(x - s, y - s),
+                    new Vector(x + s, y + s)
+                )
+            ) {
+                targets.push(object);
+            }
+        }
+
+        return targets.sort((a, b) => {
+            const dist1 = myPlayer.position.current.distance(a.position.current);
+            const dist2 = myPlayer.position.current.distance(b.position.current);
+            return dist1 - dist2;
+        })[0] || null;
+    }
+
+    getPossibleShootTarget(): TTarget | null {
+        return null;
     }
 }
 

@@ -1,4 +1,5 @@
 import Glotus from "..";
+import Logger from "../utility/Logger";
 import Regexer from "./Regexer";
 
 class Injector {
@@ -12,7 +13,7 @@ class Injector {
                         node instanceof HTMLScriptElement &&
                         /bundle/.test(node.src)
                     ) {
-                        Glotus.log("FOUND SCRIPT", node);
+                        Logger.log("FOUND SCRIPT", node);
                         observer.disconnect();
                         this.loadScript(node.src);
                         
@@ -75,7 +76,7 @@ class Injector {
         Hook.append(
             "renderItemPush",
             /\((\w+)\.dir\),\w+\.drawImage.+?2\)/,
-            `,(Glotus.Renderer.getMarkerColor($1)!==null&&Glotus.Renderer.objects.push($1))`
+            `,Glotus.Renderer.objects.push($1)`
         );
 
         // Hook.append(
@@ -107,6 +108,24 @@ class Injector {
             /\w+\.send\("13c",1,(\w+),(\w+)\)/,
             `Glotus.Controller.buy($2,$1)`
         );
+
+        Hook.replace(
+            "pingCaller",
+            /,\w+\.send\("pp"\)/,
+            ``
+        );
+
+        Hook.replace(
+            "pingElem",
+            /,\w+\.innerText="Ping.+?ms"/,
+            ``
+        );
+
+        Hook.replace(
+            "RenderGrid",
+            /("#91b2db".+?)(for.+?NUM{18}.+?NUM{18}.+?\)\);)/,
+            `$1if(Glotus.settings.renderGrid){$2}`
+        )
         
         return Hook.code;
     }
