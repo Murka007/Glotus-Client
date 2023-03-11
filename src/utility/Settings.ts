@@ -1,4 +1,4 @@
-import Storage from "./Storage";
+import Storage, { Cookie } from "./Storage";
 
 export interface ISettings {
     // Keybinds
@@ -110,13 +110,22 @@ export const defaultSettings = {
     renderGrid: false,
 } as const satisfies ISettings;
 
-const settings = { ...defaultSettings, ...Storage.get<ISettings>("Glotus") };
+const settings = { ...defaultSettings, ...Cookie.get<ISettings>("Glotus") };
 for (const iterator in settings) {
     const key = iterator as keyof ISettings;
     if (!defaultSettings.hasOwnProperty(key)) {
         delete settings[key];
     }
 }
-Storage.set("Glotus", settings);
+
+export const SaveSettings = () => {
+    Cookie.set("Glotus", JSON.stringify(settings), {
+        path: "/",
+        domain: ".moomoo.io",
+        expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    });
+}
+SaveSettings();
+// Storage.set("Glotus", settings);
 
 export default settings;

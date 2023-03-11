@@ -6,8 +6,7 @@ import Keybinds from "../../public/menu-pages/Keybinds.html";
 import Combat from "../../public/menu-pages/Combat.html";
 import Visuals from "../../public/menu-pages/Visuals.html";
 import { formatButton, formatCode, removeClass } from "../utility/Common";
-import settings, { defaultSettings, ISettings } from "../utility/Settings";
-import Storage from "../utility/Storage";
+import settings, { defaultSettings, ISettings, SaveSettings } from "../utility/Settings";
 import Controller from "./Controller";
 import { KeysOfType } from "../types/Common";
 import GameUI from "./GameUI";
@@ -101,7 +100,7 @@ const UI = new class UI {
 
     private handleResize() {
         const { menuContainer } = this.getElements();
-        const scale = Math.min(1, Math.min(innerWidth / 1280, innerHeight / 720));
+        const scale = Math.min(0.9, Math.min(innerWidth / 1280, innerHeight / 720));
         menuContainer.style.transform = `translate(-50%, -50%) scale(${scale})`;
     }
 
@@ -183,7 +182,7 @@ const UI = new class UI {
         const id = this.activeHotkeyInput.id as KeysOfType<ISettings, string>;
         if (id in settings) {
             settings[id] = deleting ? "..." : keySetting;
-            Storage.set("Glotus", settings);
+            SaveSettings();
         } else {
             Logger.error(`applyCode Error: Property "${id}" does not exist in settings`);
         }
@@ -223,7 +222,7 @@ const UI = new class UI {
             checkbox.onchange = () => {
                 if (id in settings) {
                     settings[id] = checkbox.checked;
-                    Storage.set("Glotus", settings);
+                    SaveSettings();
                     this.handleCheckboxToggle(id, checkbox.checked);
                 } else {
                     Logger.error(`attachCheckboxes Error: Property "${id}" was deleted from settings`);
@@ -246,7 +245,7 @@ const UI = new class UI {
             picker.onchange = () => {
                 if (id in settings) {
                     settings[id] = picker.value;
-                    Storage.set("Glotus", settings);
+                    SaveSettings();
                     picker.blur();
                 } else {
                     Logger.error(`attachColorPickers Error: Property "${id}" was deleted from settings`);
@@ -260,7 +259,7 @@ const UI = new class UI {
                     if (id in settings) {
                         picker.value = defaultSettings[id];
                         settings[id] = defaultSettings[id];
-                        Storage.set("Glotus", settings);
+                        SaveSettings();
                     } else {
                         Logger.error(`resetColor Error: Property "${id}" was deleted from settings`);
                     }

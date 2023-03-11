@@ -7,6 +7,7 @@ import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../
 import { EStoreAction, TAccessory, THat, TStoreType } from "../types/Store";
 import { getUniqueID } from "../utility/Common";
 import Hooker from "../utility/Hooker";
+import Logger from "../utility/Logger";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
@@ -99,14 +100,25 @@ const SocketManager = new class SocketManager {
             }
         );
 
+        let count = 0;
         window.WebSocket = new Proxy(WebSocket, {
             construct(target, args: [url: string | URL, protocols?: string | string[]]) {
                 const socket: WebSocket = new target(...args);
                 that.socket = socket;
+                const _send = socket.send;
+                socket.send = function(...args) {
+                    count += 1;
+                    return _send.apply(this, args);
+                }
                 socket.addEventListener("message", that.message);
                 return socket;
             }
         })
+
+        setInterval(() => {
+            Logger.log("PACKET COUNT", count);
+            count = 0;
+        }, 1000);
     }
 
     private handlePing() {

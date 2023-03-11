@@ -112,6 +112,7 @@ const Controller = new class Controller {
      * A bitmask which represents current movement direction
      */
     private move!: number;
+    private placementTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
     constructor() {
         this.mouse = {
@@ -191,6 +192,19 @@ const Controller = new class Controller {
         )
     }
 
+    get placing(): boolean {
+        return this.currentType !== null;
+    }
+
+    private canInstakill() {
+        return !(
+            this.attacking ||
+            this.breaking ||
+            this.breakingState ||
+            this.autoattack
+        )
+    }
+
     /**
      * Buys a hat or accessory and returns true if it was successful
      * @param type Buy 0 - hat, 1 - accessory
@@ -256,7 +270,7 @@ const Controller = new class Controller {
      */
     private place(type: TItemType, angle = this.mouse.angle) {
         this.selectItemByType(type);
-        SocketManager.attack(angle);
+        this.attack(angle);
         SocketManager.stopAttack(angle);
         this.whichWeapon();
         if (this.attacking || this.breaking) {
@@ -287,7 +301,7 @@ const Controller = new class Controller {
         ) {
             this.place(this.currentType);
         }
-        setTimeout(this.placement, 200);
+        this.placementTimeout = setTimeout(this.placement, 200);
     }
 
     /**
@@ -335,13 +349,15 @@ const Controller = new class Controller {
 
         if (!myPlayer.inGame) return;
         if (event.code === settings.toggleChat) {
-            GameUI.toggleChat();
+            GameUI.toggleChat(event);
         }
 
         if (isInput) return;
 
-        if (event.code === settings.primary) this.whichWeapon(WeaponType.PRIMARY);
-        if (event.code === settings.secondary) this.whichWeapon(WeaponType.SECONDARY);
+        if (!Instakill.isActive) {
+            if (event.code === settings.primary) this.whichWeapon(WeaponType.PRIMARY);
+            if (event.code === settings.secondary) this.whichWeapon(WeaponType.SECONDARY);
+        }
 
         if (event.code === settings.food) this.placementHandler(ItemType.FOOD, event.code);
         if (event.code === settings.wall) this.placementHandler(ItemType.WALL, event.code);
@@ -380,8 +396,8 @@ const Controller = new class Controller {
             const entry = [...this.hotkeys].pop();
             this.currentType = entry !== undefined ? entry[1] : null;
 
-            // Sometimes placement was not successful and it continues to hold an item
             if (this.currentType === null) {
+                clearTimeout(this.placementTimeout);
                 this.whichWeapon();
             }
         }
@@ -391,10 +407,10 @@ const Controller = new class Controller {
         const button = formatButton(event.button);
         if (button === "LBTN" && !this.attacking) {
             this.attacking = true;
-            SocketManager.attack(this.mouse.angle);
+            this.attack(this.mouse.angle);
         }
 
-        if (button === "MBTN") {
+        if (button === "MBTN" && this.canInstakill()) {
             Instakill.init();
         }
 

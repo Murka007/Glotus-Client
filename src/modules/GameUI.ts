@@ -46,7 +46,11 @@ const GameUI = new class GameUI {
         const actionBar = document.querySelectorAll<HTMLDivElement>("div[id*='actionBarItem'");
         for (let i=19;i<39;i++) {
             const item = Items[i - 16];
-            if (item !== undefined && "itemGroup" in item) {
+            if (
+                actionBar[i] instanceof HTMLDivElement &&
+                item !== undefined &&
+                "itemGroup" in item
+            ) {
                 const group = item.itemGroup;
                 const span = document.createElement("span");
                 span.classList.add("itemCounter");
@@ -120,10 +124,11 @@ const GameUI = new class GameUI {
         }
     }
 
-    toggleChat() {
+    toggleChat(event: KeyboardEvent) {
         const { chatHolder, chatBox } = this.getElements();
         this.closePopups(chatHolder);
         if (this.isOpened(chatHolder)) {
+            event.preventDefault();
             chatBox.focus();
         } else {
             chatBox.blur();

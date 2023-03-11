@@ -54,10 +54,10 @@ class Renderer {
         ctx.restore();
     }
 
-    static line(ctx: TCTX, start: Vector, end: Vector, color: string) {
+    static line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1) {
         ctx.save();
         ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
-        ctx.globalAlpha = 0.75;
+        ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
         ctx.lineCap = "round";
         ctx.lineWidth = 5;
@@ -110,8 +110,8 @@ class Renderer {
         if (colorValue === null) return;
         const color = settings.rainbow ? `hsl(${this.HSL}, 100%, 50%)` : colorValue;
 
-        const pos1 = new Vector(player.x, player.y);//.sub(myPlayer.offset);
-        const pos2 = new Vector(entity.x, entity.y);//.sub(myPlayer.offset);
+        const pos1 = new Vector(player.x, player.y);
+        const pos2 = new Vector(entity.x, entity.y);
 
         if (settings.arrows) {
             const w = 8;
@@ -120,7 +120,7 @@ class Renderer {
             const pos = pos1.direction(angle, distance);
             this.arrow(ctx, w, pos.x, pos.y, angle, color);
         } else {
-            this.line(ctx, pos1, pos2, color);
+            this.line(ctx, pos1, pos2, color, 0.75);
         }
     }
 
