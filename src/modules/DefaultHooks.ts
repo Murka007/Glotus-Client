@@ -4,6 +4,7 @@ import ZoomHandler from "./ZoomHandler";
 
 const DefaultHooks = () => {
 
+    // Makes you to have 100 of each resources on spawn
     Storage.set("moofoll", 1);
 
     Object.defineProperty(window, "onbeforeunload", {
@@ -12,6 +13,8 @@ const DefaultHooks = () => {
     });
 
     type TListener = [type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions];
+
+    // Removes default keydown and keyup handlers
     window.addEventListener = new Proxy(window.addEventListener, {
         apply(target, _this, args: TListener) {
             if (["keydown", "keyup"].includes(args[0])) {
@@ -25,6 +28,7 @@ const DefaultHooks = () => {
         }
     });
 
+    // Removes setInterval, which sends ping packet
     window.setInterval = new Proxy(setInterval, {
         apply(target, _this, args: [(args: void) => void, number | undefined]) {
             if (args[1] === 2500) {
@@ -35,6 +39,7 @@ const DefaultHooks = () => {
         }
     });
 
+    // Removes all isTrusted checks from the bundle
     Hooker.createRecursiveHook(
         Object.prototype, "checkTrusted",
         () => true,
@@ -44,6 +49,7 @@ const DefaultHooks = () => {
         }
     );
 
+    // Force connect. It is now possible to bypass 40 players limit
     Hooker.createRecursiveHook(
         Object.prototype, "maxPlayers",
         () => true,
@@ -53,6 +59,7 @@ const DefaultHooks = () => {
         }
     )
 
+    // Removes default mouse handlers
     const proto = HTMLCanvasElement.prototype;
     proto.addEventListener = new Proxy(proto.addEventListener, {
         apply(target, _this, args: [string, EventListenerOrEventListenerObject, boolean | AddEventListenerOptions | undefined]) {
@@ -66,6 +73,7 @@ const DefaultHooks = () => {
         }
     })
 
+    // Replaces properties with linker. Allows to change zoom in the game
     Hooker.createRecursiveHook(
         Object.prototype, "maxScreenHeight",
         () => true,

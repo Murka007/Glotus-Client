@@ -1,3 +1,6 @@
+/**
+ * Constant animal data
+ */
 const Animals = [{
     id: 0,
     src: "cow_1",

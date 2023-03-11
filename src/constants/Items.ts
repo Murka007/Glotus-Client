@@ -1,5 +1,8 @@
 import { EItem, EWeapon, EWeaponVariant, ItemGroup, ItemType, WeaponType } from "../types/Items";
 
+/**
+ * Constant array of weapon data, index represent weapon ID
+ */
 export const Weapons = [{
     id: EWeapon.TOOL_HAMMER,
     itemType: WeaponType.PRIMARY,
@@ -312,6 +315,9 @@ export const Weapons = [{
     speed: 1500
 }] as const;
 
+/**
+ * All existing item groups. Each group have unique layer and max placement count
+ */
 export const ItemGroups = {
     [ItemGroup.WALL]: {
         name: "Wall",
@@ -380,6 +386,9 @@ export const ItemGroups = {
     },
 } as const;
 
+/**
+ * Constant array of items. Food and items are combined together
+ */
 export const Items = [{
     id: EItem.APPLE,
     itemType: ItemType.FOOD,
@@ -818,6 +827,9 @@ export const Items = [{
     placeOffset: -5
 }] as const;
 
+/**
+ * All existing weapon variants
+ */
 export const weaponVariants = [{
     id: EWeaponVariant.STONE,
     src: "",
@@ -841,6 +853,9 @@ export const weaponVariants = [{
     val: 1.18
 }] as const;
 
+/**
+ * All existing projectiles for shooting weapons and turrets
+ */
 export const Projectiles = [{
     name: "Hunting bow",
     index: 0,

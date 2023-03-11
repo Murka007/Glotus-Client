@@ -5,7 +5,6 @@ import Navbar from "../../public/Navbar.html";
 import Keybinds from "../../public/menu-pages/Keybinds.html";
 import Combat from "../../public/menu-pages/Combat.html";
 import Visuals from "../../public/menu-pages/Visuals.html";
-import Glotus from "..";
 import { formatButton, formatCode, removeClass } from "../utility/Common";
 import settings, { defaultSettings, ISettings } from "../utility/Settings";
 import Storage from "../utility/Storage";
@@ -26,6 +25,9 @@ const UI = new class UI {
     private toggleTimeout: ReturnType<typeof setTimeout> | undefined;
     private menuOpened = false;
 
+    /**
+     * Merges all html code together
+     */
     private getFrameContent() {
         return `
             <style>${CSS}</style>
@@ -47,6 +49,9 @@ const UI = new class UI {
         `
     }
 
+    /**
+     * Injects css
+     */
     private createStyles() {
         const style = document.createElement("style");
         style.innerHTML = GameCSS;
@@ -135,6 +140,9 @@ const UI = new class UI {
         }
     }
 
+    /**
+     * Finds all repeating hotkeys and highlights them red
+     */
     private checkForRepeats() {
         const { hotkeyInputs } = this.getElements();
         const list = new Map<string, [number, HTMLButtonElement[]]>();
@@ -161,6 +169,9 @@ const UI = new class UI {
         }
     }
 
+    /**
+     * Changes value of hotkeyInput
+     */
     private applyCode(code: string | number) {
         if (this.activeHotkeyInput === null) return;
 

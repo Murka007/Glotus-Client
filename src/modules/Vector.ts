@@ -1,6 +1,6 @@
 import { fixTo, clamp } from "../utility/Common";
 
-export default class Vector {
+class Vector {
     x: number;
     y: number;
 
@@ -108,3 +108,5 @@ export default class Vector {
         return this;
     }
 }
+
+export default Vector;

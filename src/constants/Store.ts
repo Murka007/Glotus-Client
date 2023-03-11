@@ -1,5 +1,8 @@
 import { EAccessory, EHat } from "../types/Store";
 
+/**
+ * Constant hat data
+ */
 export const Hats = {
     [EHat.UNEQUIP]: {
         id: EHat.UNEQUIP,
@@ -376,6 +379,9 @@ export const Hats = {
 
 export type THats = typeof Hats;
 
+/**
+ * Constant accessory data
+ */
 export const Accessories = {
     [EAccessory.UNEQUIP]: {
         id: EAccessory.UNEQUIP,

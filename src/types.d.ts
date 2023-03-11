@@ -1,5 +1,4 @@
 import Glotus from ".";
-import { TAccessory, THat, TStoreType } from "./types/Store";
 
 declare global {
     interface Window {
@@ -10,7 +9,6 @@ declare global {
 
         readonly config: {
             nameY: number;
-            storeEquip: (id: THat | TAccessory, index: TStoreType) => void;
         }
     }
 }

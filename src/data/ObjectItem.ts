@@ -12,6 +12,9 @@ const EResourceType = {
 } as const;
 type TResourceType = ValueOf<typeof EResourceType>;
 
+/**
+ * Represents resources and player objects
+ */
 abstract class ObjectItem {
     readonly id: number;
     readonly position: {
@@ -19,6 +22,10 @@ abstract class ObjectItem {
     }
     readonly angle: number;
     readonly scale: number;
+
+    /**
+     * Current grid location (x_y)
+     */
     location!: string;
 
     constructor(
@@ -64,13 +71,26 @@ export class Resource extends ObjectItem {
 }
 
 export class PlayerObject extends ObjectItem {
+
     readonly type: TPlaceable;
+
+    /**
+     * ID of player who placed this item
+     */
     readonly ownerID: number;
     readonly colDiv: number;
+
+    /**
+     * current health of item
+     */
     health: number;
     readonly maxHealth: number;
     reload: number = -1;
     readonly maxReload: number = -1;
+
+    /**
+     * true, if my player saw how this item was placed
+     */
     readonly seenPlacement: boolean;
     readonly layer: number;
     constructor(
@@ -104,10 +124,16 @@ export class PlayerObject extends ObjectItem {
         return this.scale * (isItem ? 1 : this.colDiv);
     }
 
+    /**
+     * true, if it is possible to destroy this item
+     */
     isDestroyable() {
         return this.maxHealth !== Infinity;
     }
 
+    /**
+     * Returns current scale that matches arrow collision
+     */
     get arrowScale() {
         return this.formatScale();
     }

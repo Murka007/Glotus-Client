@@ -1,5 +1,3 @@
-import Glotus from "..";
-import { Weapons } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
 import { EWeapon, ItemType, TItemType, TWeapon, TWeaponData, TWeaponType, WeaponType } from "../types/Items";
@@ -7,17 +5,15 @@ import { fixTo, formatButton, getAngle, getAngleFromBitmask, isActiveInput } fro
 import GameUI from "./GameUI";
 import settings from "../utility/Settings";
 import UI from "./UI";
-import DataHandler from "../utility/DataHandler";
 import { EHat, EStoreType, TAccessory, TEquipType, THat, TStoreType } from "../types/Store";
 import { Accessories, Hats } from "../constants/Store";
 import Logger from "../utility/Logger";
 import ZoomHandler from "./ZoomHandler";
-
+import Instakill from "./Instakill";
 
 interface IStore {
     readonly [EStoreType.HAT]: {
         utility: THat;
-        biome: THat;
         current: THat;
         actual: THat;
     }
@@ -29,8 +25,21 @@ interface IStore {
     }
 }
 
+/**
+ * Controller class. Responsible for everything related to the basic controls of the game.
+ * 
+ * Movement, placement, open/close shop etc.
+ */
 const Controller = new class Controller {
-    private readonly hotkeys: Map<string, TItemType>;
+
+    /**
+     * A list of placement hotkeys that are currently pressed
+     */
+    private readonly hotkeys = new Map<string, TItemType>();
+
+    /**
+     * A list of IDs of bought hats and accessories
+     */
     private readonly bought = {
         [EStoreType.HAT]: new Set<THat>,
         [EStoreType.ACCESSORY]: new Set<TAccessory>
@@ -39,7 +48,6 @@ const Controller = new class Controller {
     readonly store: IStore = {
         [EStoreType.HAT]: {
             utility: 0,
-            biome: 0,
             current: 0,
             actual: 0,
         },
@@ -54,24 +62,58 @@ const Controller = new class Controller {
     readonly mouse: {
         x: number;
         y: number;
+
+        /**
+         * Current mouse angle, regardless of conditions
+         */
         _angle: number;
+
+        /**
+         * Current mouse angle, including lock rotation
+         */
         angle: number;
+
+        /**
+         * An angle that was sent to the server
+         */
         sentAngle: number;
     }
 
-    readonly teammates: number[] = [];
+    /**
+     * The type of weapon my player is holding
+     */
     private weapon!: TWeaponType;
+
+    /**
+     * Current type of item which is placing
+     */
     private currentType!: TItemType | null;
+
+    /**
+     * true if autoattack is enabled
+     */
     private autoattack!: boolean;
+
+    /**
+     * true if rotation is enabled
+     */
     private rotation!: boolean;
+
+    /**
+     * true if myPlayer is attacking using left mouse button
+     */
     private attacking!: boolean;
+
     breaking!: boolean;
     breakingState!: boolean;
     wasBreaking!: boolean;
+
+    /**
+     * A bitmask which represents current movement direction
+     */
     private move!: number;
 
     constructor() {
-        this.hotkeys = new Map;
         this.mouse = {
             x: 0,
             y: 0,
@@ -84,6 +126,9 @@ const Controller = new class Controller {
         this.placement = this.placement.bind(this);
     }
 
+    /**
+     * Called on the first time and also when my player died
+     */
     reset() {
         this.weapon = WeaponType.PRIMARY;
         this.currentType = null;
@@ -97,23 +142,30 @@ const Controller = new class Controller {
         this.move = 0;
     }
 
+    /**
+     * Called when game completely loaded
+     */
     init() {
         this.attachMouse();
 
         setInterval(() => {
-            const angle = this.mouse.angle;
-            if (angle !== this.mouse.sentAngle) {
-                this.mouse.sentAngle = angle;
-                SocketManager.updateAngle(angle);
+            if (this.canSendAimPacket()) {
+                this.updateAngle(this.mouse.angle);
             }
-        }, 150);
+        }, 200);
+    }
+
+    updateAngle(angle: number) {
+        if (angle !== this.mouse.sentAngle) {
+            this.mouse.sentAngle = angle;
+            SocketManager.updateAngle(angle);
+        }
     }
 
     private attachMouse() {
         const { gameCanvas } = GameUI.getElements();
         window.addEventListener("mousemove", event => {
             if (myPlayer.inGame && event.target !== gameCanvas) return;
-            
             this.mouse.x = event.clientX;
             this.mouse.y = event.clientY;
             const angle = getAngle(innerWidth / 2, innerHeight / 2, this.mouse.x, this.mouse.y);
@@ -128,27 +180,22 @@ const Controller = new class Controller {
         window.addEventListener("wheel", event => ZoomHandler.handler(event));
     }
 
-    isMyPlayer(id: number) {
-        return id === myPlayer.id;
+    /**
+     * We should not send update angle packet, because we are already placing items or instakilling.
+     */
+    private canSendAimPacket() {
+        return (
+            myPlayer.inGame &&
+            Instakill.isActive === false &&
+            this.currentType === null
+        )
     }
 
-    isTeammate(id: number) {
-        return this.teammates.includes(id);
-    }
-
-    isEnemy(id: number) {
-        return !this.isMyPlayer(id) && !this.isTeammate(id);
-    }
-
-    getBestDestroyingWeapon(): TWeaponType | null {
-        const secondaryID = myPlayer.getItemByType(WeaponType.SECONDARY);
-        if (secondaryID === EWeapon.GREAT_HAMMER) return WeaponType.SECONDARY;
-
-        const primary = DataHandler.getWeaponByType(WeaponType.PRIMARY);
-        if (primary.damage !== 1) return WeaponType.PRIMARY;
-        return null;
-    }
-
+    /**
+     * Buys a hat or accessory and returns true if it was successful
+     * @param type Buy 0 - hat, 1 - accessory
+     * @param id ID of the hat or accessory
+     */
     buy(type: TStoreType, id: THat | TAccessory): boolean {
         const store = type === EStoreType.HAT ? Hats : Accessories;
         const price = store[id as keyof typeof store].price;
@@ -161,6 +208,12 @@ const Controller = new class Controller {
         return bought.has(id);
     }
 
+    /**
+     * Buys and equips a hat or accessory
+     * @param type Equip 0 - hat, 1 - accessory
+     * @param id ID of the hat or accessory
+     * @param equipType Indicates the type of hat you want to equip.
+     */
     equip(type: TStoreType, id: THat | TAccessory, equipType: TEquipType) {
         if (!this.buy(type, id) || !myPlayer.inGame) return;
 
@@ -176,7 +229,16 @@ const Controller = new class Controller {
         }
     }
 
-    private whichWeapon(type: TWeaponType = this.weapon) {
+    attack(angle: number) {
+        this.mouse.sentAngle = angle;
+        SocketManager.attack(angle);
+    }
+
+    /**
+     * Selects the specified or current weapon
+     * @param type 0 - primary, 1 - secondary
+     */
+    whichWeapon(type: TWeaponType = this.weapon) {
         if (!myPlayer.hasItemType(type)) return;
         this.weapon = type;
 
@@ -189,13 +251,16 @@ const Controller = new class Controller {
         SocketManager.selectItemByID(item, false);
     }
 
+    /**
+     * Tries to place an item once
+     */
     private place(type: TItemType, angle = this.mouse.angle) {
         this.selectItemByType(type);
         SocketManager.attack(angle);
         SocketManager.stopAttack(angle);
         this.whichWeapon();
         if (this.attacking || this.breaking) {
-            SocketManager.attack(angle);
+            this.attack(angle);
         }
     }
 
@@ -206,11 +271,14 @@ const Controller = new class Controller {
             SocketManager.stopAttack(null);
             this.whichWeapon();
             if (this.attacking || this.breaking) {
-                SocketManager.attack(this.mouse.angle);
+                this.attack(this.mouse.angle);
             }
         }
     }
 
+    /**
+     * A constant loop that runs as long as player is trying to place an item
+     */
     private placement() {
         if (this.currentType === null) return;
         if (
@@ -219,9 +287,12 @@ const Controller = new class Controller {
         ) {
             this.place(this.currentType);
         }
-        setTimeout(this.placement, 150);
+        setTimeout(this.placement, 200);
     }
 
+    /**
+     * Called when player pressed a placement key. Checks for placement availability.
+     */
     private placementHandler(type: TItemType, code: string) {
         if (!myPlayer.hasItemType(type)) return;
         if (!myPlayer.hasResourcesForType(type)) return;
@@ -239,6 +310,18 @@ const Controller = new class Controller {
     private handleMovement() {
         const angle = getAngleFromBitmask(this.move, false);
         SocketManager.move(angle);
+    }
+
+    toggleAutoattack() {
+        this.autoattack = !this.autoattack;
+        SocketManager.autoAttack();
+    }
+
+    private toggleRotation() {
+        this.rotation = !this.rotation;
+        if (this.rotation) {
+            this.mouse.angle = this.mouse._angle;
+        }
     }
 
     handleKeydown(event: KeyboardEvent) {
@@ -276,17 +359,8 @@ const Controller = new class Controller {
         if (event.code === settings.right) this.move |= 8;
         if (copyMove !== this.move) this.handleMovement();
 
-        if (event.code === settings.autoattack) {
-            this.autoattack = !this.autoattack;
-            SocketManager.autoAttack();
-        }
-
-        if (event.code === settings.lockrotation) {
-            this.rotation = !this.rotation;
-            if (this.rotation) {
-                this.mouse.angle = this.mouse._angle;
-            }
-        }
+        if (event.code === settings.autoattack) this.toggleAutoattack();
+        if (event.code === settings.lockrotation) this.toggleRotation();
 
         const { storeButton, clanButton } = GameUI.getElements();
         if (event.code === settings.toggleShop) storeButton.click();
@@ -306,6 +380,7 @@ const Controller = new class Controller {
             const entry = [...this.hotkeys].pop();
             this.currentType = entry !== undefined ? entry[1] : null;
 
+            // Sometimes placement was not successful and it continues to hold an item
             if (this.currentType === null) {
                 this.whichWeapon();
             }
@@ -317,6 +392,10 @@ const Controller = new class Controller {
         if (button === "LBTN" && !this.attacking) {
             this.attacking = true;
             SocketManager.attack(this.mouse.angle);
+        }
+
+        if (button === "MBTN") {
+            Instakill.init();
         }
 
         if (button === "RBTN") {

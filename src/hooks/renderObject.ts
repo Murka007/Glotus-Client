@@ -8,6 +8,9 @@ import { clamp } from "../utility/Common";
 import Renderer from "../utility/Renderer";
 import settings from "../utility/Settings";
 
+/**
+ * Called when game bundle rendering objects
+ */
 const renderObject = (ctx: TCTX) => {
     if (Renderer.objects.length === 0) return;
     

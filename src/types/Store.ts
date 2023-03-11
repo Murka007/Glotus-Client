@@ -90,8 +90,16 @@ export const EStoreType = {
 export type TStoreType = ValueOf<typeof EStoreType>;
 
 export const EEquipType = {
-    UTILITY: "UTILITY",
-    CURRENT: "CURRENT",
     ACTUAL: "ACTUAL",
+    CURRENT: "CURRENT",
+    UTILITY: "UTILITY",
 } as const;
+
+/**
+ * `ACTUAL` - Equipped by the player himself, using shop or hat hotkeys
+ * 
+ * `CURRENT` - Equipped automatically by algorithm. Has the highest priority
+ * 
+ * `UTILITY` - A temporary hat that will be unequipped soon
+ */
 export type TEquipType = ValueOf<typeof EEquipType>;

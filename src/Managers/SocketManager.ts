@@ -1,40 +1,86 @@
-import Glotus from "..";
 import myPlayer from "../data/ClientPlayer";
 import { PlayerObject } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
-import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
 import { TItem, TWeapon } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
 import { EStoreAction, TAccessory, THat, TStoreType } from "../types/Store";
 import { getUniqueID } from "../utility/Common";
-import Logger from "../utility/Logger";
+import Hooker from "../utility/Hooker";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
 
 const SocketManager = new class SocketManager {
+
+    /**
+     * Current websocket connection
+     */
     private socket: WebSocket | null = null;
+
+    /**
+     * Hooked msgpack's Encoder
+     */
     private Encoder: null | {
         readonly encode: ((data: any) => Uint8Array);
     } = null;
+
+    /**
+     * Hooked msgpacks' Decoder
+     */
     private Decoder: null | {
         readonly decode: ((data: Uint8Array) => any);
     } = null;
+
+    /**
+     * An array of actions, that should be executed after receiving all packets
+     */
     private readonly PacketQueue: (() => void)[] = [];
     startPing = Date.now();
+
+    /**
+     * Time in ms between server and client
+     */
     ping = 0;
-    readonly TICK = 1000 / 9;
+
+    /**
+     * Time in ms between client, server and client
+     */
+    pong = 0;
+
+    // /**
+    //  * A rate at which server updates (ms) 111
+    //  */
+    // readonly TICK = 1000 / 9;
+
+    // /**
+    //  * Current tick update count
+    //  * 
+    //  * 0 - start, ...
+    //  */
+    // tickIndex = 0;
+
+    // /**
+    //  * Time when the tick update received
+    //  */
+    // startTick = Date.now();
+
+    // /**
+    //  * Predicted time of the future received tick
+    //  */
+    // nextTick = Date.now();
+
+    // /**
+    //  * Current time difference between the current and previous tick
+    //  */
+    // DELTA = 0;
 
     constructor() {
         this.message = this.message.bind(this);
-    }
-
-    init() {
         const that = this;
-        
+
         // Intercept msgpack encoder
-        Glotus.Hooker.createRecursiveHook(
+        Hooker.createRecursiveHook(
             Object.prototype, "initialBufferSize",
             (_this) => true,
             (_this) => {
@@ -44,7 +90,7 @@ const SocketManager = new class SocketManager {
         );
 
         // Intercept msgpack decoder
-        Glotus.Hooker.createRecursiveHook(
+        Hooker.createRecursiveHook(
             Object.prototype, "maxExtLength",
             (_this) => true,
             (_this) => {
@@ -64,8 +110,9 @@ const SocketManager = new class SocketManager {
     }
 
     private handlePing() {
-        this.ping = Date.now() - this.startPing;
-        GameUI.updatePing(this.ping);
+        this.pong = (Date.now() - this.startPing);
+        this.ping = this.pong / 2;
+        GameUI.updatePing(this.pong);
 
         setTimeout(() => {
             this.pingRequest();
@@ -134,18 +181,28 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.REMOVE_ALL_OBJECTS: {
-                ObjectManager.removePlayerObjects(temp[1]);
+                const player = PlayerManager.players.get(temp[1]);
+                if (player !== undefined) {
+                    ObjectManager.removePlayerObjects(player);
+                }
                 break;
             }
 
             case SocketServer.UPDATE_PLAYER_HEALTH: {
-                if (Controller.isMyPlayer(temp[1])) {
+                if (myPlayer.isMyPlayerByID(temp[1])) {
                     myPlayer.updateHealth(temp[2]);
                 }
                 break;
             }
 
             case SocketServer.MOVE_UPDATE: {
+                // this.tickIndex += 1;
+
+                // const now = Date.now();
+                // this.DELTA = now - this.startTick;
+                // this.startTick = now;
+                // this.nextTick = this.startTick + this.TICK;
+
                 PlayerManager.updatePlayer(temp[1]);
                 for (let i=0;i<this.PacketQueue.length;i++) {
                     this.PacketQueue[i]();
@@ -185,7 +242,7 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.UPDATE_MY_CLAN: {
                 if (typeof temp[1] !== "string") {
-                    Controller.teammates.length = 0;
+                    myPlayer.teammates.clear();
                 }
                 break;
             }

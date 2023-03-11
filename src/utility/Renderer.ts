@@ -93,13 +93,13 @@ class Renderer {
         if (
             settings.teammateTracers &&
             entity.isPlayer &&
-            Controller.isTeammate(entity.sid)
+            myPlayer.isTeammateByID(entity.sid)
         ) return settings.teammateTracersColor;
 
         if (
             settings.enemyTracers &&
             entity.isPlayer &&
-            Controller.isEnemy(entity.sid)
+            myPlayer.isEnemyByID(entity.sid)
         ) return settings.enemyTracersColor;
 
         return null;
@@ -125,11 +125,26 @@ class Renderer {
     }
 
     static getMarkerColor(object: IRenderObject): string | null {
+
+        // ID of the owner
+        // if ID is undefined, it means object is a resource
         const id = object.owner?.sid;
         if (id === undefined) return null;
-        if (settings.itemMarkers && Controller.isMyPlayer(id)) return settings.itemMarkersColor;
-        if (settings.teammateMarkers && Controller.isTeammate(id)) return settings.teammateMarkersColor;
-        if (settings.enemyMarkers && Controller.isEnemy(id)) return settings.enemyMarkersColor;
+        if (
+            settings.itemMarkers &&
+            myPlayer.isMyPlayerByID(id)
+        ) return settings.itemMarkersColor;
+
+        if (
+            settings.teammateMarkers &&
+            myPlayer.isTeammateByID(id)
+        ) return settings.teammateMarkersColor;
+
+        if (
+            settings.enemyMarkers &&
+            myPlayer.isEnemyByID(id)
+        ) return settings.enemyMarkersColor;
+
         return null;
     }
 

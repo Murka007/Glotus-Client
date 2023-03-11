@@ -26,13 +26,32 @@ interface IPlayerData {
 }
 
 const PlayerManager = new class PlayerManager {
+
+    /**
+     * A Map of all known players in the game
+     */
     readonly players: Map<number, Player> = new Map;
+
+    /**
+     * An array of current players, that are visible to my player
+     */
     readonly visiblePlayers: Player[] = [];
 
+    /**
+     * A Map of all known animals in the game
+     */
     readonly animals: Map<number, Animal> = new Map;
+
+    /**
+     * An array of current animals, that are visible to my player
+     */
     readonly visibleAnimals: Animal[] = [];
 
     start = Date.now();
+
+    /**
+     * A time between current and previous `MOVE_UPDATE` packet
+     */
     step = 0;
     tickStep = 0;
 
@@ -90,13 +109,14 @@ const PlayerManager = new class PlayerManager {
             const player = this.players.get(buffer[i]);
             if (!player) continue;
 
-            if (myPlayerCopy === null && Controller.isMyPlayer(buffer[i])) {
+            const id = buffer[i];
+            if (myPlayerCopy === null && myPlayer.isMyPlayerByID(id)) {
                 myPlayerCopy = player as ClientPlayer;
             }
 
             this.visiblePlayers.push(player);
             player.update(
-                buffer[i],
+                id,
                 buffer[i + 1],
                 buffer[i + 2],
                 buffer[i + 3],
@@ -111,6 +131,7 @@ const PlayerManager = new class PlayerManager {
             );
         }
 
+        // Call all other classes after updating player and animal positions
         if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
         ProjectileManager.postTick();
         ObjectManager.postTick();
@@ -138,6 +159,9 @@ const PlayerManager = new class PlayerManager {
         }
     }
 
+    /**
+     * Checks if players are enemies by their clan names.
+     */
     isEnemy(target1: Player, target2: Player) {
         return (
             target1 !== target2 && (
@@ -147,14 +171,23 @@ const PlayerManager = new class PlayerManager {
         )
     }
 
+    /**
+     * true, if the projectile won't pass through entity
+     */
     canShoot(target: Player | Animal) {
         return target instanceof Player && this.isEnemy(myPlayer, target) || target instanceof Animal;
     }
 
+    /**
+     * Returns current players and animals visible to my player
+     */
     getEntities(): (Player | Animal)[] {
         return [...this.visiblePlayers, ...this.visibleAnimals];
     }
 
+    /**
+     * Returns nearest hostile entity to a specified player
+     */
     getNearestEntity(target: Player): Player | Animal | null {
         const entities = this.getEntities();
         return entities.filter(a => {

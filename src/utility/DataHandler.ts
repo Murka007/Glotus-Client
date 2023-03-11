@@ -6,10 +6,17 @@ import { ItemType, TDestroyable, TItemType, TPlaceable, TShootable, TWeapon, TWe
  * Used in order to optimize management with constant data
  */
 class DataHandler {
+
+    /**
+     * Returns weapon data by type based on inventory
+     */
     static getWeaponByType<T extends TWeaponType>(type: T) {
         return Weapons[myPlayer.getItemByType(type)];
     }
 
+    /**
+     * Returns item data by type based on inventory
+     */
     static getItemByType<T extends TItemType>(type: T) {
         return Items[myPlayer.getItemByType(type)];
     }
@@ -22,14 +29,23 @@ class DataHandler {
         return Weapons[id].itemType === WeaponType.SECONDARY;
     }
 
+    /**
+     * Checks if weapon can shoot
+     */
     static isShootable(id: TWeapon): id is TShootable {
         return id !== null && "projectile" in Weapons[id];
     }
 
+    /**
+     * Checks if item has health by ID
+     */
     static isDestroyable(id: TPlaceable | null): id is TDestroyable {
         return id !== null && "health" in Items[id];
     }
 
+    /**
+     * Returns a projectile data from shootable weapon ID
+     */
     static getProjectile(id: TShootable) {
         return Projectiles[Weapons[id].projectile];
     }

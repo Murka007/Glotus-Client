@@ -1,4 +1,3 @@
-import Glotus from "..";
 import { Items } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
@@ -8,6 +7,9 @@ import settings from "../utility/Settings";
 
 const GameUI = new class GameUI {
 
+    /**
+     * Returns game html elements
+     */
     getElements() {
         const querySelector = document.querySelector.bind(document);
         const querySelectorAll = document.querySelectorAll.bind(document);
@@ -37,6 +39,9 @@ const GameUI = new class GameUI {
         }
     }
 
+    /**
+     * Adds item counts to the inventory. So you can see amount of placed items
+     */
     private attachItemCount() {
         const actionBar = document.querySelectorAll<HTMLDivElement>("div[id*='actionBarItem'");
         for (let i=19;i<39;i++) {
@@ -57,6 +62,9 @@ const GameUI = new class GameUI {
         }
     }
 
+    /**
+     * When user switches option in the menu. It toggles item count
+     */
     toggleItemCount() {
         const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id]`);
         for (const item of items) {
@@ -64,6 +72,9 @@ const GameUI = new class GameUI {
         }
     }
 
+    /**
+     * Updates item count of items in inventory
+     */
     updateItemCount(group: TItemGroup) {
         const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id='${group}']`);
         const { count, limit } = myPlayer.getItemCount(group);
@@ -87,10 +98,16 @@ const GameUI = new class GameUI {
         }
     }
 
+    /**
+     * Checks if element is opened. Used for store, clan and chat
+     */
     private isOpened(element: HTMLElement) {
         return element.style.display === "block";
     }
 
+    /**
+     * Closes all popups except..
+     */
     private closePopups(element?: HTMLElement) {
         const popups = document.querySelectorAll<HTMLDivElement>("#chatHolder, #storeMenu, #allianceMenu");
         for (const popup of popups) {

@@ -60,7 +60,7 @@ export interface ISettings {
     renderGrid: boolean;
 }
 
-export const defaultSettings: Readonly<ISettings> = {
+export const defaultSettings = {
     primary: "Digit1",
     secondary: "Digit2",
     food: "KeyQ",
@@ -108,7 +108,7 @@ export const defaultSettings: Readonly<ISettings> = {
     itemHealthBarColor: "#6b449e",
     itemCounter: true,
     renderGrid: false,
-}
+} as const satisfies ISettings;
 
 const settings = { ...defaultSettings, ...Storage.get<ISettings>("Glotus") };
 for (const iterator in settings) {

@@ -10,24 +10,25 @@ import { circleInsideSquare, removeFast } from "../utility/Common";
 import Logger from "../utility/Logger";
 import PlayerManager from "./PlayerManager";
 import Controller from "../modules/Controller";
+import myPlayer from "../data/ClientPlayer";
 
 const ObjectManager = new class ObjectManager {
 
     /**
      * A Map that stores all the game objects
      */
-    readonly objects: Map<number, TObject> = new Map;
+    readonly objects = new Map<number, TObject>();
     private readonly grids: Record<string, TObject[]> = {};
 
     /**
      * A Map which stores all turret objects that are currently reloading
      */
-    readonly reloadingTurrets: Map<number, PlayerObject> = new Map;
+    readonly reloadingTurrets = new Map<number, PlayerObject>();
 
     /**
      * A Map of attacked objects at current tick
      */
-    readonly attackedObjects: Map<number, PlayerObject> = new Map;
+    readonly attackedObjects = new Map<number, PlayerObject>();
     private readonly gridSize = 16;
     private readonly gridCellSize = Config.mapScale / this.gridSize;
 
@@ -39,8 +40,11 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
+    /**
+     * true, if object was placed by an enemy
+     */
     isEnemyObject(object: TObject): boolean {
-        if (object instanceof PlayerObject && !Controller.isEnemy(object.ownerID)) {
+        if (object instanceof PlayerObject && !myPlayer.isEnemyByID(object.ownerID)) {
             return false;
         }
         return true;
@@ -50,6 +54,9 @@ const ObjectManager = new class ObjectManager {
         return this.reloadingTurrets.has(object.id) === false;
     }
 
+    /**
+     * Called after all packet received
+     */
     postTick() {
         for (const [id, turret] of this.reloadingTurrets) {
             turret.reload = Math.min(turret.reload + PlayerManager.step, turret.maxReload);
@@ -78,6 +85,18 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
+    private removeObject(object: TObject) {
+        const objects = this.grids[object.location];
+        const index = objects.indexOf(object);
+        if (index >= 0) {
+            removeFast(objects, index);
+        }
+        this.objects.delete(object.id);
+    }
+
+    /**
+     * Called when received add objects packet
+     */
     createObjects(buffer: any[]) {
         for (let i=0;i<buffer.length;i+=8) {
             const isResource = buffer[i + 5] !== null;
@@ -91,15 +110,6 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
-    private removeObject(object: TObject) {
-        const objects = this.grids[object.location];
-        const index = objects.indexOf(object);
-        if (index >= 0) {
-            removeFast(objects, index);
-        }
-        this.objects.delete(object.id);
-    }
-
     removeObjectByID(id: number) {
         const object = this.objects.get(id);
         if (object !== undefined) {
@@ -107,10 +117,7 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
-    removePlayerObjects(id: number) {
-        const player = PlayerManager.players.get(id);
-        if (player === undefined) return;
-
+    removePlayerObjects(player: Player) {
         let i = player.objects.length;
         while (i--) {
             this.removeObject(player.objects[i]);

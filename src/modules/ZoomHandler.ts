@@ -2,8 +2,8 @@ import myPlayer from "../data/ClientPlayer";
 import { isActiveInput } from "../utility/Common";
 import Hooker from "../utility/Hooker";
 
-class ZoomHandler {
-    static readonly scale = {
+const ZoomHandler = new class ZoomHandler {
+    readonly scale = {
         Default: {
             w: 1920,
             h: 1080,
@@ -13,10 +13,13 @@ class ZoomHandler {
             h: Hooker.linker(1080)
         }
     } as const;
-    private static wheels = 0;
-    private static readonly scaleFactor = 200;
+    private wheels = 0;
+    private readonly scaleFactor = 200;
 
-    private static getMinScale(scale: number) {
+    /**
+     * Returns minimum possible width and height scale
+     */
+    private getMinScale(scale: number) {
         let w = this.scale.Default.w;
         let h = this.scale.Default.h;
         while (w > scale && h > scale) {
@@ -29,7 +32,7 @@ class ZoomHandler {
         } as const;
     }
 
-    static handler(event: WheelEvent) {
+    handler(event: WheelEvent) {
         if (
             myPlayer.inGame && !(event.target instanceof HTMLCanvasElement) ||
             event.ctrlKey || event.shiftKey || event.altKey ||
@@ -37,6 +40,8 @@ class ZoomHandler {
         ) return;
 
         const { Default, current } = this.scale;
+
+        // When scale is default, make some gap so user could find it easily
         if (
             Default.w === current.w[0] && Default.h === current.h[0] &&
             (this.wheels = (this.wheels + 1) % 5) !== 0

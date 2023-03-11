@@ -93,6 +93,13 @@ export const lineIntersectsRect = (
     )
 }
 
+export const sleep = (ms: number): Promise<void> => {
+    return new Promise<void>(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Checks if active DOM element is an input
+ */
 export const isActiveInput = () => {
     const active = document.activeElement || document.body;
     return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;

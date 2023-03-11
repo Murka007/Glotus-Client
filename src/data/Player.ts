@@ -1,18 +1,12 @@
 import Glotus from "..";
-import { Items, Projectiles, Weapons, weaponVariants } from "../constants/Items";
+import { Projectiles, Weapons, weaponVariants } from "../constants/Items";
 import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
-import SocketManager from "../Managers/SocketManager";
-import Controller from "../modules/Controller";
-import Vector from "../modules/Vector";
-import { ReplaceWithType } from "../types/Common";
-import { EItem, EWeapon, TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant } from "../types/Items";
-import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
-import { fixTo, getAngleDist } from "../utility/Common";
+import { TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant } from "../types/Items";
+import { EHat, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
-import myPlayer from "./ClientPlayer";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
 
@@ -21,25 +15,45 @@ interface IReload {
     max: number;
 }
 
+/**
+ * Represents all players.
+ */
 class Player extends Entity {
     
+    /**
+     * ID of item player is holding at the current tick
+     * 
+     * `-1` means player is holding a weapon
+     */
     currentItem: TItem | -1 = -1;
     private weaponVariant: TWeaponVariant = 0;
+
     clanName: string | null = null;
-    // private isLeader = false;
-    hatID: THat = 0;
-    accessoryID: TAccessory = 0;
-    // private isSkull = false;
-    previousHealth = 100;
-    currentHealth = 100;
-    maxHealth = 100;
     nickname = "unknown";
     skinID = 0;
-    scale = 35;
+    readonly scale = 35;
+
+    hatID: THat = 0;
+    accessoryID: TAccessory = 0;
+
+    previousHealth = 100;
+    currentHealth = 100;
+    readonly maxHealth = 100;
 
     readonly weapon: {
+        /**
+         * ID of weapon player is holding at the current tick
+         */
         current: TWeapon;
+
+        /**
+         * ID of current primary weapon
+         */
         primary: TWeapon;
+
+        /**
+         * ID of current secondary weapon
+         */
         secondary: TWeapon;
     }
 
@@ -49,6 +63,9 @@ class Player extends Entity {
         readonly turret: IReload;
     }
 
+    /**
+     * Array of items placed by the player
+     */
     readonly objects: PlayerObject[] = [];
 
     constructor() {
@@ -101,18 +118,20 @@ class Player extends Entity {
         this.weapon.current = currentWeapon;
         this.weaponVariant = weaponVariant;
         this.clanName = clanName;
-        // this.isLeader = Boolean(isLeader);
         this.hatID = hatID;
         this.accessoryID = accessoryID;
-        // this.isSkull = Boolean(isSkull);
         this.updateReloads();
+    }
+
+    increaseReload(reload: IReload) {
+        reload.current = Math.min(reload.current + PlayerManager.step, reload.max);
     }
 
     private updateReloads() {
         const current = this.position.current;
 
         const turretReload = this.reload.turret;
-        turretReload.current = Math.min(turretReload.current + PlayerManager.step, turretReload.max);
+        this.increaseReload(turretReload);
         if (this.hatID === EHat.TURRET_GEAR) {
             for (const [id, turret] of ProjectileManager.turrets) {
                 if (current.distance(turret.position.current) < 2) {
@@ -138,7 +157,7 @@ class Player extends Entity {
             targetReload.max = weaponSpeed;
         }
         
-        targetReload.current = Math.min(targetReload.current + PlayerManager.step, targetReload.max);
+        this.increaseReload(targetReload);
         this.weapon[type] = this.weapon.current;
 
         // Handle reloading of shootable weapons
@@ -165,6 +184,9 @@ class Player extends Entity {
         }
     }
 
+    /**
+     * Returns the number of damage, that can be dealt by the player weapon
+     */
     getWeaponDamage(id: TMelee): number {
         const weapon = Weapons[id];
         const variant = weaponVariants[this.weaponVariant];
@@ -181,6 +203,11 @@ class Player extends Entity {
         return damage;
     }
 
+    /**
+     * true, if player is colliding an item
+     * @param type ID of item, that can be placed
+     * @param subRadius Subtracts this amount from the item radius
+     */
     checkCollision(type: TPlaceable, subRadius = 0): boolean {
         const objects = ObjectManager.getObjects(this.position.future, this.scale);
         for (const object of objects) {

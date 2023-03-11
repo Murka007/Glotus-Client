@@ -1,3 +1,6 @@
+/**
+ * Constant game config
+ */
 const Config = {
     maxScreenWidth: 1920,
     maxScreenHeight: 1080,

@@ -15,7 +15,9 @@ import Vector from "../modules/Vector";
 import Logger from "../utility/Logger";
 import Projectile from "../data/Projectile";
 
-let start = 0;
+/**
+ * Called when bundle rendering entities (player, animal)
+ */
 const renderEntity = (
     ctx: TCTX,
     entity: IRenderEntity,
@@ -23,11 +25,9 @@ const renderEntity = (
 ) => {
     const isMyPlayer = entity === player;
     if (isMyPlayer) {
-        const now = Date.now();
-        myPlayer.delta = now - start;
-        start = now;
-
         Renderer.updateHSL();
+
+        const position = new Vector(player.x, player.y);
 
         const { current } = myPlayer.weapon;
         if (DataHandler.isShootable(current)) {
@@ -35,7 +35,7 @@ const renderEntity = (
             const arrow = DataHandler.getProjectile(current);
 
             const angle = Controller.mouse.sentAngle;
-            const start = new Vector(player.x, player.y).direction(angle, 70);
+            const start = position.direction(angle, 70);
             const projectile = new Projectile(
                 start.x, start.y, angle,
                 arrow.range,
@@ -55,8 +55,10 @@ const renderEntity = (
                 const pos = entity.position.current;
                 Renderer.rect(ctx, pos, entity.arrowScale, "#e39542");
             }
-            Renderer.line(ctx, start, projectile.position.end, "red");
+            // Renderer.line(ctx, start, projectile.position.end, "red");
         }
+
+        Renderer.line(ctx, position, position.direction(myPlayer.angle, 70), "#e9adf0");
     }
 
     if (entity.isPlayer) {

@@ -5,6 +5,7 @@ import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
 import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
+import Instakill from "../modules/Instakill";
 import Vector from "../modules/Vector";
 import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
 import { EHat, EStoreType, THat } from "../types/Store";
@@ -14,11 +15,29 @@ import settings from "../utility/Settings";
 import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
 
+/**
+ * Represents my player. Contains all data that are related to the game bundle and websocket
+ */
 export class ClientPlayer extends Player {
+
+    /**
+     * All weapons in my inventory grouped by type
+     */
     readonly weaponData = {} as TWeaponData;
+
+    /**
+     * All items in my inventory grouped by type
+     */
     readonly itemData = {} as TItemData;
 
+    /**
+     * Current count of placed items grouped by type
+     */
     readonly itemCount: Map<TItemGroup, number> = new Map;
+
+    /**
+     * My player's current resources
+     */
     readonly resources = {
         food: 100,
         wood: 100,
@@ -27,15 +46,47 @@ export class ClientPlayer extends Player {
         kills: 0
     }
     readonly offset = new Vector;
-    delta = 0;
+
+    /**
+     * true if my player is in game
+     */
     inGame = false;
     private platformActivated = false;
+
+    /**
+     * A Set of teammate IDs
+     */
+    readonly teammates: Set<number> = new Set;
 
     constructor() {
         super();
         this.reset();
     }
 
+    /**
+     * Checks if ID is ID of my player
+     */
+    isMyPlayerByID(id: number) {
+        return id === myPlayer.id;
+    }
+
+    /**
+     * Checks if the ID belongs to the teammate
+     */
+    isTeammateByID(id: number) {
+        return this.teammates.has(id);
+    }
+
+    /**
+     * Checks if the ID belongs to the enemy
+     */
+    isEnemyByID(id: number) {
+        return !this.isMyPlayerByID(id) && !this.isTeammateByID(id);
+    }
+
+    /**
+     * true if connected to the sandbox
+     */
     private get isSandbox() {
         return window.vultr.scheme === "mm_exp";
     }
@@ -50,6 +101,9 @@ export class ClientPlayer extends Player {
         return this.itemData[type as TItemType] !== null;
     }
 
+    /**
+     * Returns current inventory weapon or item by type
+     */
     getItemByType<T extends TWeaponType | TItemType>(type: T): NonNullable<TData<T>> {
         if (type <= 1) {
             return this.weaponData[type as TWeaponType] as NonNullable<TData<T>>;
@@ -60,6 +114,9 @@ export class ClientPlayer extends Player {
         }
     }
 
+    /**
+     * Checks if item has enough resources to be placed
+     */
     hasResourcesForType(type: TItemType) {
         if (this.isSandbox) return true;
 
@@ -72,6 +129,9 @@ export class ClientPlayer extends Player {
         return hasFood && hasWood && hasStone && hasGold;
     }
 
+    /**
+     * Returns current and max count of object
+     */
     getItemCount(group: TItemGroup) {
         return {
             count: this.itemCount.get(group) || 0,
@@ -79,6 +139,9 @@ export class ClientPlayer extends Player {
         } as const;
     }
 
+    /**
+     * Checks if my player can place item by type
+     */
     hasItemCountForType(type: TItemType): boolean {
         const item = DataHandler.getItemByType(type);
         if ("itemGroup" in item) {
@@ -86,6 +149,36 @@ export class ClientPlayer extends Player {
             return count < limit;
         }
         return true;
+    }
+
+    isReloaded(type: "primary" | "secondary" | "turret"): boolean {
+        const reload = this.reload[type];
+        return reload.current === reload.max;
+    }
+
+    /**
+     * Checks if primary, secondary and turret bars are reloaded
+     */
+    isFullyReloaded(): boolean {
+        return (
+            myPlayer.isReloaded("primary") &&
+            myPlayer.isReloaded("secondary") &&
+            myPlayer.isReloaded("turret")
+        )
+    }
+
+    /**
+     * Returns the best destroying weapon depending on the inventory
+     * 
+     * `null`, if player have stick and does not have a hammer
+     */
+    getBestDestroyingWeapon(): TWeaponType | null {
+        const secondaryID = myPlayer.getItemByType(WeaponType.SECONDARY);
+        if (secondaryID === EWeapon.GREAT_HAMMER) return WeaponType.SECONDARY;
+
+        const primary = DataHandler.getWeaponByType(WeaponType.PRIMARY);
+        if (primary.damage !== 1) return WeaponType.PRIMARY;
+        return null;
     }
 
     playerSpawn(id: number) {
@@ -109,12 +202,12 @@ export class ClientPlayer extends Player {
     }
 
     updateClanMembers(teammates: (string | number)[]) {
-        Controller.teammates.length = 0;
+        this.teammates.clear();
         for (let i=0;i<teammates.length;i+=2) {
             const id = teammates[i + 0] as number;
             const nickname = teammates[i + 1] as string;
-            if (!Controller.isMyPlayer(id)) {
-                Controller.teammates.push(id);
+            if (!this.isMyPlayerByID(id)) {
+                this.teammates.add(id);
             }
         }
     }
@@ -124,18 +217,25 @@ export class ClientPlayer extends Player {
         GameUI.updateItemCount(group);
     }
 
+    /**
+     * Returns the best hat to be equipped at the tick
+     */
     private getBestCurrentHat(): THat {
         const { current, future } = this.position;
 
         const inRiver = current.y > 6837 && current.y < 7562;
         if (inRiver) {
+            // myPlayer is right on the platform
             const platformActivated = this.checkCollision(EItem.PLATFORM, 30);
+
+            // myPlayer almost left the platform
             const stillStandingOnPlatform = this.checkCollision(EItem.PLATFORM, -15);
 
             if (!this.platformActivated && platformActivated) {
                 this.platformActivated = true;
             }
 
+            // myPlayer is not standing on platform
             if (this.platformActivated && !stillStandingOnPlatform) {
                 this.platformActivated = false;
             }
@@ -146,26 +246,26 @@ export class ClientPlayer extends Player {
         }
 
         // Add turret detection
-        let turretCount = 0;
-        const maxTurretCount = 5;
-        const turret = Items[EItem.TURRET];
-        const range = turret.shootRange + turret.scale;
-        const objects = ObjectManager.getObjects(future, range);
-        for (const object of objects) {
-            const distance = future.distance(object.position.current);
-            if (
-                object instanceof PlayerObject &&
-                object.type === EItem.TURRET &&
-                ObjectManager.isEnemyObject(object) &&
-                distance <= turret.shootRange &&
-                ObjectManager.isTurretReloaded(object)
-            ) {
-                turretCount += 1;
-                if (turretCount === maxTurretCount) {
-                    return EHat.EMP_HELMET;
-                }
-            }
-        }
+        // let turretCount = 0;
+        // const maxTurretCount = 5;
+        // const turret = Items[EItem.TURRET];
+        // const range = turret.shootRange + turret.scale;
+        // const objects = ObjectManager.getObjects(future, range);
+        // for (const object of objects) {
+        //     const distance = future.distance(object.position.current);
+        //     if (
+        //         object instanceof PlayerObject &&
+        //         object.type === EItem.TURRET &&
+        //         ObjectManager.isEnemyObject(object) &&
+        //         distance <= turret.shootRange &&
+        //         ObjectManager.isTurretReloaded(object)
+        //     ) {
+        //         turretCount += 1;
+        //         if (turretCount === maxTurretCount) {
+        //             return EHat.EMP_HELMET;
+        //         }
+        //     }
+        // }
 
         const nearestEntity = PlayerManager.getNearestEntity(this);
         if (
@@ -178,7 +278,11 @@ export class ClientPlayer extends Player {
         return Controller.store[EStoreType.HAT].actual;
     }
 
+    /**
+     * Called after all received packets. Player and animal positions have been updated
+     */
     tickUpdate() {
+        Instakill.postTick();
         const type = DataHandler.isPrimary(this.weapon.current) ? "primary" : "secondary";
         const target = this.reload[type];
 
@@ -264,6 +368,9 @@ export class ClientPlayer extends Player {
         this.itemData[ItemType.SPAWN] = null;
     }
 
+    /**
+     * Resets player data. Called when myPlayer died
+     */
     reset() {
         this.resetResources();
         this.resetInventory();

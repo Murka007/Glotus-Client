@@ -13,31 +13,32 @@ import Injector from "./modules/Injector";
 import settings from "./utility/Settings";
 import UI from "./modules/UI";
 import Renderer from "./utility/Renderer";
+import Instakill from "./modules/Instakill";
 
-const Glotus = new class Glotus {
-    readonly ObjectManager = ObjectManager;
-    readonly PlayerManager = PlayerManager;
-    readonly ProjectileManager = ProjectileManager;
-    readonly SocketManager = SocketManager;
-    readonly Controller = Controller;
-    readonly GameUI = GameUI;
-    readonly Hooker = Hooker;
-    readonly UI = UI;
-    readonly myPlayer = myPlayer;
-    readonly settings = settings;
-    readonly Renderer = Renderer;
-    readonly hooks = {
+const Glotus = {
+    ObjectManager,
+    PlayerManager,
+    ProjectileManager,
+    SocketManager,
+    Controller,
+    GameUI,
+    Hooker,
+    UI,
+    myPlayer,
+    settings,
+    Renderer,
+    Instakill,
+    hooks: {
         renderEntity,
         renderObject,
-    } as const;
-}
+    }
+} as const;
 export default Glotus;
 window.Glotus = Glotus;
 
-SocketManager.init();
 Injector.init();
 
-window.addEventListener("load", () => {
+window.addEventListener("DOMContentLoaded", () => {
     Controller.init();
     UI.createMenu();
 });

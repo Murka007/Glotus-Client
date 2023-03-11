@@ -1,11 +1,12 @@
-import Glotus from "..";
 import Logger from "../utility/Logger";
 import Regexer from "./Regexer";
 
-class Injector {
+const Injector = new class Injector {
 
-    // Intercept creation of <script src="bundle.js"></script>
-    static init() {
+    /**
+     * Intercepts creation of <script src="bundle.js"></script>
+     */
+    init() {
         const observer = new MutationObserver(mutations => {
             for (const mutation of mutations) {
                 for (const node of mutation.addedNodes) {
@@ -32,12 +33,15 @@ class Injector {
         observer.observe(document, { childList: true, subtree: true });
     }
 
-    private static loadScript(src: string) {
+    /**
+     * Fetches game bundle by src, modifies it and injects back to the DOM
+     */
+    private loadScript(src: string) {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", src, false);
         xhr.send();
         
-        const code = Injector.formatCode(xhr.responseText);
+        const code = this.formatCode(xhr.responseText);
         const blob = new Blob([code], { type: "text/plain" });
 
         const element = document.createElement("script");
@@ -45,8 +49,10 @@ class Injector {
         document.body.appendChild(element);
     }
 
-    // Modify bundle using regular expressions
-    private static formatCode(code: string) {
+    /**
+     * Modifies bundle using regular expressions
+     */
+    private formatCode(code: string) {
         const Hook = new Regexer(code);
 
         Hook.prepend(

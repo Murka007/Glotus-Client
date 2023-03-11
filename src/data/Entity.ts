@@ -1,5 +1,8 @@
 import Vector from "../modules/Vector";
 
+/**
+ * Abstract entity class. Represents players and animals
+ */
 abstract class Entity {
     id = -1;
 

@@ -1,7 +1,9 @@
 import Animals from "../constants/Animals";
-import Vector from "../modules/Vector";
 import Entity from "./Entity";
 
+/**
+ * Animal class. Represents all animals including bosses
+ */
 class Animal extends Entity {
     type = -1;
     health = 0;

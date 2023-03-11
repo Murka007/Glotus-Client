@@ -7,8 +7,20 @@ type TRegex = RegExp | RegExp[] | string | string[];
  * Regexer class, significantly simplifies the work with regular expressions
  */
 class Regexer {
+
+    /**
+     * the code to which changes are applied
+     */
     code: string;
+
+    /**
+     * The original code
+     */
     readonly COPY_CODE: string;
+
+    /**
+     * Total amount of hooks applied
+     */
     hookCount: number
     private readonly ANY_LETTER: string;
     private readonly NumberSystem: ReadonlyArray<{radix: number, prefix: string}>;
@@ -30,11 +42,22 @@ class Regexer {
         return regex instanceof RegExp;
     }
 
+    /**
+     * Converts a number to regular expression which represents this number in different number systems
+     * 
+     * @example
+     * ```
+     * 25 -> '(?:0b0*11001|0+31|25|0x0*19)'
+     * ```
+     */
     private generateNumberSystem(int: number) {
         const template = this.NumberSystem.map(({ radix, prefix }) => prefix + int.toString(radix));
         return `(?:${ template.join("|") })`;
     }
 
+    /**
+     * Replaces variables with regular expressions
+     */
     private parseVariables(regex: string) {
         regex = regex.replace(/\{VAR\}/g, "(?:let|var|const)");
         regex = regex.replace(/\{QUOTE\}/g, "[\'\"\`]");
@@ -45,6 +68,9 @@ class Regexer {
         return regex;
     }
 
+    /**
+     * Formats regular expression
+     */
     private format(name: string, inputRegex: TRegex, flags?: string): RegExp {
 
         let regex: string = "";
