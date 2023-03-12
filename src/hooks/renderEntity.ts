@@ -1,18 +1,13 @@
-import Glotus from "..";
 import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
 import Controller from "../modules/Controller";
-import settings from "../utility/Settings";
 import { TCTX } from "../types/Common";
 import { IRenderEntity } from "../types/RenderTargets";
 import Renderer from "../utility/Renderer";
-import ProjectileManager from "../Managers/ProjectileManager";
 import { EItem, WeaponType } from "../types/Items";
 import DataHandler from "../utility/DataHandler";
 import { Projectiles, Weapons } from "../constants/Items";
-import ObjectManager from "../Managers/ObjectManager";
 import Vector from "../modules/Vector";
-import Logger from "../utility/Logger";
 import Projectile from "../data/Projectile";
 
 /**
@@ -29,10 +24,10 @@ const renderEntity = (
 
         const position = new Vector(player.x, player.y);
 
-        const { current } = myPlayer.weapon;
-        if (DataHandler.isShootable(current)) {
-            const secondary = Weapons[current];
-            const arrow = DataHandler.getProjectile(current);
+        const currentWeapon = myPlayer.weapon.current;
+        if (DataHandler.isShootable(currentWeapon)) {
+            const secondary = Weapons[currentWeapon];
+            const arrow = DataHandler.getProjectile(currentWeapon);
 
             const angle = Controller.mouse.sentAngle;
             const start = position.direction(angle, 70);

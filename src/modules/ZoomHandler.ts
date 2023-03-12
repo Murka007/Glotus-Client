@@ -1,5 +1,5 @@
 import myPlayer from "../data/ClientPlayer";
-import { isActiveInput } from "../utility/Common";
+import { isActiveInput, lerp } from "../utility/Common";
 import Hooker from "../utility/Hooker";
 
 const ZoomHandler = new class ZoomHandler {
@@ -7,14 +7,25 @@ const ZoomHandler = new class ZoomHandler {
         Default: {
             w: 1920,
             h: 1080,
-        },
+        } as const,
         current: {
+            w: 1920,
+            h: 1080
+        },
+        smooth: {
             w: Hooker.linker(1920),
             h: Hooker.linker(1080)
-        }
-    } as const;
+        } as const
+    };
     private wheels = 0;
     private readonly scaleFactor = 200;
+    private readonly duration = 1000;
+    private start = Date.now();
+    private animating = false;
+
+    constructor() {
+        this.animate = this.animate.bind(this);
+    }
 
     /**
      * Returns minimum possible width and height scale
@@ -32,6 +43,29 @@ const ZoomHandler = new class ZoomHandler {
         } as const;
     }
 
+    private animate() {
+        const delta = Date.now() - this.start;
+        if (delta >= this.duration) {
+            this.animating = false;
+            return;
+        }
+        setTimeout(this.animate, 10);
+
+        const progress = Math.min(1, delta / this.duration);
+        const { current, smooth } = this.scale;
+        smooth.w[0] = lerp(smooth.w[0], current.w, progress);
+        smooth.h[0] = lerp(smooth.h[0], current.h, progress);
+        window.dispatchEvent(new Event("resize"));
+    }
+
+    private startAnimation() {
+        this.start = Date.now();
+        if (!this.animating) {
+            this.animating = true;
+            this.animate();
+        }
+    }
+
     handler(event: WheelEvent) {
         if (
             myPlayer.inGame && !(event.target instanceof HTMLCanvasElement) ||
@@ -43,15 +77,15 @@ const ZoomHandler = new class ZoomHandler {
 
         // When scale is default, make some gap so user could find it easily
         if (
-            Default.w === current.w[0] && Default.h === current.h[0] &&
-            (this.wheels = (this.wheels + 1) % 5) !== 0
+            Default.w === current.w && Default.h === current.h &&
+            (this.wheels = (this.wheels + 1) % 4) !== 0
         ) return;
 
         const { w, h } = this.getMinScale(this.scaleFactor);
         const zoom = event.deltaY > 0 ? -this.scaleFactor : this.scaleFactor;
-        current.w[0] = Math.max(w, current.w[0] + zoom);
-        current.h[0] = Math.max(h, current.h[0] + zoom);
-        window.dispatchEvent(new Event("resize"));
+        current.w = Math.max(w, current.w + zoom);
+        current.h = Math.max(h, current.h + zoom);
+        this.startAnimation()
     }
 }
 

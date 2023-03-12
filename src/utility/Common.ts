@@ -31,6 +31,10 @@ export const removeFast = (array: unknown[], index: number) => {
     }
 }
 
+export const lerp = (start: number, end: number, factor: number) => {
+    return (1 - factor) * start + factor * end;
+}
+
 let uniqueID = 0;
 export const getUniqueID = () => {
     return uniqueID++;

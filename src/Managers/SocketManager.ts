@@ -105,20 +105,20 @@ const SocketManager = new class SocketManager {
             construct(target, args: [url: string | URL, protocols?: string | string[]]) {
                 const socket: WebSocket = new target(...args);
                 that.socket = socket;
-                const _send = socket.send;
-                socket.send = function(...args) {
-                    count += 1;
-                    return _send.apply(this, args);
-                }
+                // const _send = socket.send;
+                // socket.send = function(...args) {
+                //     count += 1;
+                //     return _send.apply(this, args);
+                // }
                 socket.addEventListener("message", that.message);
                 return socket;
             }
         })
 
-        setInterval(() => {
-            Logger.log("PACKET COUNT", count);
-            count = 0;
-        }, 1000);
+        // setInterval(() => {
+        //     Logger.log("PACKET COUNT", count);
+        //     count = 0;
+        // }, 1000);
     }
 
     private handlePing() {

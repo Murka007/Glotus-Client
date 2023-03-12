@@ -182,18 +182,21 @@ const Controller = new class Controller {
     }
 
     /**
+     * true, if myPlayer is placing an item
+     */
+    get placing(): boolean {
+        return this.currentType !== null;
+    }
+    
+    /**
      * We should not send update angle packet, because we are already placing items or instakilling.
      */
     private canSendAimPacket() {
         return (
             myPlayer.inGame &&
             Instakill.isActive === false &&
-            this.currentType === null
+            this.placing === false
         )
-    }
-
-    get placing(): boolean {
-        return this.currentType !== null;
     }
 
     private canInstakill() {
@@ -375,7 +378,7 @@ const Controller = new class Controller {
         if (event.code === settings.right) this.move |= 8;
         if (copyMove !== this.move) this.handleMovement();
 
-        if (event.code === settings.autoattack) this.toggleAutoattack();
+        if (event.code === settings.autoattack && !Instakill.isActive) this.toggleAutoattack();
         if (event.code === settings.lockrotation) this.toggleRotation();
 
         const { storeButton, clanButton } = GameUI.getElements();
@@ -405,7 +408,7 @@ const Controller = new class Controller {
 
     private handleMousedown(event: MouseEvent) {
         const button = formatButton(event.button);
-        if (button === "LBTN" && !this.attacking) {
+        if (button === "LBTN" && !this.attacking && !Instakill.isActive) {
             this.attacking = true;
             this.attack(this.mouse.angle);
         }
@@ -414,7 +417,7 @@ const Controller = new class Controller {
             Instakill.init();
         }
 
-        if (button === "RBTN") {
+        if (button === "RBTN" && !Instakill.isActive) {
             this.breaking = true;
             this.breakingState = true;
         }

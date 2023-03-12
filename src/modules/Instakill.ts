@@ -41,7 +41,9 @@ const Instakill = new class Instakill {
             if (myPlayer.isReloaded("secondary")) {
                 this.state++;
             }
+            Controller.updateAngle(Controller.mouse.angle);
             Controller.toggleAutoattack();
+            
             const store = Controller.store[EStoreType.HAT];
             Controller.equip(EStoreType.HAT, store.current, "CURRENT");
             store.utility = 0;

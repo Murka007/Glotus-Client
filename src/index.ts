@@ -14,6 +14,7 @@ import settings from "./utility/Settings";
 import UI from "./modules/UI";
 import Renderer from "./utility/Renderer";
 import Instakill from "./modules/Instakill";
+import ZoomHandler from "./modules/ZoomHandler";
 
 const Glotus = {
     ObjectManager,
@@ -28,6 +29,7 @@ const Glotus = {
     settings,
     Renderer,
     Instakill,
+    ZoomHandler,
     hooks: {
         renderEntity,
         renderObject,

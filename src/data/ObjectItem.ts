@@ -26,7 +26,7 @@ abstract class ObjectItem {
     /**
      * Current grid location (x_y)
      */
-    location!: string;
+    location: string | null = null;
 
     constructor(
         id: number,

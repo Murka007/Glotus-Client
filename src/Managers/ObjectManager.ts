@@ -18,7 +18,7 @@ const ObjectManager = new class ObjectManager {
      * A Map that stores all the game objects
      */
     readonly objects = new Map<number, TObject>();
-    private readonly grids: Record<string, TObject[]> = {};
+    private readonly grids: Record<string, Set<TObject>> = {};
 
     /**
      * A Map which stores all turret objects that are currently reloading
@@ -71,26 +71,28 @@ const ObjectManager = new class ObjectManager {
         const pos = position.current.copy().div(this.gridCellSize).floor().clamp(0, this.gridSize);
         const key = pos.x + "_" + pos.y;
         if (!this.grids[key]) {
-            this.grids[key] = [];
+            this.grids[key] = new Set();
         }
         object.location = key;
-        this.grids[key].push(object);
+        this.grids[key].add(object);
         this.objects.set(id, object);
 
         if (object instanceof PlayerObject) {
             const owner = PlayerManager.players.get(object.ownerID);
             if (owner !== undefined) {
-                owner.objects.push(object);
+                owner.objects.add(object);
             }
         }
     }
 
     private removeObject(object: TObject) {
+        if (object.location === null) return;
         const objects = this.grids[object.location];
-        const index = objects.indexOf(object);
-        if (index >= 0) {
-            removeFast(objects, index);
-        }
+        objects.delete(object);
+        // const index = objects.indexOf(object);
+        // if (index >= 0) {
+        //     removeFast(objects, index);
+        // }
         this.objects.delete(object.id);
     }
 
@@ -118,9 +120,9 @@ const ObjectManager = new class ObjectManager {
     }
 
     removePlayerObjects(player: Player) {
-        let i = player.objects.length;
-        while (i--) {
-            this.removeObject(player.objects[i]);
+        for (const object of player.objects) {
+            player.objects.delete(object);
+            this.removeObject(object);
         }
     }
 

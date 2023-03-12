@@ -78,8 +78,8 @@ const DefaultHooks = () => {
         Object.prototype, "maxScreenHeight",
         () => true,
         (that) => {
-            that.maxScreenWidth = ZoomHandler.scale.current.w;
-            that.maxScreenHeight = ZoomHandler.scale.current.h;
+            that.maxScreenWidth = ZoomHandler.scale.smooth.w;
+            that.maxScreenHeight = ZoomHandler.scale.smooth.h;
             return true;
         }
     )

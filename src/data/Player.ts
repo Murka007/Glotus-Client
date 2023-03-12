@@ -64,9 +64,9 @@ class Player extends Entity {
     }
 
     /**
-     * Array of items placed by the player
+     * Set of items placed by the player
      */
-    readonly objects: PlayerObject[] = [];
+    readonly objects = new Set<PlayerObject>();
 
     constructor() {
         super();
