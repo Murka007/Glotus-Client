@@ -25,6 +25,7 @@ export interface ISettings {
     toggleMenu: string;
 
     // Combat
+    autoreload: boolean;
     autoheal: boolean;
     antiboostpad: boolean;
 
@@ -58,6 +59,15 @@ export interface ISettings {
 
     itemCounter: boolean;
     renderGrid: boolean;
+    windmillRotation: boolean;
+
+    displayPlayerAngle: boolean;
+    projectileHitbox: boolean;
+    possibleShootTarget: boolean;
+    weaponHitbox: boolean;
+    collisionHitbox: boolean
+    placementHitbox: boolean;
+    turretHitbox: boolean;
 }
 
 export const defaultSettings = {
@@ -81,6 +91,7 @@ export const defaultSettings = {
     toggleShop: "ShiftLeft",
     toggleClan: "ControlLeft",
     toggleMenu: "Escape",
+    autoreload: true,
     autoheal: true,
     antiboostpad: true,
     enemyTracers: true,
@@ -108,6 +119,14 @@ export const defaultSettings = {
     itemHealthBarColor: "#6b449e",
     itemCounter: true,
     renderGrid: false,
+    windmillRotation: false,
+    displayPlayerAngle: false,
+    projectileHitbox: false,
+    possibleShootTarget: false,
+    weaponHitbox: false,
+    collisionHitbox: false,
+    placementHitbox: false,
+    turretHitbox: false,
 } as const satisfies ISettings;
 
 const settings = { ...defaultSettings, ...Cookie.get<ISettings>("Glotus") };

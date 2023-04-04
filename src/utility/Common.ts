@@ -1,3 +1,4 @@
+import Config from "../constants/Config";
 import Vector from "../modules/Vector";
 
 export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
@@ -172,4 +173,11 @@ export const removeClass = (target: HTMLElement | NodeListOf<HTMLElement>, name:
     for (const element of target) {
         element.classList.remove(name);
     }
+}
+
+export const pointInRiver = (position: Vector) => {
+    const y = position.y;
+    const below = y >= (Config.mapScale / 2) - (Config.riverWidth / 2);
+    const above = y <= (Config.mapScale / 2) + (Config.riverWidth / 2);
+    return below && above;
 }

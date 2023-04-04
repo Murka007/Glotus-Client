@@ -125,6 +125,6 @@ export type OutcomingPacket =
     [SocketClient.PING_MAP] |
     [SocketClient.SELECT_ITEM, TItem | TWeapon, boolean] |
     [SocketClient.SPAWN, ISpawn] |
-    [SocketClient.UPGRADE_ITEM, TItem | TWeapon] |
+    [SocketClient.UPGRADE_ITEM, number] |
     [SocketClient.ANGLE, number] |
     [SocketClient.PING_REQUEST];

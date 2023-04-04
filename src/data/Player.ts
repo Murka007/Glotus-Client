@@ -4,16 +4,12 @@ import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
-import { TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant } from "../types/Items";
+import { IReload } from "../types/Common";
+import { TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant, WeaponTypeString } from "../types/Items";
 import { EHat, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
-
-interface IReload {
-    current: number;
-    max: number;
-}
 
 /**
  * Represents all players.
@@ -145,11 +141,10 @@ class Player extends Entity {
         // We should not reload if player is holding item
         if (this.currentItem !== -1) return;
 
-        const type = DataHandler.isPrimary(this.weapon.current) ? "primary" : "secondary";
+        const type = WeaponTypeString[Weapons[this.weapon.current].itemType];
         const targetReload = this.reload[type];
         const weapon = Weapons[this.weapon.current];
-        const reloadSpeed = this.hatID === EHat.SAMURAI_ARMOR ? Hats[this.hatID].atkSpd : 1;
-        const weaponSpeed = weapon.speed * reloadSpeed;
+        const weaponSpeed = this.getWeaponSpeed(this.weapon.current);
 
         // Set default reload based on current weapon
         if (targetReload.max === -1) {
@@ -201,6 +196,11 @@ class Player extends Entity {
             damage *= hat.bDmg;
         }
         return damage;
+    }
+
+    getWeaponSpeed(id: TWeapon): number {
+        const reloadSpeed = this.hatID === EHat.SAMURAI_ARMOR ? Hats[this.hatID].atkSpd : 1;
+        return Weapons[id].speed * reloadSpeed;
     }
 
     /**

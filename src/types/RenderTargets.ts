@@ -10,12 +10,14 @@ export interface IRenderEntity {
 }
 
 export interface IRenderObject {
+    id: number;
     sid: number;
     x: number;
     y: number;
     dir: number;
     xWiggle: number;
     yWiggle: number;
+    turnSpeed: number | undefined;
     owner?: {
         sid: number;
     }

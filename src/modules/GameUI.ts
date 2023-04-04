@@ -25,7 +25,7 @@ const GameUI = new class GameUI {
             serverBrowser: querySelector<HTMLSelectElement>("#serverBrowser")!,
             skinColorHolder: querySelector<HTMLDivElement>("#skinColorHolder")!,
             settingRadio: querySelectorAll<HTMLDivElement>(".settingRadio")!,
-            pingDisplay: querySelector<HTMLDivElement>("#pingDisplay")!,
+            pingDisplay: querySelector<HTMLDivElement>("#pingDisplay")!
         } as const;
     }
 

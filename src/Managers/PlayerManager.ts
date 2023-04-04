@@ -7,6 +7,7 @@ import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
 import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
+import Projectile from "../data/Projectile";
 import Controller from "../modules/Controller";
 import Vector from "../modules/Vector";
 import { TTarget } from "../types/Common";
@@ -53,15 +54,16 @@ const PlayerManager = new class PlayerManager {
      * A time between current and previous `MOVE_UPDATE` packet
      */
     step = 0;
-    tickStep = 0;
 
     createPlayer({ id, nickname, skinID }: IPlayerData) {
         const player = this.players.get(id) || new Player;
         if (!this.players.has(id)) {
             this.players.set(id, player);
         }
+        player.id = id;
         player.nickname = nickname;
         player.skinID = skinID;
+        return player;
     }
 
     attackPlayer(id: number, gathering: 0 | 1, weaponID: TMelee) {
@@ -101,7 +103,6 @@ const PlayerManager = new class PlayerManager {
         const now = Date.now();
         this.step = now - this.start;
         this.start = now;
-        this.tickStep += this.step;
 
         let myPlayerCopy: ClientPlayer | null = null;
 
@@ -202,17 +203,20 @@ const PlayerManager = new class PlayerManager {
         })[0] || null;
     }
 
-    getCurrentShootTarget(
-        start: Vector,
-        end: Vector,
-        range: number,
-        layer: 1 | 0,
-    ): TTarget | null {
+    /**
+     * Returns a target that can be shot at the current tick
+     */
+    getCurrentShootTarget(projectile: Projectile): TTarget | null {
+        const start = projectile.position.current;
+        const end = projectile.position.end;
+        const length = projectile.length;
+        const layer = projectile.onPlatform;
 
         const targets: TTarget[] = [];
+
         const entities = this.getEntities();
         for (const entity of entities) {
-            const s = entity.arrowScale;
+            const s = entity.collisionScale;
             const { x, y } = entity.position.current;
             if (
                 this.canShoot(entity) &&
@@ -226,9 +230,9 @@ const PlayerManager = new class PlayerManager {
             }
         }
 
-        const objects = ObjectManager.getObjects(start, range);
+        const objects = ObjectManager.getObjects(start, length);
         for (const object of objects) {
-            const s = object.arrowScale;
+            const s = object.collisionScale;
             const { x, y } = object.position.current;
             if (
                 layer <= object.layer &&
@@ -242,6 +246,7 @@ const PlayerManager = new class PlayerManager {
             }
         }
 
+        // The closest target to my player is the only one that can be hit
         return targets.sort((a, b) => {
             const dist1 = myPlayer.position.current.distance(a.position.current);
             const dist2 = myPlayer.position.current.distance(b.position.current);
@@ -249,8 +254,47 @@ const PlayerManager = new class PlayerManager {
         })[0] || null;
     }
 
-    getPossibleShootTarget(): TTarget | null {
-        return null;
+    private projectileCanHitEntity(projectile: Projectile, target: Player | Animal): TTarget | null {
+        const pos1 = projectile.position.current.copy();
+        const pos2 = target.position.future.copy();
+
+        const objects = ObjectManager.getObjects(pos1, projectile.length);
+        for (const object of objects) {
+            const pos3 = object.position.current.copy();
+
+            // Skip objects that are further away than the target
+            if (pos1.distance(pos3) > pos1.distance(pos2)) continue;
+            if (projectile.onPlatform > object.layer) continue;
+
+            const s = object.collisionScale;
+            const { x, y } = pos3;
+            if (
+                lineIntersectsRect(
+                    pos1, pos2,
+                    new Vector(x - s, y - s),
+                    new Vector(x + s, y + s)
+                )
+            ) {
+                return null;
+            }
+        }
+
+        return target;
+    }
+
+    getPossibleShootEntity(): Player | Animal | null {
+        const projectile = myPlayer.getProjectile(myPlayer.position.future, myPlayer.weapon.secondary);
+        if (projectile === null) return null;
+
+        return this.getEntities().filter(entity => {
+            const notTarget = entity !== myPlayer;
+            const canHit = this.projectileCanHitEntity(projectile, entity);
+            return notTarget && canHit;
+        }).sort((a, b) => {
+            const dist1 = myPlayer.position.current.distance(a.position.current);
+            const dist2 = myPlayer.position.current.distance(b.position.current);
+            return dist1 - dist2;
+        })[0] || null;
     }
 }
 

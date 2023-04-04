@@ -22,8 +22,12 @@ abstract class Entity {
         future.setVec(current.direction(angle, distance));
     }
 
-    get arrowScale() {
+    get collisionScale() {
         return this.scale;
+    }
+
+    get hitScale() {
+        return this.scale * 1.8;
     }
 }
 

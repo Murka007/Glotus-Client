@@ -5,6 +5,9 @@ import Navbar from "../../public/Navbar.html";
 import Keybinds from "../../public/menu-pages/Keybinds.html";
 import Combat from "../../public/menu-pages/Combat.html";
 import Visuals from "../../public/menu-pages/Visuals.html";
+import Misc from "../../public/menu-pages/Misc.html";
+import Devtool from "../../public/menu-pages/Devtool.html";
+import Credits from "../../public/menu-pages/Credits.html";
 import { formatButton, formatCode, removeClass } from "../utility/Common";
 import settings, { defaultSettings, ISettings, SaveSettings } from "../utility/Settings";
 import Controller from "./Controller";
@@ -41,6 +44,9 @@ const UI = new class UI {
                             ${Keybinds}
                             ${Combat}
                             ${Visuals}
+                            ${Misc}
+                            ${Devtool}
+                            ${Credits}
                         </div>
                     </main>
                 </div>
@@ -82,19 +88,24 @@ const UI = new class UI {
         })
     }
 
-    private getElements() {
-        const querySelector = this.frame.document.querySelector.bind(this.frame.document);
-        const querySelectorAll = this.frame.document.querySelectorAll.bind(this.frame.document);
+    private querySelector<T extends Element>(selector: string) {
+        return this.frame.document.querySelector<T>(selector);
+    }
 
+    private querySelectorAll<T extends Element>(selector: string) {
+        return this.frame.document.querySelectorAll<T>(selector);
+    }
+
+    private getElements() {
         return {
-            menuContainer: querySelector<HTMLDivElement>("#menu-container")!,
-            menuWrapper: querySelector<HTMLDivElement>("#menu-wrapper")!,
-            hotkeyInputs: querySelectorAll<HTMLButtonElement>(".hotkeyInput[id]")!,
-            checkboxes: querySelectorAll<HTMLInputElement>("input[type='checkbox'][id]")!,
-            colorPickers: querySelectorAll<HTMLInputElement>("input[type='color'][id]")!,
-            closeButton: querySelector<SVGSVGElement>("#close-button")!,
-            openMenuButtons: querySelectorAll<HTMLButtonElement>(".open-menu")!,
-            menuPages: querySelectorAll<HTMLDivElement>(".menu-page")!,
+            menuContainer: this.querySelector<HTMLDivElement>("#menu-container")!,
+            menuWrapper: this.querySelector<HTMLDivElement>("#menu-wrapper")!,
+            hotkeyInputs: this.querySelectorAll<HTMLButtonElement>(".hotkeyInput[id]")!,
+            checkboxes: this.querySelectorAll<HTMLInputElement>("input[type='checkbox'][id]")!,
+            colorPickers: this.querySelectorAll<HTMLInputElement>("input[type='color'][id]")!,
+            closeButton: this.querySelector<SVGSVGElement>("#close-button")!,
+            openMenuButtons: this.querySelectorAll<HTMLButtonElement>(".open-menu[data-id]")!,
+            menuPages: this.querySelectorAll<HTMLDivElement>(".menu-page[data-id]")!,
         } as const;
     }
 
@@ -306,7 +317,8 @@ const UI = new class UI {
         const { openMenuButtons, menuPages } = this.getElements();
         for (let i=0;i<openMenuButtons.length;i++) {
             const button = openMenuButtons[i];
-            const menuPage = menuPages[i];
+            const id = button.getAttribute("data-id");
+            const menuPage = this.querySelector<HTMLDivElement>(`.menu-page[data-id='${id}']`)
             button.onclick = () => {
                 if (menuPage instanceof this.frame.window.HTMLDivElement) {
                     removeClass(openMenuButtons, "active");

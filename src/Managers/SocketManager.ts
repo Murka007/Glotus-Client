@@ -49,32 +49,9 @@ const SocketManager = new class SocketManager {
      */
     pong = 0;
 
-    // /**
-    //  * A rate at which server updates (ms) 111
-    //  */
-    // readonly TICK = 1000 / 9;
-
-    // /**
-    //  * Current tick update count
-    //  * 
-    //  * 0 - start, ...
-    //  */
-    // tickIndex = 0;
-
-    // /**
-    //  * Time when the tick update received
-    //  */
-    // startTick = Date.now();
-
-    // /**
-    //  * Predicted time of the future received tick
-    //  */
-    // nextTick = Date.now();
-
-    // /**
-    //  * Current time difference between the current and previous tick
-    //  */
-    // DELTA = 0;
+    readonly TICK = 1000 / 9;
+    startTick = Date.now();
+    nextTick = Date.now();
 
     constructor() {
         this.message = this.message.bind(this);
@@ -131,7 +108,7 @@ const SocketManager = new class SocketManager {
         }, 2000);
     }
 
-    message(event: MessageEvent<ArrayBuffer>) {
+    private message(event: MessageEvent<ArrayBuffer>) {
         if (this.Decoder === null) return;
         
         const data = event.data;
@@ -208,12 +185,9 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.MOVE_UPDATE: {
-                // this.tickIndex += 1;
-
-                // const now = Date.now();
-                // this.DELTA = now - this.startTick;
-                // this.startTick = now;
-                // this.nextTick = this.startTick + this.TICK;
+                this.startTick = Date.now();
+                this.nextTick = this.startTick + this.TICK;
+                
 
                 PlayerManager.updatePlayer(temp[1]);
                 for (let i=0;i<this.PacketQueue.length;i++) {
@@ -344,8 +318,8 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.ATTACK, 1, angle]);
     }
 
-    stopAttack(angle: number | null) {
-        this.send([SocketClient.ATTACK, 0, angle]);
+    stopAttack() {
+        this.send([SocketClient.ATTACK, 0, null]);
     }
 
     resetMoveDir() {
@@ -376,7 +350,7 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.SPAWN, { name, moofoll, skin }]);
     }
 
-    upgradeItem(id: TWeapon | TItem) {
+    upgradeItem(id: number) {
         this.send([SocketClient.UPGRADE_ITEM, id]);
     }
 
@@ -385,7 +359,6 @@ const SocketManager = new class SocketManager {
     }
 
     pingRequest() {
-        // Glotus.log("PING REQUEST");
         this.startPing = Date.now();
         this.send([SocketClient.PING_REQUEST]);
     }

@@ -1,8 +1,11 @@
 import { ItemGroups, Items } from "../constants/Items";
 import PlayerManager from "../Managers/PlayerManager";
+import SocketManager from "../Managers/SocketManager";
 import Vector from "../modules/Vector";
 import { ValueOf } from "../types/Common";
 import { EItem, TPlaceable } from "../types/Items";
+import Logger from "../utility/Logger";
+import myPlayer from "./ClientPlayer";
 
 const EResourceType = {
     WOOD: 0,
@@ -42,6 +45,10 @@ abstract class ObjectItem {
         this.angle = angle;
         this.scale = scale;
     }
+
+    get hitScale() {
+        return this.scale;
+    }
 }
 
 export class Resource extends ObjectItem {
@@ -65,8 +72,12 @@ export class Resource extends ObjectItem {
         return this.scale * reduceScale;
     }
 
-    get arrowScale() {
+    get collisionScale() {
         return this.formatScale();
+    }
+
+    get placementScale() {
+        return this.formatScale(0.6);
     }
 }
 
@@ -120,8 +131,8 @@ export class PlayerObject extends ObjectItem {
         this.layer = ItemGroups[item.itemGroup].layer;
     }
 
-    formatScale(isItem = false) {
-        return this.scale * (isItem ? 1 : this.colDiv);
+    formatScale(placeCollision = false): number {
+        return this.scale * (placeCollision ? 1 : this.colDiv);
     }
 
     /**
@@ -131,11 +142,14 @@ export class PlayerObject extends ObjectItem {
         return this.maxHealth !== Infinity;
     }
 
-    /**
-     * Returns current scale that matches arrow collision
-     */
-    get arrowScale() {
+    get collisionScale(): number {
         return this.formatScale();
+    }
+
+    get placementScale() {
+        const item = Items[this.type];
+        if (item.id === EItem.BLOCKER) return item.blocker;
+        return this.scale;
     }
 }
 

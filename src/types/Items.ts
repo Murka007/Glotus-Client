@@ -11,6 +11,11 @@ export const WeaponType = {
 
 export type TWeaponType = ValueOf<typeof WeaponType>;
 
+export const WeaponTypeString = [
+    "primary",
+    "secondary",
+] as const;
+
 /**
  * Item types that exist in the game
  */
@@ -135,4 +140,5 @@ export type TData<T> = T extends TWeaponType ? TWeaponData[T] : T extends TItemT
 export type TMelee = Extract<TWeapons[TWeapon], { damage: number }>["id"];
 export type TShootable = Extract<TWeapons[TWeapon], { projectile: number }>["id"];
 export type TPlaceable = Extract<TItems[TItem], { itemGroup: number }>["id"];
+export type THealable = Extract<TItems[TItem], { restore: number }>["id"];
 export type TDestroyable = Extract<TItems[TItem], { health: number }>["id"];

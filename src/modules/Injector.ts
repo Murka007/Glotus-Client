@@ -79,17 +79,17 @@ const Injector = new class Injector {
             `;Glotus.hooks.renderEntity($3,$1,$2);`
         );
 
-        Hook.append(
-            "renderItemPush",
-            /\((\w+)\.dir\),\w+\.drawImage.+?2\)/,
-            `,Glotus.Renderer.objects.push($1)`
-        );
-
         // Hook.append(
         //     "renderItemPush",
-        //     /(\w+)\.blocker,\w+.+?2\)\)/,
+        //     /\((\w+)\.dir\),\w+\.drawImage.+?2\)/,
         //     `,Glotus.Renderer.objects.push($1)`
         // );
+
+        Hook.append(
+            "renderItemPush",
+            /(\w+)\.blocker,\w+.+?2\)\)/,
+            `,Glotus.Renderer.objects.push($1)`
+        );
 
         Hook.append(
             "renderItem",
@@ -131,7 +131,13 @@ const Injector = new class Injector {
             "RenderGrid",
             /("#91b2db".+?)(for.+?NUM{18}.+?NUM{18}.+?\)\);)/,
             `$1if(Glotus.settings.renderGrid){$2}`
-        )
+        );
+
+        Hook.replace(
+            "upgradeItem",
+            /\w+\.send\("6",(\w+)\)/,
+            `Glotus.Controller.upgradeItem($1);`
+        );
         
         return Hook.code;
     }

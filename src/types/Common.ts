@@ -9,3 +9,8 @@ export type KeysOfType<T,V> = keyof { [ P in keyof T as T[P] extends V ? P : nev
 export type ReplaceWithType<T,R> = { [K in keyof T]: R };
 export type TCTX = CanvasRenderingContext2D;
 export type TTarget = Player | Animal | TObject;
+
+export interface IReload {
+    current: number;
+    max: number;
+}

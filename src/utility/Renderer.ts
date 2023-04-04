@@ -41,11 +41,18 @@ class Renderer {
         ctx.closePath();
     }
 
-    static circle(ctx: TCTX, x: number, y: number, radius: number, color: string, opacity = 1) {
+    static circle(
+        ctx: TCTX,
+        x: number, y: number,
+        radius: number,
+        color: string,
+        opacity = 1,
+        lineWidth = 4
+    ) {
         ctx.save();
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
-        ctx.lineWidth = 4;
+        ctx.lineWidth = lineWidth;
         ctx.beginPath();
         ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
         ctx.arc(x, y, radius, 0, 2 * Math.PI);
@@ -265,6 +272,7 @@ class Renderer {
         ctx: TCTX,
         object: IRenderObject,
         perc: number,
+        angle: number,
         color: string,
         offset = 0
     ): number {
@@ -275,12 +283,13 @@ class Renderer {
         const scale = defaultScale + 3 + offset;
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(object.dir);
+        ctx.rotate(angle);
 
+        ctx.lineCap = "round";
         ctx.strokeStyle = "#3b3b3b";
         ctx.lineWidth = height;
         ctx.beginPath();
-        ctx.arc(0, 0, scale, 0, 2 * Math.PI);
+        ctx.arc(0, 0, scale, 0, perc * 2 * Math.PI);
         ctx.stroke();
         ctx.closePath();
 

@@ -1,17 +1,32 @@
+import { Weapons } from "../constants/Items";
+import Animal from "../data/Animal";
 import myPlayer from "../data/ClientPlayer";
+import Player from "../data/Player";
 import PlayerManager from "../Managers/PlayerManager";
 import { EWeapon, WeaponType } from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
+import DataHandler from "../utility/DataHandler";
+import settings from "../utility/Settings";
 import Controller from "./Controller";
 
 const Instakill = new class Instakill {
     private state: number = -1;
 
     /**
-     * Returns true if instakill is still active
+     * true if instakill is still active
      */
-    get isActive() {
+    isActive = false;
+
+    /**
+     * true if myPlayer pressed instakill button and on next tick it will execute
+     */
+    get willExecute() {
         return this.state !== -1;
+    }
+
+    reset() {
+        this.state = -1;
+        this.isActive = false;
     }
 
     /**
@@ -25,29 +40,37 @@ const Instakill = new class Instakill {
         }
     }
 
-    private spearMusket() {
-        if (this.state === 0 && myPlayer.isFullyReloaded()) {
+    private spearMusketPrimary() {
+        const isShootable = DataHandler.isSecondary(myPlayer.getItemByType(WeaponType.SECONDARY));
+        if (this.state === 0 && Controller.isFullyReloaded()) {
+            this.isActive = true;
             this.state++;
             this.aimAtEnemy();
             Controller.whichWeapon(WeaponType.PRIMARY);
+            Controller.equip(EStoreType.ACCESSORY, EHat.UNEQUIP, "UTILITY");
             Controller.equip(EStoreType.HAT, EHat.BULL_HELMET, "UTILITY");
             Controller.toggleAutoattack();
         } else if (this.state === 1) {
             this.state++;
             this.aimAtEnemy();
-            Controller.equip(EStoreType.HAT, EHat.TURRET_GEAR, "UTILITY");
+            if (isShootable) {
+                Controller.equip(EStoreType.HAT, EHat.TURRET_GEAR, "UTILITY");
+            }
             Controller.whichWeapon(WeaponType.SECONDARY);
         } else if (this.state === 2) {
-            if (myPlayer.isReloaded("secondary")) {
-                this.state++;
-            }
+            this.state++;
             Controller.updateAngle(Controller.mouse.angle);
             Controller.toggleAutoattack();
             
-            const store = Controller.store[EStoreType.HAT];
-            Controller.equip(EStoreType.HAT, store.current, "CURRENT");
-            store.utility = 0;
-        } else if (this.state === 3) {
+            const hatStore = Controller.store[EStoreType.HAT];
+            const accessoryStore = Controller.store[EStoreType.ACCESSORY];
+            Controller.equip(EStoreType.HAT, hatStore.current, "CURRENT");
+            Controller.equip(EStoreType.ACCESSORY, accessoryStore.actual, "ACTUAL");
+            hatStore.utility = 0;
+            this.isActive = false;
+        }
+
+        if (this.state === 3 && (Controller.isReloaded("secondary") || !settings.autoreload)) {
             this.state = -1;
             Controller.whichWeapon(WeaponType.PRIMARY);
         }
@@ -55,14 +78,7 @@ const Instakill = new class Instakill {
 
     postTick() {
         if (this.state === -1) return;
-        this.spearMusket();
-        // const actions = this.spearMusket();
-        // if (actions === null) return;
-
-        // actions[this.state++]();
-        // if (this.state === actions.length) {
-        //     this.state = -1;
-        // }
+        this.spearMusketPrimary();
     }
 
     init() {

@@ -1,6 +1,6 @@
 import { Items, Projectiles, Weapons } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
-import { ItemType, TDestroyable, TItemType, TPlaceable, TShootable, TWeapon, TWeaponData, TWeapons, TWeaponType, WeaponType } from "../types/Items";
+import { ItemType, TDestroyable, THealable, TItem, TItemType, TMelee, TPlaceable, TShootable, TWeapon, TWeaponData, TWeapons, TWeaponType, WeaponType } from "../types/Items";
 
 /**
  * Used in order to optimize management with constant data
@@ -36,11 +36,27 @@ class DataHandler {
         return id !== null && "projectile" in Weapons[id];
     }
 
+    static isMelee(id: TWeapon): id is TMelee {
+        return id !== null && "range" in Weapons[id];
+    }
+
+    static isWeapon(id: number): id is TWeapon {
+        return Weapons[id] !== undefined;
+    }
+
     /**
      * Checks if item has health by ID
      */
     static isDestroyable(id: TPlaceable | null): id is TDestroyable {
         return id !== null && "health" in Items[id];
+    }
+
+    static isPlaceable(id: TItem | -1): id is TPlaceable {
+        return id !== -1 && "itemGroup" in Items[id];
+    }
+
+    static isHealable(id: TItem): id is THealable {
+        return "restore" in Items[id];
     }
 
     /**

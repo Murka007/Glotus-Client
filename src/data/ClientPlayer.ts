@@ -7,13 +7,16 @@ import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
 import Instakill from "../modules/Instakill";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
+import { IReload } from "../types/Common";
+import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TPlaceable, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
 import { EHat, EStoreType, THat } from "../types/Store";
+import { pointInRiver } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Logger from "../utility/Logger";
 import settings from "../utility/Settings";
 import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
+import Projectile from "./Projectile";
 
 /**
  * Represents my player. Contains all data that are related to the game bundle and websocket
@@ -47,6 +50,12 @@ export class ClientPlayer extends Player {
     }
     readonly offset = new Vector;
 
+    // readonly clientReload: {
+    //     readonly primary: IReload;
+    //     readonly secondary: IReload;
+    //     readonly turret: IReload;
+    // }
+
     /**
      * true if my player is in game
      */
@@ -61,6 +70,20 @@ export class ClientPlayer extends Player {
     constructor() {
         super();
         this.reset();
+        // this.clientReload = {
+        //     primary: {
+        //         current: -1,
+        //         max: -1,
+        //     },
+        //     secondary: {
+        //         current: -1,
+        //         max: -1,
+        //     },
+        //     turret: {
+        //         current: 2500,
+        //         max: 2500,
+        //     }
+        // }
     }
 
     /**
@@ -181,9 +204,126 @@ export class ClientPlayer extends Player {
         return null;
     }
 
+    /**
+     * Returns the best hat to be equipped at the tick
+     */
+    getBestCurrentHat(): THat {
+        const { future } = this.position;
+
+        const inRiver = pointInRiver(future);
+        if (inRiver) {
+            // myPlayer is right on the platform
+            const platformActivated = this.checkCollision(EItem.PLATFORM, 30);
+
+            // myPlayer almost left the platform
+            const stillStandingOnPlatform = this.checkCollision(EItem.PLATFORM, -15);
+
+            if (!this.platformActivated && platformActivated) {
+                this.platformActivated = true;
+            }
+
+            // myPlayer is not standing on platform
+            if (this.platformActivated && !stillStandingOnPlatform) {
+                this.platformActivated = false;
+            }
+
+            if (!this.platformActivated) {
+                return EHat.FLIPPER_HAT;
+            }
+        }
+
+        // Add turret detection
+        const turret = Items[EItem.TURRET];
+        const range = turret.shootRange + turret.scale;
+        const objects = ObjectManager.getObjects(future, range);
+        for (const object of objects) {
+            const distance = future.distance(object.position.current);
+            if (
+                object instanceof PlayerObject &&
+                object.type === EItem.TURRET &&
+                ObjectManager.isEnemyObject(object) &&
+                distance <= turret.shootRange &&
+                ObjectManager.isTurretReloaded(object)
+            ) {
+                return EHat.EMP_HELMET;
+            }
+        }
+
+        const nearestEntity = PlayerManager.getNearestEntity(this);
+        if (
+            nearestEntity !== null &&
+            nearestEntity.position.future.distance(future) < 300
+        ) return EHat.SOLDIER_HELMET;
+
+        const inWinter = future.y <= 2400;
+        if (inWinter) return EHat.WINTER_CAP;
+        return Controller.store[EStoreType.HAT].actual;
+    }
+
+    getPlacePosition(
+        start: Vector,
+        itemID: TPlaceable,
+        angle: number
+    ): Vector {
+        const item = Items[itemID];
+        return start.direction(angle, this.scale + item.scale + item.placeOffset);
+    }
+
+    getProjectile(position: Vector, weapon: TWeapon): Projectile | null {
+        if (!DataHandler.isShootable(weapon)) return null;
+
+        const secondary = Weapons[weapon];
+        const arrow = DataHandler.getProjectile(weapon);
+        const angle = Controller.mouse.sentAngle;
+        const start = position.direction(angle, 140);
+        return new Projectile(
+            start.x, start.y, angle,
+            arrow.range,
+            arrow.speed,
+            secondary.projectile,
+            myPlayer.checkCollision(EItem.PLATFORM) ? 1 : 0,
+            0
+        )
+    }
+
+    /**
+     * Called after all received packets. Player and animal positions have been updated
+     */
+    tickUpdate() {
+        Controller.postTick();
+        // Instakill.postTick();
+    }
+
+    updateHealth(health: number) {
+        this.previousHealth = this.currentHealth;
+        this.currentHealth = health;
+
+        if (settings.autoheal && health < 100) {
+            const difference = Math.abs(health - this.previousHealth);
+            const delay = difference <= 10 ? 150 : 80;
+            setTimeout(() => {
+                Controller.heal(true);
+            }, delay);
+        }
+
+        // const item = DataHandler.getItemByType(ItemType.FOOD);
+        // item.name
+        // const id = this.getItemType(ItemType.FOOD);
+        // const itemFood = Items[id];
+        // if (!("restore" in itemFood)) return;
+        // const times = Math.ceil((this.maxHealth - this.currentHealth) / itemFood.restore);
+        // for (let i=0;i<=times;i++) {
+        //     this.healthQueue.push(Math.min(this.currentHealth + itemFood.restore, this.maxHealth));
+        //     Controller.heal(i === times);
+        // }
+    }
+
     playerSpawn(id: number) {
         this.id = id;
         this.inGame = true;
+        this.reload.primary.max = this.reload.primary.current = -1;
+        this.reload.secondary.max = this.reload.secondary.current = -1;
+        this.reload.turret.max = this.reload.turret.current = 2500;
         if (!PlayerManager.players.has(id)) {
             PlayerManager.players.set(id, myPlayer);
         }
@@ -217,136 +357,6 @@ export class ClientPlayer extends Player {
         GameUI.updateItemCount(group);
     }
 
-    /**
-     * Returns the best hat to be equipped at the tick
-     */
-    private getBestCurrentHat(): THat {
-        const { current, future } = this.position;
-
-        const inRiver = current.y > 6837 && current.y < 7562;
-        if (inRiver) {
-            // myPlayer is right on the platform
-            const platformActivated = this.checkCollision(EItem.PLATFORM, 30);
-
-            // myPlayer almost left the platform
-            const stillStandingOnPlatform = this.checkCollision(EItem.PLATFORM, -15);
-
-            if (!this.platformActivated && platformActivated) {
-                this.platformActivated = true;
-            }
-
-            // myPlayer is not standing on platform
-            if (this.platformActivated && !stillStandingOnPlatform) {
-                this.platformActivated = false;
-            }
-
-            if (!this.platformActivated) {
-                return EHat.FLIPPER_HAT;
-            }
-        }
-
-        // Add turret detection
-        // let turretCount = 0;
-        // const maxTurretCount = 5;
-        // const turret = Items[EItem.TURRET];
-        // const range = turret.shootRange + turret.scale;
-        // const objects = ObjectManager.getObjects(future, range);
-        // for (const object of objects) {
-        //     const distance = future.distance(object.position.current);
-        //     if (
-        //         object instanceof PlayerObject &&
-        //         object.type === EItem.TURRET &&
-        //         ObjectManager.isEnemyObject(object) &&
-        //         distance <= turret.shootRange &&
-        //         ObjectManager.isTurretReloaded(object)
-        //     ) {
-        //         turretCount += 1;
-        //         if (turretCount === maxTurretCount) {
-        //             return EHat.EMP_HELMET;
-        //         }
-        //     }
-        // }
-
-        const nearestEntity = PlayerManager.getNearestEntity(this);
-        if (
-            nearestEntity !== null &&
-            nearestEntity.position.future.distance(future) < 300
-        ) return EHat.SOLDIER_HELMET;
-
-        const inWinter = current.y <= 2400;
-        if (inWinter) return EHat.WINTER_CAP;
-        return Controller.store[EStoreType.HAT].actual;
-    }
-
-    /**
-     * Called after all received packets. Player and animal positions have been updated
-     */
-    tickUpdate() {
-        Instakill.postTick();
-        const type = DataHandler.isPrimary(this.weapon.current) ? "primary" : "secondary";
-        const target = this.reload[type];
-
-        const isReloaded = (
-                SocketManager.ping > 125 ?
-                PlayerManager.tickStep >= target.max : target.current === target.max
-            );
-
-        if (
-            this.currentItem === -1 &&
-            Controller.breaking &&
-            !Controller.wasBreaking &&
-            isReloaded
-        ) {
-            PlayerManager.tickStep = -(SocketManager.ping / 2);
-            Controller.wasBreaking = true;
-            Controller.equip(EStoreType.HAT, EHat.TANK_GEAR, "UTILITY");
-            SocketManager.attack(Controller.mouse.angle);
-        } else if (Controller.wasBreaking) {
-            Controller.wasBreaking = false;
-            SocketManager.stopAttack(Controller.mouse.angle);
-
-            const store = Controller.store[EStoreType.HAT];
-            Controller.equip(EStoreType.HAT, store.current, "CURRENT");
-            store.utility = 0;
-        }
-
-        if (!Controller.breakingState) {
-            Controller.breaking = false;
-        }
-
-        const store = Controller.store[EStoreType.HAT];
-        if (store.utility === 0) {
-            const hat = this.getBestCurrentHat();
-            if (store.current !== hat) {
-                Controller.equip(EStoreType.HAT, hat, "CURRENT");
-            }
-        }
-    }
-
-    updateHealth(health: number) {
-        this.previousHealth = this.currentHealth;
-        this.currentHealth = health;
-
-        if (settings.autoheal && health < 100) {
-            const difference = Math.abs(health - this.previousHealth);
-            const delay = difference <= 10 ? 150 : 80;
-            setTimeout(() => {
-                Controller.heal(true);
-            }, delay);
-        }
-
-        // const item = DataHandler.getItemByType(ItemType.FOOD);
-        // item.name
-        // const id = this.getItemType(ItemType.FOOD);
-        // const itemFood = Items[id];
-        // if (!("restore" in itemFood)) return;
-        // const times = Math.ceil((this.maxHealth - this.currentHealth) / itemFood.restore);
-        // for (let i=0;i<=times;i++) {
-        //     this.healthQueue.push(Math.min(this.currentHealth + itemFood.restore, this.maxHealth));
-        //     Controller.heal(i === times);
-        // }
-    }
-
     private resetResources() {
         this.resources.food = 100;
         this.resources.wood = 100;
@@ -377,9 +387,12 @@ export class ClientPlayer extends Player {
         Controller.reset();
         this.inGame = false;
 
-        const { primary, secondary } = this.reload;
-        primary.max = primary.current = -1;
-        secondary.max = secondary.current = -1;
+        const weapon = this.weapon;
+        weapon.current = weapon.primary = weapon.secondary = 0;
+
+        // this.clientReload.primary.max = this.clientReload.primary.current = -1;
+        // this.clientReload.secondary.max = this.clientReload.secondary.current = -1;
+        // this.clientReload.turret.max = this.clientReload.turret.current = 2500;
     }
 }
 

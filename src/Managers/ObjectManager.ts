@@ -5,8 +5,8 @@ import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
 import { GetValues } from "../types/Common";
-import { TItem } from "../types/Items";
-import { circleInsideSquare, removeFast } from "../utility/Common";
+import { EItem, TItem, TPlaceable } from "../types/Items";
+import { circleInsideSquare, pointInRiver, removeFast } from "../utility/Common";
 import Logger from "../utility/Logger";
 import PlayerManager from "./PlayerManager";
 import Controller from "../modules/Controller";
@@ -78,22 +78,12 @@ const ObjectManager = new class ObjectManager {
         this.objects.set(id, object);
 
         if (object instanceof PlayerObject) {
-            const owner = PlayerManager.players.get(object.ownerID);
-            if (owner !== undefined) {
-                owner.objects.add(object);
-            }
+            const owner = (
+                PlayerManager.players.get(object.ownerID) ||
+                PlayerManager.createPlayer({ id: object.ownerID, nickname: "", skinID: -1 })
+            );
+            owner.objects.add(object);
         }
-    }
-
-    private removeObject(object: TObject) {
-        if (object.location === null) return;
-        const objects = this.grids[object.location];
-        objects.delete(object);
-        // const index = objects.indexOf(object);
-        // if (index >= 0) {
-        //     removeFast(objects, index);
-        // }
-        this.objects.delete(object.id);
     }
 
     /**
@@ -101,7 +91,7 @@ const ObjectManager = new class ObjectManager {
      */
     createObjects(buffer: any[]) {
         for (let i=0;i<buffer.length;i+=8) {
-            const isResource = buffer[i + 5] !== null;
+            const isResource = buffer[i + 6] === null;
             const data = [buffer[i + 0], buffer[i + 1], buffer[i + 2], buffer[i + 3], buffer[i + 4]] as const;
 
             this.addObject(
@@ -109,6 +99,20 @@ const ObjectManager = new class ObjectManager {
                     new Resource(...data, buffer[i + 5]) :
                     new PlayerObject(...data, buffer[i + 6], buffer[i + 7])
             )
+        }
+    }
+
+    private removeObject(object: TObject) {
+        if (object.location === null) return;
+
+        this.grids[object.location].delete(object);
+        this.objects.delete(object.id);
+
+        if (object instanceof PlayerObject) {
+            const player = PlayerManager.players.get(object.ownerID);
+            if (player !== undefined) {
+                player.objects.delete(object);
+            }
         }
     }
 
@@ -121,7 +125,6 @@ const ObjectManager = new class ObjectManager {
 
     removePlayerObjects(player: Player) {
         for (const object of player.objects) {
-            player.objects.delete(object);
             this.removeObject(object);
         }
     }
@@ -140,6 +143,20 @@ const ObjectManager = new class ObjectManager {
             }
         }
         return objects;
+    }
+
+    canPlaceItem(id: TPlaceable, position: Vector): boolean {
+        const item = Items[id];
+        const objects = this.getObjects(position, item.scale);
+        for (const object of objects) {
+            const scale = item.scale + object.placementScale;
+            if (position.distance(object.position.current) < scale) return false;
+        }
+
+        if (id !== EItem.PLATFORM && pointInRiver(position)) {
+            return false;
+        }
+        return true;
     }
 }
 
