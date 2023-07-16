@@ -2,6 +2,7 @@ import myPlayer from "../data/ClientPlayer";
 import { isActiveInput, lerp } from "../utility/Common";
 import Hooker from "../utility/Hooker";
 
+const resizeEvent = new Event("resize");
 const ZoomHandler = new class ZoomHandler {
     readonly scale = {
         Default: {
@@ -18,13 +19,14 @@ const ZoomHandler = new class ZoomHandler {
         } as const
     };
     private wheels = 0;
-    private readonly scaleFactor = 200;
-    private readonly duration = 1000;
-    private start = Date.now();
-    private animating = false;
+    private readonly scaleFactor = 100;
+    // private animationLife = 1500;
+    // private start = Date.now();
+    // private animating = false;
 
     constructor() {
-        this.animate = this.animate.bind(this);
+        // this.animate = this.animate.bind(this);
+        // setInterval(this.animate, 8);
     }
 
     /**
@@ -43,28 +45,29 @@ const ZoomHandler = new class ZoomHandler {
         } as const;
     }
 
-    private animate() {
-        const delta = Date.now() - this.start;
-        if (delta >= this.duration) {
-            this.animating = false;
-            return;
-        }
-        setTimeout(this.animate, 10);
+    // private animate() {
 
-        const progress = Math.min(1, delta / this.duration);
-        const { current, smooth } = this.scale;
-        smooth.w[0] = lerp(smooth.w[0], current.w, progress);
-        smooth.h[0] = lerp(smooth.h[0], current.h, progress);
-        window.dispatchEvent(new Event("resize"));
-    }
+    //     // const delta = Date.now() - this.start;
+    //     // if (delta >= this.animationLife) {
+    //     //     this.animating = false;
+    //     //     return;
+    //     // }
+    //     // setTimeout(this.animate, 0);
 
-    private startAnimation() {
-        this.start = Date.now();
-        if (!this.animating) {
-            this.animating = true;
-            this.animate();
-        }
-    }
+    //     const progress = 0.07;//Math.min(1, delta / this.animationLife);
+    //     const { current, smooth } = this.scale;
+    //     smooth.w[0] = lerp(smooth.w[0], current.w, progress);
+    //     smooth.h[0] = lerp(smooth.h[0], current.h, progress);
+    //     window.dispatchEvent(resizeEvent);
+    // }
+
+    // private startAnimation() {
+    //     this.start = Date.now();
+    //     if (!this.animating) {
+    //         this.animating = true;
+    //         this.animate();
+    //     }
+    // }
 
     handler(event: WheelEvent) {
         if (
@@ -73,7 +76,7 @@ const ZoomHandler = new class ZoomHandler {
             isActiveInput()
         ) return;
 
-        const { Default, current } = this.scale;
+        const { Default, current, smooth } = this.scale;
 
         // When scale is default, make some gap so user could find it easily
         if (
@@ -85,7 +88,10 @@ const ZoomHandler = new class ZoomHandler {
         const zoom = event.deltaY > 0 ? -this.scaleFactor : this.scaleFactor;
         current.w = Math.max(w, current.w + zoom);
         current.h = Math.max(h, current.h + zoom);
-        this.startAnimation()
+        
+        smooth.w[0] = current.w;
+        smooth.h[0] = current.h;
+        window.dispatchEvent(resizeEvent);
     }
 }
 

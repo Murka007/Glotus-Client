@@ -1,8 +1,11 @@
 import Glotus from "..";
-import { Items } from "../constants/Items";
+import { Items, Projectiles } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
 import { PlayerObject } from "../data/ObjectItem";
+import Projectile from "../data/Projectile";
 import ObjectManager from "../Managers/ObjectManager";
+import PlayerManager from "../Managers/PlayerManager";
+import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";
 import { EItem, ItemType } from "../types/Items";
 import { clamp } from "../utility/Common";
@@ -21,7 +24,7 @@ const renderObject = (ctx: TCTX) => {
 
         Renderer.renderMarker(ctx, object);
         if (playerObject instanceof PlayerObject) {
-            const { type, angle, health, maxHealth, reload, maxReload } = playerObject;
+            const { position, type, angle, health, maxHealth, reload, maxReload } = playerObject;
             let scale = 0;
 
             if (
@@ -42,7 +45,9 @@ const renderObject = (ctx: TCTX) => {
                 }
 
                 if (settings.turretHitbox) {
-                    Renderer.circle(ctx, object.x, object.y, 700, "#3e2773", 1, 1);
+
+                    const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(playerObject);
+                    Renderer.circle(ctx, object.x, object.y, 700, canShootMyPlayer ? "#73272d" : "#3e2773", 1, 1);
                 }
             }
 
@@ -66,7 +71,6 @@ const renderObject = (ctx: TCTX) => {
             if (settings.placementHitbox) {
                 Renderer.circle(ctx, x, y, item.placementScale, "#13d16f", 1, 1);
             }
-            // Logger.log(object, item);
         }
     }
     Renderer.objects.length = 0;

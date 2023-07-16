@@ -12,6 +12,7 @@ import Projectile from "../data/Projectile";
 import settings from "../utility/Settings";
 import ObjectManager from "../Managers/ObjectManager";
 import { EHat } from "../types/Store";
+import ZoomHandler from "../modules/ZoomHandler";
 
 /**
  * Called when bundle rendering entities (player, animal)
@@ -23,21 +24,19 @@ const renderEntity = (
 ) => {
     const isMyPlayer = entity === player;
     if (isMyPlayer) {
-        Renderer.updateHSL();
+        if (settings.rainbow) Renderer.updateHSL();
 
         const position = new Vector(player.x, player.y);
 
         if (settings.projectileHitbox) {
             const projectile = myPlayer.getProjectile(position, myPlayer.weapon.current);
             if (projectile !== null) {
-                const entity = PlayerManager.getCurrentShootTarget(projectile);
+                const entity = PlayerManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
                 if (entity !== null) {
                     const pos = entity.position.current;
                     Renderer.rect(ctx, pos, entity.collisionScale, "#e39542");
-                    (window as any).currentTarget = entity;
                 }
             }
-            // Renderer.line(ctx, projectile.position.current, projectile.position.end, "red", 0.6);
         }
 
         if (settings.possibleShootTarget) {

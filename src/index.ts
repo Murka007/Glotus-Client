@@ -13,7 +13,6 @@ import Injector from "./modules/Injector";
 import settings from "./utility/Settings";
 import UI from "./modules/UI";
 import Renderer from "./utility/Renderer";
-import Instakill from "./modules/Instakill";
 import ZoomHandler from "./modules/ZoomHandler";
 
 const Glotus = {
@@ -28,7 +27,6 @@ const Glotus = {
     myPlayer,
     settings,
     Renderer,
-    Instakill,
     ZoomHandler,
     hooks: {
         renderEntity,

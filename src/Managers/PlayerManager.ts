@@ -133,9 +133,9 @@ const PlayerManager = new class PlayerManager {
         }
 
         // Call all other classes after updating player and animal positions
+        ObjectManager.postTick();
         if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
         ProjectileManager.postTick();
-        ObjectManager.postTick();
     }
 
     updateAnimal(buffer: any[]) {
@@ -172,11 +172,25 @@ const PlayerManager = new class PlayerManager {
         )
     }
 
+    isEnemyByID(ownerID: number, target: Player) {
+        const player = this.players.get(ownerID)!;
+
+        if (player instanceof ClientPlayer) {
+            return !player.teammates.has(target.id);
+        }
+
+        if (target instanceof ClientPlayer) {
+            return !target.teammates.has(player.id);
+        }
+        
+        return this.isEnemy(player, target);
+    }
+
     /**
      * true, if the projectile won't pass through entity
      */
-    canShoot(target: Player | Animal) {
-        return target instanceof Player && this.isEnemy(myPlayer, target) || target instanceof Animal;
+    canShoot(ownerID: number, target: Player | Animal) {
+        return target instanceof Animal || target instanceof Player && this.isEnemyByID(ownerID, target);
     }
 
     /**
@@ -206,7 +220,11 @@ const PlayerManager = new class PlayerManager {
     /**
      * Returns a target that can be shot at the current tick
      */
-    getCurrentShootTarget(projectile: Projectile): TTarget | null {
+    getCurrentShootTarget(
+        owner: TTarget,
+        ownerID: number,
+        projectile: Projectile
+    ): TTarget | null {
         const start = projectile.position.current;
         const end = projectile.position.end;
         const length = projectile.length;
@@ -216,10 +234,12 @@ const PlayerManager = new class PlayerManager {
 
         const entities = this.getEntities();
         for (const entity of entities) {
+            if (entity === owner) continue;
+
             const s = entity.collisionScale;
             const { x, y } = entity.position.current;
             if (
-                this.canShoot(entity) &&
+                this.canShoot(ownerID, entity) &&
                 lineIntersectsRect(
                     start, end,
                     new Vector(x - s, y - s),
@@ -232,6 +252,8 @@ const PlayerManager = new class PlayerManager {
 
         const objects = ObjectManager.getObjects(start, length);
         for (const object of objects) {
+            if (object === owner) continue;
+
             const s = object.collisionScale;
             const { x, y } = object.position.current;
             if (
@@ -248,8 +270,8 @@ const PlayerManager = new class PlayerManager {
 
         // The closest target to my player is the only one that can be hit
         return targets.sort((a, b) => {
-            const dist1 = myPlayer.position.current.distance(a.position.current);
-            const dist2 = myPlayer.position.current.distance(b.position.current);
+            const dist1 = owner.position.current.distance(a.position.current);
+            const dist2 = owner.position.current.distance(b.position.current);
             return dist1 - dist2;
         })[0] || null;
     }
@@ -289,7 +311,8 @@ const PlayerManager = new class PlayerManager {
         return this.getEntities().filter(entity => {
             const notTarget = entity !== myPlayer;
             const canHit = this.projectileCanHitEntity(projectile, entity);
-            return notTarget && canHit;
+            const canShoot = this.canShoot(myPlayer.id, entity);
+            return notTarget && canHit && canShoot;
         }).sort((a, b) => {
             const dist1 = myPlayer.position.current.distance(a.position.current);
             const dist2 = myPlayer.position.current.distance(b.position.current);

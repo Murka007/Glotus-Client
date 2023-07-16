@@ -77,25 +77,19 @@ const SocketManager = new class SocketManager {
             }
         );
 
-        let count = 0;
         window.WebSocket = new Proxy(WebSocket, {
-            construct(target, args: [url: string | URL, protocols?: string | string[]]) {
-                const socket: WebSocket = new target(...args);
+            construct(target, args: ConstructorParameters<typeof WebSocket>) {
+                const socket = new target(...args);
                 that.socket = socket;
                 // const _send = socket.send;
-                // socket.send = function(...args) {
-                //     count += 1;
-                //     return _send.apply(this, args);
+                // socket.send = function(data) {
+                //     console.log(data);
+                //     return _send.call(this, data);
                 // }
                 socket.addEventListener("message", that.message);
                 return socket;
             }
         })
-
-        // setInterval(() => {
-        //     Logger.log("PACKET COUNT", count);
-        //     count = 0;
-        // }, 1000);
     }
 
     private handlePing() {

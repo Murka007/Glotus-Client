@@ -1,16 +1,17 @@
 import Glotus from "..";
 import Config from "../constants/Config";
-import { Items } from "../constants/Items";
+import { Items, Projectiles } from "../constants/Items";
 import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
-import { GetValues } from "../types/Common";
+import { GetValues, TTarget } from "../types/Common";
 import { EItem, TItem, TPlaceable } from "../types/Items";
 import { circleInsideSquare, pointInRiver, removeFast } from "../utility/Common";
 import Logger from "../utility/Logger";
 import PlayerManager from "./PlayerManager";
 import Controller from "../modules/Controller";
 import myPlayer from "../data/ClientPlayer";
+import Projectile from "../data/Projectile";
 
 const ObjectManager = new class ObjectManager {
 
@@ -51,7 +52,11 @@ const ObjectManager = new class ObjectManager {
     }
 
     isTurretReloaded(object: TObject): boolean {
-        return this.reloadingTurrets.has(object.id) === false;
+        const turret = this.reloadingTurrets.get(object.id);
+        if (turret === undefined) return true;
+
+        const tick = 1000 / Config.serverUpdateRate * 2;
+        return turret.reload > turret.maxReload - tick;
     }
 
     /**
@@ -157,6 +162,31 @@ const ObjectManager = new class ObjectManager {
             return false;
         }
         return true;
+    }
+
+    canTurretHitMyPlayer(object: PlayerObject) {
+        const turret = Items[EItem.TURRET];
+        const bullet = Projectiles[turret.projectile];
+
+        const pos = object.position.current;
+        const angle = pos.angle(myPlayer.position.current);
+        const distance = pos.distance(myPlayer.position.current);
+
+        if (distance > turret.shootRange) return false;
+        if (!this.isTurretReloaded(object)) return false;
+        if (!this.isEnemyObject(object)) return false;
+
+        const projectile = new Projectile(
+            pos.x, pos.y, angle,
+            bullet.range,
+            bullet.speed,
+            bullet.index,
+            bullet.layer,
+            -1
+        );
+
+        const shootTarget = PlayerManager.getCurrentShootTarget(object, object.ownerID, projectile);
+        return shootTarget === myPlayer;
     }
 }
 

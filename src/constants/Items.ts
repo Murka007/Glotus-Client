@@ -869,7 +869,9 @@ export const Projectiles = [{
     index: 1,
     layer: 1,
     damage: 25,
-    scale: 20
+    scale: 20,
+    speed: 1.5,
+    range: 700
 }, {
     name: "Crossbow",
     index: 0,

@@ -1,11 +1,10 @@
 import Glotus from "..";
-import { ItemGroups, Items, Weapons } from "../constants/Items";
+import { ItemGroups, Items, Projectiles, Weapons } from "../constants/Items";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
 import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
-import Instakill from "../modules/Instakill";
 import Vector from "../modules/Vector";
 import { IReload } from "../types/Common";
 import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TPlaceable, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
@@ -208,7 +207,7 @@ export class ClientPlayer extends Player {
      * Returns the best hat to be equipped at the tick
      */
     getBestCurrentHat(): THat {
-        const { future } = this.position;
+        const { current, future } = this.position;
 
         const inRiver = pointInRiver(future);
         if (inRiver) {
@@ -232,22 +231,44 @@ export class ClientPlayer extends Player {
             }
         }
 
-        // Add turret detection
         const turret = Items[EItem.TURRET];
-        const range = turret.shootRange + turret.scale;
-        const objects = ObjectManager.getObjects(future, range);
+        const bullet = Projectiles[turret.projectile];
+        const objects = ObjectManager.getObjects(future, bullet.range);
         for (const object of objects) {
-            const distance = future.distance(object.position.current);
-            if (
-                object instanceof PlayerObject &&
-                object.type === EItem.TURRET &&
-                ObjectManager.isEnemyObject(object) &&
-                distance <= turret.shootRange &&
-                ObjectManager.isTurretReloaded(object)
-            ) {
-                return EHat.EMP_HELMET;
+            if (object instanceof PlayerObject && object.type === EItem.TURRET) {
+                if (ObjectManager.canTurretHitMyPlayer(object)) {
+                    return EHat.EMP_HELMET;
+                }
             }
         }
+
+        // const objects = ObjectManager.getObjects(future, range);
+        // for (const object of objects) {
+        //     const distance = object.position.current.distance(future);
+        //     const angle = object.position.current.angle(future);
+        //     if (
+        //         object instanceof PlayerObject &&
+        //         object.type === EItem.TURRET &&
+        //         ObjectManager.isEnemyObject(object) &&
+        //         distance <= bullet.range &&
+        //         ObjectManager.isTurretReloaded(object)
+        //     ) {
+        //         // return EHat.EMP_HELMET;
+        //         const { x, y } = object.position.current;
+        //         const projectile = new Projectile(
+        //             x, y, angle,
+        //             bullet.range,
+        //             bullet.speed,
+        //             bullet.index,
+        //             bullet.layer,
+        //             -1
+        //         );
+        //         const shootTarget = PlayerManager.getCurrentShootTarget(projectile);
+        //         if (shootTarget === this) {
+        //             return EHat.EMP_HELMET;
+        //         }
+        //     }
+        // }
 
         const nearestEntity = PlayerManager.getNearestEntity(this);
         if (

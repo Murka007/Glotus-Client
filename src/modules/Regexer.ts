@@ -16,26 +16,23 @@ class Regexer {
     /**
      * The original code
      */
-    readonly COPY_CODE: string;
+    private readonly COPY_CODE: string;
 
     /**
      * Total amount of hooks applied
      */
-    hookCount: number
-    private readonly ANY_LETTER: string;
-    private readonly NumberSystem: ReadonlyArray<{radix: number, prefix: string}>;
+    hookCount = 0;
+    private readonly ANY_LETTER = "(?:[^\\x00-\\x7F-]|\\$|\\w)";
+    private readonly NumberSystem = [
+        { radix: 2, prefix: "0b0*" },
+        { radix: 8, prefix: "0+" },
+        { radix: 10, prefix: "" },
+        { radix: 16, prefix: "0x0*" },
+    ] as const satisfies ReadonlyArray<{radix: number, prefix: string}>;
 
     constructor(code: string) {
         this.code = code;
         this.COPY_CODE = code;
-        this.hookCount = 0;
-        this.ANY_LETTER = "(?:[^\\x00-\\x7F-]|\\$|\\w)";
-        this.NumberSystem = [
-            { radix: 2, prefix: "0b0*" },
-            { radix: 8, prefix: "0+" },
-            { radix: 10, prefix: "" },
-            { radix: 16, prefix: "0x0*" },
-        ];
     }
 
     private isRegExp(regex: RegExp | string): regex is RegExp {
@@ -47,7 +44,7 @@ class Regexer {
      * 
      * @example
      * ```
-     * 25 -> '(?:0b0*11001|0+31|25|0x0*19)'
+     * 25 -> "(?:0b0*11001|0+31|25|0x0*19)"
      * ```
      */
     private generateNumberSystem(int: number) {
@@ -59,9 +56,9 @@ class Regexer {
      * Replaces variables with regular expressions
      */
     private parseVariables(regex: string) {
-        regex = regex.replace(/\{VAR\}/g, "(?:let|var|const)");
-        regex = regex.replace(/\{QUOTE\}/g, "[\'\"\`]");
-        regex = regex.replace(/NUM\{(\d+)\}/g, (...args) => {
+        regex = regex.replace(/{VAR}/g, "(?:let|var|const)");
+        regex = regex.replace(/{QUOTE}/g, "[\'\"\`]");
+        regex = regex.replace(/NUM{(\d+)}/g, (...args) => {
             return this.generateNumberSystem(Number(args[1]));
         });
         regex = regex.replace(/\\w/g, this.ANY_LETTER);
@@ -73,7 +70,7 @@ class Regexer {
      */
     private format(name: string, inputRegex: TRegex, flags?: string): RegExp {
 
-        let regex: string = "";
+        let regex = "";
         if (Array.isArray(inputRegex)) {
             regex = inputRegex.map(exp => this.isRegExp(exp) ? exp.source : exp).join("\\s*");
         } else if (this.isRegExp(inputRegex)) {
@@ -98,30 +95,47 @@ class Regexer {
         this.code = this.code.replace(expression, substr);
     }
 
-    private insert(index: number, str: string) {
+    private insertAtIndex(index: number, str: string) {
         return this.code.slice(0, index) + str + this.code.slice(index, this.code.length);
     }
 
-    append(name: string, regex: TRegex, substr: string) {
+    private template(
+        name: string,
+        regex: TRegex,
+        substr: string,
+        getIndex: (match: RegExpMatchArray) => number
+    ) {
         const expression = this.format(name, regex);
         const match = this.code.match(expression);
         if (match === null) return;
 
-        const appendIndex = (match.index || 0) + match[0].length;
-        this.code = this.insert(appendIndex, substr.replace(/\$(\d+)/g, (...args) => {
+        const index = getIndex(match);
+        this.code = this.insertAtIndex(index, substr.replace(/\$(\d+)/g, (...args) => {
             return match[args[1]];
         }));
     }
 
-    prepend(name: string, regex: TRegex, substr: string) {
-        const expression = this.format(name, regex);
-        const match = this.code.match(expression);
-        if (match === null) return;
+    append(name: string, regex: TRegex, substr: string) {
+        this.template(name, regex, substr, (match) => (match.index || 0) + match[0].length);
+    }
 
-        const appendIndex = match.index || 0;
-        this.code = this.insert(appendIndex, substr.replace(/\$(\d+)/g, (...args) => {
-            return match[args[1]];
-        }));
+    prepend(name: string, regex: TRegex, substr: string) {
+        this.template(name, regex, substr, (match) => match.index || 0);
+    }
+
+    insert(name: string, regex: TRegex, substr: string) {
+        const expression = this.format(name, regex);
+        if (!/{INSERT}/.test(expression.source)) {
+            throw new Error("insert Error: Your regexp must contain {INSERT} keyword");
+        }
+
+        let source = expression.source;
+        while (/\(.+?\)/.test(source)) {
+            source = source.replace(/\((?!\?)(.+?)\)/g, "$1");
+        }
+        const formatted = new RegExp(source.replace(/{INSERT}/g, ""));
+        const match = this.code.match(formatted)!;
+        console.log(expression, match);
     }
 }
 

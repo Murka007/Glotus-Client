@@ -9,7 +9,6 @@ import { EHat, EStoreType, TAccessory, TEquipType, THat, TStoreType } from "../t
 import { Accessories, Hats } from "../constants/Store";
 import Logger from "../utility/Logger";
 import ZoomHandler from "./ZoomHandler";
-import Instakill from "./Instakill";
 import { IReload } from "../types/Common";
 import { Weapons } from "../constants/Items";
 import PlayerManager from "../Managers/PlayerManager";
@@ -196,7 +195,7 @@ const Controller = new class Controller {
         this.sentAngle = false;
         this.sentHatEquip = false;
         this.sentAccEquip = false;
-        Instakill.reset();
+        // Instakill.reset();
 
         const { primary, secondary, turret } = this.reload;
         primary.current = primary.max = 300;
@@ -444,7 +443,7 @@ const Controller = new class Controller {
         if (!this.breaking) { this.breakingState = false; }
         if (!this.shooting) { this.shootingState = false; }
 
-        Instakill.postTick();
+        // Instakill.postTick();
 
         // Autohat
         const store = this.store[EStoreType.HAT];
@@ -616,7 +615,7 @@ const Controller = new class Controller {
 
         if (isInput) return;
 
-        if (!Instakill.isActive && !this.shootingActive) {
+        if (!this.shootingActive) {
             if (event.code === settings.primary) {
                 this.whichWeapon(WeaponType.PRIMARY);
             }
@@ -643,7 +642,6 @@ const Controller = new class Controller {
 
         if (
             event.code === settings.autoattack &&
-            !Instakill.isActive &&
             !this.breakingActive
         ) {
             this.toggleAutoattack();
@@ -678,7 +676,6 @@ const Controller = new class Controller {
 
         if (
             button === "LBTN" &&
-            !Instakill.isActive &&
             !this.breakingActive
         ) {
             this.attacking = true;
@@ -686,13 +683,11 @@ const Controller = new class Controller {
         }
 
         if (button === "MBTN" && this.canInstakill()) {
-            Instakill.init();
             this.holdingInsta = true;
         }
 
         if (
             button === "RBTN" &&
-            !Instakill.isActive &&
             !this.attacking &&
             !this.autoattack
         ) {

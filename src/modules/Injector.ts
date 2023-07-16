@@ -138,6 +138,12 @@ const Injector = new class Injector {
             /\w+\.send\("6",(\w+)\)/,
             `Glotus.Controller.upgradeItem($1);`
         );
+
+        // Hook.insert(
+        //     "smallGap",
+        //     /\w+\.\w+\/NUM{2};{INSERT}for(\(var (n)=O)/,
+        //     `if(!A){A={x:0,y:0};}R=A.x;L=A.y;`
+        // );
         
         return Hook.code;
     }
