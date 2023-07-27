@@ -12,7 +12,10 @@ import Projectile from "../data/Projectile";
 import settings from "../utility/Settings";
 import ObjectManager from "../Managers/ObjectManager";
 import { EHat } from "../types/Store";
-import ZoomHandler from "../modules/ZoomHandler";
+import ProjectileManager from "../Managers/ProjectileManager";
+import Animals, { EAnimal } from "../constants/Animals";
+import Config from "../constants/Config";
+import { getAngleDist } from "../utility/Common";
 
 /**
  * Called when bundle rendering entities (player, animal)
@@ -26,15 +29,16 @@ const renderEntity = (
     if (isMyPlayer) {
         if (settings.rainbow) Renderer.updateHSL();
 
-        const position = new Vector(player.x, player.y);
+        const currentPosition = myPlayer.position.current;
+        const lerpPosition = new Vector(player.x, player.y);
 
         if (settings.projectileHitbox) {
-            const projectile = myPlayer.getProjectile(position, myPlayer.weapon.current);
+            const projectile = myPlayer.getProjectile(currentPosition, myPlayer.weapon.current);
             if (projectile !== null) {
-                const entity = PlayerManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
+                const entity = ProjectileManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
                 if (entity !== null) {
                     const pos = entity.position.current;
-                    Renderer.rect(ctx, pos, entity.collisionScale, "#e39542");
+                    Renderer.rect(ctx, pos, entity.collisionScale, "#e39542", 3);
                 }
             }
         }
@@ -43,25 +47,25 @@ const renderEntity = (
             const entity = PlayerManager.getPossibleShootEntity();
             if (entity !== null) {
                 const pos = entity.position.current;
-                Renderer.rect(ctx, pos, entity.collisionScale, "#4272e3");
+                Renderer.rect(ctx, pos, entity.collisionScale, "#4272e3", 3);
             }
         }
 
         if (settings.displayPlayerAngle) {
-            Renderer.line(ctx, position, position.direction(myPlayer.angle, 70), "#e9adf0");
+            Renderer.line(ctx, lerpPosition, lerpPosition.direction(myPlayer.angle, 70), "#e9adf0");
         }
 
         if (settings.weaponHitbox) {
             const current = myPlayer.getItemByType(Controller.weapon);
             if (DataHandler.isMelee(current)) {
                 const weapon = Weapons[current];
-                Renderer.circle(ctx, entity.x, entity.y, weapon.range, "#3f4ec4", 1, 1);
+                Renderer.circle(ctx, player.x, player.y, weapon.range, "#3f4ec4", 1, 1);
             }
         }
 
         if (settings.placementHitbox && DataHandler.isPlaceable(myPlayer.currentItem)) {
             const item = Items[myPlayer.currentItem];
-            const place = myPlayer.getPlacePosition(position, myPlayer.currentItem, Controller.mouse.angle);
+            const place = myPlayer.getPlacePosition(lerpPosition, myPlayer.currentItem, Controller.mouse.sentAngle);
             const color = ObjectManager.canPlaceItem(item.id, place) ? "#ffa552" : "#13d16f";
             Renderer.circle(ctx, place.x, place.y, item.scale, color, 1, 1);
         }
@@ -83,12 +87,18 @@ const renderEntity = (
     if (isMyPlayer) return;
 
     if (settings.weaponHitbox) {
-        const type = entity.isPlayer ? PlayerManager.players : PlayerManager.animals;
+        const type = entity.isPlayer ? PlayerManager.playerData : PlayerManager.animalData;
         const target = type.get(entity.sid);
         if (target !== undefined) {
             Renderer.circle(ctx, entity.x, entity.y, target.hitScale, "#3f4ec4", 1, 1);
         }
+
+        if (entity.isAI && entity.index === EAnimal.MOOSTAFA) {
+            const moostafa = Animals[EAnimal.MOOSTAFA];
+            Renderer.circle(ctx, entity.x, entity.y, moostafa.hitRange, "#f5cb42", 1, 1);
+        }
     }
+
 
     Renderer.renderTracer(ctx, entity, player);
 }

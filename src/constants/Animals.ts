@@ -1,8 +1,20 @@
+export const EAnimal = {
+    COW: 0,
+    PIG: 1,
+    BULL: 2,
+    BULLY: 3,
+    WOLF: 4,
+    QUACK: 5,
+    MOOSTAFA: 6,
+    TREASURE: 7,
+    MOOFIE: 8,
+} as const;
+
 /**
  * Constant animal data
  */
 const Animals = [{
-    id: 0,
+    id: EAnimal.COW,
     src: "cow_1",
     hostile: false,
     killScore: 150,
@@ -13,7 +25,7 @@ const Animals = [{
     scale: 72,
     drop: ["food", 50]
 }, {
-    id: 1,
+    id: EAnimal.PIG,
     src: "pig_1",
     hostile: false,
     killScore: 200,
@@ -24,7 +36,7 @@ const Animals = [{
     scale: 72,
     drop: ["food", 80]
 }, {
-    id: 2,
+    id: EAnimal.BULL,
     name: "Bull",
     src: "bull_2",
     hostile: true,
@@ -39,7 +51,7 @@ const Animals = [{
     chargePlayer: true,
     drop: ["food", 100]
 }, {
-    id: 3,
+    id: EAnimal.BULLY,
     name: "Bully",
     src: "bull_1",
     hostile: true,
@@ -54,7 +66,7 @@ const Animals = [{
     chargePlayer: true,
     drop: ["food", 400]
 }, {
-    id: 4,
+    id: EAnimal.WOLF,
     name: "Wolf",
     src: "wolf_1",
     hostile: true,
@@ -69,7 +81,7 @@ const Animals = [{
     chargePlayer: true,
     drop: ["food", 200]
 }, {
-    id: 5,
+    id: EAnimal.QUACK,
     name: "Quack",
     src: "chicken_1",
     hostile: false,
@@ -83,7 +95,7 @@ const Animals = [{
     scale: 70,
     drop: ["food", 100]
 }, {
-    id: 6,
+    id: EAnimal.MOOSTAFA,
     name: "MOOSTAFA",
     nameScale: 50,
     src: "enemy",
@@ -108,7 +120,7 @@ const Animals = [{
     chargePlayer: true,
     drop: ["food", 100]
 }, {
-    id: 7,
+    id: EAnimal.TREASURE,
     name: "Treasure",
     hostile: true,
     nameScale: 35,
@@ -124,7 +136,7 @@ const Animals = [{
     scale: 70,
     spriteMlt: 1.0
 }, {
-    id: 8,
+    id: EAnimal.MOOFIE,
     name: "MOOFIE",
     src: "wolf_2",
     hostile: true,

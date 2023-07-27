@@ -68,6 +68,9 @@ export interface ISettings {
     collisionHitbox: boolean
     placementHitbox: boolean;
     turretHitbox: boolean;
+
+    autospawn: boolean;
+    menuTransparency: boolean;
 }
 
 export const defaultSettings = {
@@ -127,6 +130,8 @@ export const defaultSettings = {
     collisionHitbox: false,
     placementHitbox: false,
     turretHitbox: false,
+    autospawn: false,
+    menuTransparency: false,
 } as const satisfies ISettings;
 
 const settings = { ...defaultSettings, ...Cookie.get<ISettings>("Glotus") };

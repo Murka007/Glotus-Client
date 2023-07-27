@@ -49,6 +49,18 @@ button {
     display: flex;
     justify-content: center;
     align-items: center;
+
+    &.transparent {
+        #menu-wrapper { background: $bg-color-opacity }
+        header, .menu-page, #navbar-container { background: $bg-sub-color-opacity }
+        .section { background: $ui-bg-color-opacity }
+        .open-menu {
+            background: $ui-bg-color-opacity;
+            &:hover, &.active {
+                background: $ui-bg-sub-color-opacity;
+            }
+        }
+    }
 }
 
 #menu-wrapper {

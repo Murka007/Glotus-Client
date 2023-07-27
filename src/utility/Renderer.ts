@@ -15,10 +15,10 @@ class Renderer {
         this.HSL = (this.HSL + 0.5) % 360;
     }
 
-    static rect(ctx: TCTX, pos: Vector, scale: number, color: string) {
+    static rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4) {
         ctx.save();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 4;
+        ctx.lineWidth = lineWidth;
         ctx.beginPath();
         ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
         ctx.translate(pos.x, pos.y);
@@ -199,7 +199,7 @@ class Renderer {
     }
 
     static renderBar(ctx: TCTX, entity: IRenderEntity) {
-        const player = PlayerManager.players.get(entity.sid);
+        const player = PlayerManager.playerData.get(entity.sid);
         if (player === undefined) return;
 
         const { barWidth, barHeight, barPad } = Config;

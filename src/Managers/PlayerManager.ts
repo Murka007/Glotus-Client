@@ -21,9 +21,10 @@ import ProjectileManager from "./ProjectileManager";
 import SocketManager from "./SocketManager";
 
 interface IPlayerData {
+    readonly socketID?: string;
     readonly id: number;
-    readonly nickname: string;
-    readonly skinID: number;
+    readonly nickname?: string;
+    readonly skinID?: number;
 }
 
 const PlayerManager = new class PlayerManager {
@@ -31,22 +32,22 @@ const PlayerManager = new class PlayerManager {
     /**
      * A Map of all known players in the game
      */
-    readonly players: Map<number, Player> = new Map;
+    readonly playerData: Map<number, Player> = new Map;
 
     /**
-     * An array of current players, that are visible to my player
+     * An array of players, that are visible to my player
      */
-    readonly visiblePlayers: Player[] = [];
+    readonly players: Player[] = [];
 
     /**
      * A Map of all known animals in the game
      */
-    readonly animals: Map<number, Animal> = new Map;
+    readonly animalData: Map<number, Animal> = new Map;
 
     /**
      * An array of current animals, that are visible to my player
      */
-    readonly visibleAnimals: Animal[] = [];
+    readonly animals: Animal[] = [];
 
     start = Date.now();
 
@@ -55,27 +56,28 @@ const PlayerManager = new class PlayerManager {
      */
     step = 0;
 
-    createPlayer({ id, nickname, skinID }: IPlayerData) {
-        const player = this.players.get(id) || new Player;
-        if (!this.players.has(id)) {
-            this.players.set(id, player);
+    createPlayer({ socketID, id, nickname, skinID }: IPlayerData) {
+        const player = this.playerData.get(id) || new Player;
+        if (!this.playerData.has(id)) {
+            this.playerData.set(id, player);
         }
+
+        player.socketID = socketID || "";
         player.id = id;
-        player.nickname = nickname;
-        player.skinID = skinID;
+        player.nickname = nickname || "";
+        player.skinID = skinID || -1;
         return player;
     }
 
     attackPlayer(id: number, gathering: 0 | 1, weaponID: TMelee) {
-        const player = this.players.get(id);
+        const player = this.playerData.get(id);
         if (player === undefined) return;
         const { position, hatID, reload } = player;
 
-        const reloadSpeed = hatID === EHat.SAMURAI_ARMOR ? Hats[hatID].atkSpd : 1;
+        // When player hits, we must reset his reload
         const type = DataHandler.isPrimary(weaponID) ? "primary" : "secondary";
-        
         reload[type].current = 0;
-        reload[type].max = Weapons[weaponID].speed * reloadSpeed;
+        reload[type].max = player.getWeaponSpeed(weaponID, hatID);
 
         if (gathering === 1) {
             const weapon = Weapons[weaponID];
@@ -98,7 +100,7 @@ const PlayerManager = new class PlayerManager {
     }
 
     updatePlayer(buffer: any[]) {
-        this.visiblePlayers.length = 0;
+        this.players.length = 0;
 
         const now = Date.now();
         this.step = now - this.start;
@@ -107,15 +109,15 @@ const PlayerManager = new class PlayerManager {
         let myPlayerCopy: ClientPlayer | null = null;
 
         for (let i=0;i<buffer.length;i+=13) {
-            const player = this.players.get(buffer[i]);
+            const id = buffer[i];
+            const player = this.playerData.get(id);
             if (!player) continue;
 
-            const id = buffer[i];
             if (myPlayerCopy === null && myPlayer.isMyPlayerByID(id)) {
                 myPlayerCopy = player as ClientPlayer;
             }
 
-            this.visiblePlayers.push(player);
+            this.players.push(player);
             player.update(
                 id,
                 buffer[i + 1],
@@ -139,15 +141,15 @@ const PlayerManager = new class PlayerManager {
     }
 
     updateAnimal(buffer: any[]) {
-        this.visibleAnimals.length = 0;
+        this.animals.length = 0;
 
         for (let i=0;i<buffer.length;i+=7) {
             const id = buffer[i];
-            if (!this.animals.has(id)) {
-                this.animals.set(id, new Animal);
+            if (!this.animalData.has(id)) {
+                this.animalData.set(id, new Animal);
             }
-            const animal = this.animals.get(id)!;
-            this.visibleAnimals.push(animal);
+            const animal = this.animalData.get(id)!;
+            this.animals.push(animal);
             animal.update(
                 id,
                 buffer[i + 1],
@@ -173,7 +175,7 @@ const PlayerManager = new class PlayerManager {
     }
 
     isEnemyByID(ownerID: number, target: Player) {
-        const player = this.players.get(ownerID)!;
+        const player = this.playerData.get(ownerID)!;
 
         if (player instanceof ClientPlayer) {
             return !player.teammates.has(target.id);
@@ -197,7 +199,7 @@ const PlayerManager = new class PlayerManager {
      * Returns current players and animals visible to my player
      */
     getEntities(): (Player | Animal)[] {
-        return [...this.visiblePlayers, ...this.visibleAnimals];
+        return [...this.players, ...this.animals];
     }
 
     /**
@@ -217,102 +219,22 @@ const PlayerManager = new class PlayerManager {
         })[0] || null;
     }
 
-    /**
-     * Returns a target that can be shot at the current tick
-     */
-    getCurrentShootTarget(
-        owner: TTarget,
-        ownerID: number,
-        projectile: Projectile
-    ): TTarget | null {
-        const start = projectile.position.current;
-        const end = projectile.position.end;
-        const length = projectile.length;
-        const layer = projectile.onPlatform;
-
-        const targets: TTarget[] = [];
-
-        const entities = this.getEntities();
-        for (const entity of entities) {
-            if (entity === owner) continue;
-
-            const s = entity.collisionScale;
-            const { x, y } = entity.position.current;
-            if (
-                this.canShoot(ownerID, entity) &&
-                lineIntersectsRect(
-                    start, end,
-                    new Vector(x - s, y - s),
-                    new Vector(x + s, y + s)
-                )
-            ) {
-                targets.push(entity);
-            }
-        }
-
-        const objects = ObjectManager.getObjects(start, length);
-        for (const object of objects) {
-            if (object === owner) continue;
-
-            const s = object.collisionScale;
-            const { x, y } = object.position.current;
-            if (
-                layer <= object.layer &&
-                lineIntersectsRect(
-                    start, end,
-                    new Vector(x - s, y - s),
-                    new Vector(x + s, y + s)
-                )
-            ) {
-                targets.push(object);
-            }
-        }
-
-        // The closest target to my player is the only one that can be hit
-        return targets.sort((a, b) => {
-            const dist1 = owner.position.current.distance(a.position.current);
-            const dist2 = owner.position.current.distance(b.position.current);
-            return dist1 - dist2;
-        })[0] || null;
-    }
-
-    private projectileCanHitEntity(projectile: Projectile, target: Player | Animal): TTarget | null {
-        const pos1 = projectile.position.current.copy();
-        const pos2 = target.position.future.copy();
-
-        const objects = ObjectManager.getObjects(pos1, projectile.length);
-        for (const object of objects) {
-            const pos3 = object.position.current.copy();
-
-            // Skip objects that are further away than the target
-            if (pos1.distance(pos3) > pos1.distance(pos2)) continue;
-            if (projectile.onPlatform > object.layer) continue;
-
-            const s = object.collisionScale;
-            const { x, y } = pos3;
-            if (
-                lineIntersectsRect(
-                    pos1, pos2,
-                    new Vector(x - s, y - s),
-                    new Vector(x + s, y + s)
-                )
-            ) {
-                return null;
-            }
-        }
-
-        return target;
-    }
-
     getPossibleShootEntity(): Player | Animal | null {
         const projectile = myPlayer.getProjectile(myPlayer.position.future, myPlayer.weapon.secondary);
         if (projectile === null) return null;
 
         return this.getEntities().filter(entity => {
+            const { initial, current } = projectile.position;
+            current.setVec(initial);
+
+            const angleTowardsEntity = myPlayer.position.future.angle(entity.position.future);
+            const vec = current.direction(angleTowardsEntity, 70);
+            current.setVec(vec);
+
             const notTarget = entity !== myPlayer;
-            const canHit = this.projectileCanHitEntity(projectile, entity);
             const canShoot = this.canShoot(myPlayer.id, entity);
-            return notTarget && canHit && canShoot;
+            const canHit = ProjectileManager.projectileCanHitEntity(projectile, entity);
+            return notTarget && canShoot && canHit;
         }).sort((a, b) => {
             const dist1 = myPlayer.position.current.distance(a.position.current);
             const dist2 = myPlayer.position.current.distance(b.position.current);

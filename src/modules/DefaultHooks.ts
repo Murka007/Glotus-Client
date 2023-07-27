@@ -42,7 +42,6 @@ const DefaultHooks = () => {
     // Removes all isTrusted checks from the bundle
     Hooker.createRecursiveHook(
         Object.prototype, "checkTrusted",
-        () => true,
         (that) => {
             that.checkTrusted = (event: Event) => event;
             return true;
@@ -52,7 +51,6 @@ const DefaultHooks = () => {
     // Force connect. It is now possible to bypass 40 players limit
     Hooker.createRecursiveHook(
         Object.prototype, "maxPlayers",
-        () => true,
         (that, value) => {
             that.maxPlayers = value + 10;
             return true; 
@@ -76,10 +74,33 @@ const DefaultHooks = () => {
     // Replaces properties with linker. Allows to change zoom in the game
     Hooker.createRecursiveHook(
         Object.prototype, "maxScreenHeight",
-        () => true,
         (that) => {
             that.maxScreenWidth = ZoomHandler.scale.smooth.w;
             that.maxScreenHeight = ZoomHandler.scale.smooth.h;
+            return true;
+        }
+    )
+
+    Hooker.createRecursiveHook(
+        Object.prototype, "skinColors",
+        (that, value) => {
+            that.skinColors = [...value, "#91B2DB"];
+            return true;
+        }
+    )
+
+    Hooker.createRecursiveHook(
+        window, "selectSkinColor",
+        (that, callback) => {
+            that.selectSkinColor = (skin: number) => {
+                callback(skin === 10 ? "toString" : skin);
+
+                Storage.set("skin_color", skin);
+                if (skin === 10) {
+                    const cyanSkin = document.querySelector<HTMLDivElement>("#skinColorHolder > *:last-child")!;
+                    cyanSkin.classList.add("activeSkin");
+                }
+            }
             return true;
         }
     )

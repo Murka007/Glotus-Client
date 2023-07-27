@@ -26,11 +26,6 @@ abstract class ObjectItem {
     readonly angle: number;
     readonly scale: number;
 
-    /**
-     * Current grid location (x_y)
-     */
-    location: string | null = null;
-
     constructor(
         id: number,
         x: number,
@@ -89,7 +84,7 @@ export class PlayerObject extends ObjectItem {
      * ID of player who placed this item
      */
     readonly ownerID: number;
-    readonly colDiv: number;
+    readonly collisionDivider: number;
 
     /**
      * current health of item
@@ -118,7 +113,7 @@ export class PlayerObject extends ObjectItem {
         this.ownerID = ownerID;
         
         const item = Items[type];
-        this.colDiv = "colDiv" in item ? item.colDiv : 1;
+        this.collisionDivider = "colDiv" in item ? item.colDiv : 1;
         this.health = "health" in item ? item.health : Infinity;
         this.maxHealth = this.health;
 
@@ -126,13 +121,13 @@ export class PlayerObject extends ObjectItem {
             this.reload = item.shootRate;
             this.maxReload = this.reload;
         }
-        const owner = PlayerManager.players.get(ownerID);
-        this.seenPlacement = owner !== undefined && PlayerManager.visiblePlayers.includes(owner);
+        const owner = PlayerManager.playerData.get(ownerID);
+        this.seenPlacement = owner !== undefined && PlayerManager.players.includes(owner);
         this.layer = ItemGroups[item.itemGroup].layer;
     }
 
     formatScale(placeCollision = false): number {
-        return this.scale * (placeCollision ? 1 : this.colDiv);
+        return this.scale * (placeCollision ? 1 : this.collisionDivider);
     }
 
     /**

@@ -3,6 +3,8 @@ import myPlayer from "../data/ClientPlayer";
 import SocketManager from "../Managers/SocketManager";
 import { TItemGroup } from "../types/Items";
 import settings from "../utility/Settings";
+import Storage from "../utility/Storage";
+import UI from "./UI";
 
 
 const GameUI = new class GameUI {
@@ -25,7 +27,11 @@ const GameUI = new class GameUI {
             serverBrowser: querySelector<HTMLSelectElement>("#serverBrowser")!,
             skinColorHolder: querySelector<HTMLDivElement>("#skinColorHolder")!,
             settingRadio: querySelectorAll<HTMLDivElement>(".settingRadio")!,
-            pingDisplay: querySelector<HTMLDivElement>("#pingDisplay")!
+            pingDisplay: querySelector<HTMLDivElement>("#pingDisplay")!,
+            enterGame: querySelector<HTMLDivElement>("#enterGame")!,
+            nameInput: querySelector<HTMLInputElement>("#nameInput")!,
+            allianceInput: querySelector<HTMLInputElement>("#allianceInput")!,
+            allianceButton: querySelector<HTMLDivElement>(".allianceButtonM")!,
         } as const;
     }
 
@@ -36,6 +42,12 @@ const GameUI = new class GameUI {
 
         for (const radio of settingRadio) {
             setupCard.appendChild(radio);
+        }
+
+        const index = Storage.get<number>("skin_color") || 0;
+        const colorButton = skinColorHolder.childNodes[index];
+        if (colorButton instanceof HTMLDivElement) {
+            colorButton.click();
         }
     }
 
@@ -91,7 +103,7 @@ const GameUI = new class GameUI {
         this.formatMainMenu();
         this.attachItemCount();
 
-        const { chatHolder, chatBox } = this.getElements();
+        const { chatHolder, chatBox, nameInput } = this.getElements();
         chatBox.onblur = () => {
             chatHolder.style.display = "none";
             const value = chatBox.value;
@@ -99,6 +111,10 @@ const GameUI = new class GameUI {
                 SocketManager.chat(value);
             }
             chatBox.value = "";
+        }
+
+        nameInput.onchange = () => {
+            Storage.set("moo_name", nameInput.value, false);
         }
     }
 
@@ -124,6 +140,23 @@ const GameUI = new class GameUI {
         }
     }
 
+    handleEnter(event: KeyboardEvent) {
+        if (UI.isMenuOpened) return;
+        const { allianceInput, allianceButton } = this.getElements();
+        const active = document.activeElement;
+
+        if (myPlayer.inGame) {
+            if (active === allianceInput) {
+                allianceButton.click();
+            } else {
+                this.toggleChat(event);
+            }
+            return;
+        }
+
+        this.spawn();
+    }
+
     toggleChat(event: KeyboardEvent) {
         const { chatHolder, chatBox } = this.getElements();
         this.closePopups(chatHolder);
@@ -138,6 +171,11 @@ const GameUI = new class GameUI {
     updatePing(ping: number) {
         const { pingDisplay } = this.getElements();
         pingDisplay.textContent = `Ping: ${ping}ms`;
+    }
+
+    spawn() {
+        const { enterGame } = this.getElements();
+        enterGame.click();
     }
 }
 

@@ -27,6 +27,10 @@ const UI = new class UI {
     private toggleTimeout: ReturnType<typeof setTimeout> | undefined;
     private menuOpened = false;
 
+    get isMenuOpened() {
+        return this.menuOpened;
+    }
+
     /**
      * Merges all html code together
      */
@@ -214,8 +218,15 @@ const UI = new class UI {
     }
 
     private handleCheckboxToggle(id: KeysOfType<ISettings, boolean>, checked: boolean) {
-        if (id === "itemCounter") {
-            GameUI.toggleItemCount();
+        switch (id) {
+            case "itemCounter":
+                GameUI.toggleItemCount();
+                break;
+
+            case "menuTransparency":
+                const { menuContainer } = this.getElements();
+                menuContainer.classList.toggle("transparent");
+                break;
         }
     }
 
@@ -318,7 +329,7 @@ const UI = new class UI {
         for (let i=0;i<openMenuButtons.length;i++) {
             const button = openMenuButtons[i];
             const id = button.getAttribute("data-id");
-            const menuPage = this.querySelector<HTMLDivElement>(`.menu-page[data-id='${id}']`)
+            const menuPage = this.querySelector<HTMLDivElement>(`.menu-page[data-id='${id}']`);
             button.onclick = () => {
                 if (menuPage instanceof this.frame.window.HTMLDivElement) {
                     removeClass(openMenuButtons, "active");
@@ -388,6 +399,11 @@ const UI = new class UI {
         this.attachColorPickers();
         this.attachOpenMenu();
         this.createRipple(".open-menu");
+
+        const { menuContainer } = this.getElements();
+        if (settings.menuTransparency) {
+            menuContainer.classList.add("transparent");
+        }
     }
 }
 

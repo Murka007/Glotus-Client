@@ -4,9 +4,10 @@ import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
+import Controller from "../modules/Controller";
 import { IReload } from "../types/Common";
 import { TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant, WeaponTypeString } from "../types/Items";
-import { EHat, TAccessory, THat } from "../types/Store";
+import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
@@ -16,6 +17,7 @@ import { PlayerObject } from "./ObjectItem";
  */
 class Player extends Entity {
     
+    socketID = "";
     /**
      * ID of item player is holding at the current tick
      * 
@@ -144,7 +146,7 @@ class Player extends Entity {
         const type = WeaponTypeString[Weapons[this.weapon.current].itemType];
         const targetReload = this.reload[type];
         const weapon = Weapons[this.weapon.current];
-        const weaponSpeed = this.getWeaponSpeed(this.weapon.current);
+        const weaponSpeed = this.getWeaponSpeed(this.weapon.current, this.hatID);
 
         // Set default reload based on current weapon
         if (targetReload.max === -1) {
@@ -198,8 +200,8 @@ class Player extends Entity {
         return damage;
     }
 
-    getWeaponSpeed(id: TWeapon): number {
-        const reloadSpeed = this.hatID === EHat.SAMURAI_ARMOR ? Hats[this.hatID].atkSpd : 1;
+    getWeaponSpeed(id: TWeapon, hat: THat): number {
+        const reloadSpeed = hat === EHat.SAMURAI_ARMOR ? Hats[hat].atkSpd : 1;
         return Weapons[id].speed * reloadSpeed;
     }
 
@@ -209,7 +211,7 @@ class Player extends Entity {
      * @param subRadius Subtracts this amount from the item radius
      */
     checkCollision(type: TPlaceable, subRadius = 0): boolean {
-        const objects = ObjectManager.getObjects(this.position.future, this.scale);
+        const objects = ObjectManager.retrieveObjects(this.position.future, this.scale);
         for (const object of objects) {
             if (object.type !== type) continue;
             const distance = this.position.future.distance(object.position.current);

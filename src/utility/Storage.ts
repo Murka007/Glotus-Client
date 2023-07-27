@@ -9,9 +9,9 @@ class Storage {
         return value === null ? null : JSON.parse(value);
     }
 
-    static set(key: string, value: unknown) {
-        const data = JSON.stringify(value);
-        localStorage.setItem(key, data);
+    static set(key: string, value: unknown, stringify = true) {
+        const data = stringify ? JSON.stringify(value) : value;
+        localStorage.setItem(key, data as string);
     }
 
     static delete(key: string) {

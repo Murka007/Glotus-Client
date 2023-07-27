@@ -9,6 +9,7 @@ declare global {
 
         readonly config: {
             nameY: number;
+            deathFadeout: number;
         }
     }
 }

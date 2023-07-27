@@ -9,22 +9,27 @@ import { EHat, EStoreType, TAccessory, TEquipType, THat, TStoreType } from "../t
 import { Accessories, Hats } from "../constants/Store";
 import Logger from "../utility/Logger";
 import ZoomHandler from "./ZoomHandler";
-import { IReload } from "../types/Common";
+import { ESentAngle, IReload } from "../types/Common";
 import { Weapons } from "../constants/Items";
 import PlayerManager from "../Managers/PlayerManager";
 import ObjectManager from "../Managers/ObjectManager";
 import DataHandler from "../utility/DataHandler";
+import Animal from "../data/Animal";
+import Player from "../data/Player";
+import Animals from "../constants/Animals";
 
 type IStore = [
     {
         utility: THat;
         current: THat;
         actual: THat;
+        last: THat;
     },
     {
         utility: TAccessory;
         current: TAccessory;
         actual: TAccessory;
+        last: TAccessory;
     }
 ]
 
@@ -49,8 +54,8 @@ const Controller = new class Controller {
     ] as const;
 
     readonly store: Readonly<IStore> = [
-        { utility: 0, current: 0, actual: 0, },
-        { utility: 0, current: 0, actual: 0, }
+        { utility: 0, current: 0, actual: 0, last: 0 },
+        { utility: 0, current: 0, actual: 0, last: 0 }
     ]
 
     readonly mouse: {
@@ -139,7 +144,7 @@ const Controller = new class Controller {
      * true if myPlayer attacked and weapon is still reloading
      */
     private attacked!: boolean;
-    private sentAngle!: boolean;
+    private sentAngle!: ESentAngle;
     private sentHatEquip!: boolean;
     private sentAccEquip!: boolean;
     private tickIndex = 0;
@@ -192,7 +197,7 @@ const Controller = new class Controller {
         this.move = 0;
         this.lastHoldingItemType = null;
         this.attacked = false;
-        this.sentAngle = false;
+        this.sentAngle = ESentAngle.NONE;
         this.sentHatEquip = false;
         this.sentAccEquip = false;
         // Instakill.reset();
@@ -214,12 +219,13 @@ const Controller = new class Controller {
         if (angle === this.mouse.sentAngle) return;
         SocketManager.updateAngle(angle);
         this.mouse.sentAngle = angle;
-        this.sentAngle = true;
+        this.sentAngle = ESentAngle.HIGH;
     }
 
     private attachMouse() {
         const { gameCanvas } = GameUI.getElements();
-        window.addEventListener("mousemove", event => {
+
+        const handleMouse = (event: MouseEvent) => {
             if (myPlayer.inGame && event.target !== gameCanvas) return;
             this.mouse.x = event.clientX;
             this.mouse.y = event.clientY;
@@ -228,7 +234,10 @@ const Controller = new class Controller {
             if (this.rotation) {
                 this.mouse.angle = angle;
             }
-        })
+        }
+
+        window.addEventListener("mousemove", handleMouse);
+        window.addEventListener("mouseover", handleMouse);
 
         gameCanvas.addEventListener("mousedown", event => this.handleMousedown(event));
         window.addEventListener("mouseup", event => this.handleMouseup(event));
@@ -294,7 +303,8 @@ const Controller = new class Controller {
         if (DataHandler.isWeapon(id)) {
             const type = WeaponTypeString[Weapons[id].itemType];
             const reload = this.reload[type];
-            const speed = myPlayer.getWeaponSpeed(id);
+            const store = this.store[EStoreType.HAT];
+            const speed = myPlayer.getWeaponSpeed(id, store.actual);
             reload.current = this.attacked ? -this.timeToNextTick : speed;
             reload.max = speed;
         }
@@ -323,17 +333,21 @@ const Controller = new class Controller {
      * @param id ID of the hat or accessory
      * @param equipType Indicates the type of hat you want to equip.
      */
-    equip(type: TStoreType, id: THat | TAccessory, equipType: TEquipType) {
+    equip(type: TStoreType, id: THat | TAccessory, equipType: TEquipType, force = false) {
         if (!this.buy(type, id) || !myPlayer.inGame) return;
+
+        const store = this.store[type];
+        if (!force && store.last === id) return;
+        store.last = id;
 
         SocketManager.equip(type, id);
         if (type === EStoreType.HAT) {
             this.sentHatEquip = true;
+            console.log("Equip", Hats[id as THat].name)
         } else {
             this.sentAccEquip = true;
         }
 
-        const store = this.store[type];
         if (equipType === "CURRENT") {
             store.current = id;
         } else if (equipType === "ACTUAL") {
@@ -377,7 +391,8 @@ const Controller = new class Controller {
     }
 
     private changeMaxReload(type: "primary" | "secondary", id: TWeapon) {
-        this.reload[type].max = myPlayer.getWeaponSpeed(id);
+        const store = this.store[EStoreType.HAT];
+        this.reload[type].max = myPlayer.getWeaponSpeed(id, store.current);
     }
 
     private increaseReload(reload: IReload) {
@@ -386,7 +401,7 @@ const Controller = new class Controller {
 
     postTick() {
         this.tickIndex += 1;
-        this.sentAngle = false;
+        this.sentAngle = ESentAngle.NONE;
         this.sentHatEquip = false;
         this.sentAccEquip = false;
 
@@ -405,6 +420,14 @@ const Controller = new class Controller {
             this.attacked = false;
         }
 
+        // Check if need to place, then place
+        if (
+            this.currentType !== null &&
+            this.canPlace(this.currentType)
+        ) {
+            this.place(this.currentType);
+        }
+
         const canStartAutobreak = (
             this.breakingState &&
             holdingWeapon &&
@@ -412,41 +435,56 @@ const Controller = new class Controller {
             !this.wasBreaking
         );
 
+        const store = this.store[EStoreType.HAT];
+
+        // Reset turret in order to unequip it
+        if (this.wasShooting) {
+            this.wasShooting = false;
+            this.equip(EStoreType.HAT, store.current, "CURRENT");
+            store.utility = 0;
+        }
+
         if (canStartAutobreak) {
             this.wasBreaking = true;
             this.equip(EStoreType.HAT, EHat.TANK_GEAR, "UTILITY");
-            this.attack(this.mouse.angle);
+            this.attack(this.mouse.angle, ESentAngle.LOW);
             this.stopAttack();
         } else if (this.wasBreaking) {
             this.wasBreaking = false;
-
-            const store = this.store[EStoreType.HAT];
             this.equip(EStoreType.HAT, store.current, "CURRENT");
             store.utility = 0;
-        } else if (this.shootingState && holdingWeapon) {
+        } else if (this.shootingState) {
             const entity = PlayerManager.getPossibleShootEntity();
             const { secondary } = myPlayer.weapon;
             if (entity !== null && DataHandler.isShootable(secondary)) {
                 const speed = DataHandler.getProjectile(secondary).speed;
                 const pos1 = myPlayer.position.future;
 
-                const { previous, current } = entity.position;
+                const { previous, current, future } = entity.position;
                 const distance = previous.distance(current) * speed;
                 const pos2 = current.direction(previous.angle(current), distance);
 
                 const angle = pos1.angle(pos2);
-                this.attack(angle);
+                this.attack(angle, ESentAngle.LOW);
                 this.stopAttack();
+
+                const isHostile = entity instanceof Player || Animals[entity.type].hostile;
+                const canReach = future.distance(myPlayer.position.future) < 700;
+
+                // Additional turret damage when shooting
+                if (!this.wasShooting && this.isReloaded("turret") && isHostile && canReach) {
+                    this.wasShooting = true;
+                    this.equip(EStoreType.HAT, EHat.TURRET_GEAR, "UTILITY");
+                }
             }
         }
 
-        if (!this.breaking) { this.breakingState = false; }
-        if (!this.shooting) { this.shootingState = false; }
+        if (!this.breaking) this.breakingState = false;
+        if (!this.shooting) this.shootingState = false;
 
         // Instakill.postTick();
 
         // Autohat
-        const store = this.store[EStoreType.HAT];
         if (store.utility === 0 && !this.sentHatEquip) {
             const hat = myPlayer.getBestCurrentHat();
             if (store.current !== hat) {
@@ -454,27 +492,18 @@ const Controller = new class Controller {
             }
         }
 
-        // Check if need to place, then place
-        if (
-            !this.sentAngle &&
-            this.currentType !== null &&
-            this.canPlace(this.currentType)
-        ) {
-            this.place(this.currentType);
-        }
-
         // Update angle every tick
-        if (!this.sentAngle) {
+        if (this.sentAngle === ESentAngle.NONE) {
             this.updateAngle(this.mouse.angle);
         }
     }
 
-    attack(angle: number | null) {
+    attack(angle: number | null, priority: ESentAngle) {
         if (angle !== null) {
             this.mouse.sentAngle = angle;
         }
         SocketManager.attack(angle);
-        this.sentAngle = true;
+        this.sentAngle = priority;
 
         // If holding weapon and attacked then reset reload
         if (this.lastHoldingItemType === null) {
@@ -550,22 +579,22 @@ const Controller = new class Controller {
      */
     private place(type: TItemType, angle = this.mouse.angle) {
         this.selectItemByType(type);
-        this.attack(angle);
+        this.attack(angle, ESentAngle.LOW);
         this.stopAttack();
         this.whichWeapon();
         if (this.attacking) {
-            this.attack(angle);
+            this.attack(angle, ESentAngle.LOW);
         }
     }
 
     heal(lastHeal: boolean) {
         this.selectItemByType(ItemType.FOOD);
-        this.attack(null);
+        this.attack(null, ESentAngle.LOW);
         if (lastHeal) {
             this.stopAttack();
             this.whichWeapon();
             if (this.attacking) {
-                this.attack(this.mouse.angle);
+                this.attack(this.mouse.angle, ESentAngle.LOW);
             }
         }
     }
@@ -608,11 +637,10 @@ const Controller = new class Controller {
             UI.toggleMenu();
         }
 
-        if (!myPlayer.inGame) return;
         if (event.code === settings.toggleChat) {
-            GameUI.toggleChat(event);
+            GameUI.handleEnter(event);
         }
-
+        if (!myPlayer.inGame) return;
         if (isInput) return;
 
         if (!this.shootingActive) {
@@ -654,7 +682,6 @@ const Controller = new class Controller {
     }
 
     handleKeyup(event: KeyboardEvent) {
-
         const copyMove = this.move;
         if (event.code === settings.up) this.move &= -2;
         if (event.code === settings.left) this.move &= -5;
@@ -679,7 +706,7 @@ const Controller = new class Controller {
             !this.breakingActive
         ) {
             this.attacking = true;
-            this.attack(this.mouse.angle);
+            this.attack(this.mouse.angle, ESentAngle.LOW);
         }
 
         if (button === "MBTN" && this.canInstakill()) {

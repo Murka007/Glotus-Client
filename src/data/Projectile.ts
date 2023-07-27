@@ -4,6 +4,8 @@ import Vector from "../modules/Vector";
 class Projectile {
     readonly position: {
 
+        readonly initial: Vector;
+
         /**
          * When received a packet, position is ahead of the length 70. We subtract this length to equalize the position of player and projectile
          */
@@ -45,6 +47,7 @@ class Projectile {
         this.isTurret = type === 1 && range === 700 && speed === 1.5;
         const current = this.isTurret ? new Vector(x, y) : new Vector(x, y).direction(angle, -70);
         this.position = {
+            initial: current.copy(),
             current,
             end: current.direction(angle, 2200),
         }

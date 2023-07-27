@@ -7,6 +7,7 @@ export interface IRenderEntity {
     maxHealth: number;
     isPlayer?: boolean;
     isAI?: boolean;
+    index?: number;
 }
 
 export interface IRenderObject {

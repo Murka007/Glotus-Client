@@ -139,12 +139,12 @@ const Injector = new class Injector {
             `Glotus.Controller.upgradeItem($1);`
         );
 
-        // Hook.insert(
-        //     "smallGap",
-        //     /\w+\.\w+\/NUM{2};{INSERT}for(\(var (n)=O)/,
-        //     `if(!A){A={x:0,y:0};}R=A.x;L=A.y;`
-        // );
-        
+        Hook.replace(
+            "impoveEnterGame",
+            /(NUM{2500}\).+?=).+?:(\w+)\(\).+?\)\)/,
+            "$1$2"
+        );
+
         return Hook.code;
     }
     

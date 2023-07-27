@@ -177,7 +177,7 @@ export const removeClass = (target: HTMLElement | NodeListOf<HTMLElement>, name:
 
 export const pointInRiver = (position: Vector) => {
     const y = position.y;
-    const below = y >= (Config.mapScale / 2) - (Config.riverWidth / 2);
-    const above = y <= (Config.mapScale / 2) + (Config.riverWidth / 2);
+    const below = y >= (Config.mapScale / 2 - Config.riverWidth / 2);
+    const above = y <= (Config.mapScale / 2 + Config.riverWidth / 2);
     return below && above;
 }

@@ -2,7 +2,6 @@ const Hooker = new class Hooker {
     createRecursiveHook(
         target: any,
         prop: string | number,
-        condition: (that: any, value: any) => boolean,
         callback: (that: any, value: any) => boolean
     ) {
         (function recursiveHook() {
@@ -10,10 +9,7 @@ const Hooker = new class Hooker {
                 set(value) {
                     delete target[prop];
                     this[prop] = value;
-                    if (
-                        condition(this, value) &&
-                        callback(this, value)
-                    ) return;
+                    if (callback(this, value)) return;
                     recursiveHook();
                 },
                 configurable: true

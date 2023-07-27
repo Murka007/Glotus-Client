@@ -60,7 +60,6 @@ const SocketManager = new class SocketManager {
         // Intercept msgpack encoder
         Hooker.createRecursiveHook(
             Object.prototype, "initialBufferSize",
-            (_this) => true,
             (_this) => {
                 this.Encoder = _this;
                 return true;
@@ -70,7 +69,6 @@ const SocketManager = new class SocketManager {
         // Intercept msgpack decoder
         Hooker.createRecursiveHook(
             Object.prototype, "maxExtLength",
-            (_this) => true,
             (_this) => {
                 this.Decoder = _this;
                 return true;
@@ -81,11 +79,6 @@ const SocketManager = new class SocketManager {
             construct(target, args: ConstructorParameters<typeof WebSocket>) {
                 const socket = new target(...args);
                 that.socket = socket;
-                // const _send = socket.send;
-                // socket.send = function(data) {
-                //     console.log(data);
-                //     return _send.call(this, data);
-                // }
                 socket.addEventListener("message", that.message);
                 return socket;
             }
@@ -145,10 +138,12 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.CREATE_PLAYER: {
+                const data = temp[1];
                 PlayerManager.createPlayer({
-                    id: temp[1][1],
-                    nickname: temp[1][2],
-                    skinID: temp[1][9],
+                    socketID: data[0],
+                    id: data[1],
+                    nickname: data[2],
+                    skinID: data[9],
                 })
                 break;
             }
@@ -164,7 +159,7 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.REMOVE_ALL_OBJECTS: {
-                const player = PlayerManager.players.get(temp[1]);
+                const player = PlayerManager.playerData.get(temp[1]);
                 if (player !== undefined) {
                     ObjectManager.removePlayerObjects(player);
                 }
@@ -239,7 +234,7 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.SHOOT_TURRET: {
                 this.PacketQueue.push(
-                    () => ObjectManager.updateTurret(temp[1])
+                    () => ObjectManager.resetTurret(temp[1])
                 )
                 break;
             }
