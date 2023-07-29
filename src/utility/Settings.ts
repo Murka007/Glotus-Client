@@ -25,6 +25,13 @@ export interface ISettings {
     toggleMenu: string;
 
     // Combat
+    autoflipper: boolean;
+    autowinter: boolean;
+    autoemp: boolean;
+    antienemy: boolean;
+    antianimal: boolean;
+    spikeprotection: boolean;
+
     autoreload: boolean;
     autoheal: boolean;
     antiboostpad: boolean;
@@ -94,6 +101,12 @@ export const defaultSettings = {
     toggleShop: "ShiftLeft",
     toggleClan: "ControlLeft",
     toggleMenu: "Escape",
+    autoflipper: true,
+    autowinter: true,
+    autoemp: true,
+    antienemy: true,
+    antianimal: true,
+    spikeprotection: true,
     autoreload: true,
     autoheal: true,
     antiboostpad: true,
@@ -143,13 +156,8 @@ for (const iterator in settings) {
 }
 
 export const SaveSettings = () => {
-    Cookie.set("Glotus", JSON.stringify(settings), {
-        path: "/",
-        domain: ".moomoo.io",
-        expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-    });
+    Cookie.set("Glotus", JSON.stringify(settings), 365);
 }
 SaveSettings();
-// Storage.set("Glotus", settings);
 
 export default settings;

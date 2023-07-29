@@ -1,4 +1,3 @@
-import settings from "./Settings";
 
 /**
  * Used to get, set and delete values from localStorage
@@ -23,13 +22,6 @@ class Storage {
 
 export default Storage;
 
-// document.cookie = "myCookieName=myCookieValue;domain=.moomoo.io;path=/";
-interface IOptions {
-    readonly path?: string;
-    expires?: Date | string;
-    readonly domain?: string;
-}
-
 export class Cookie {
     static get<T>(key: string): T | null {
         const cookies = document.cookie.split(";");
@@ -44,21 +36,14 @@ export class Cookie {
         return null;
     }
 
-    static set(key: string, value: string, options: IOptions = {}) {
-        options = {
-            path: "/",
-            ...options
-        }
-
-        if (options.expires instanceof Date) {
-            options.expires = options.expires.toUTCString();
-        }
-        
-        let cookie = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
-        for (const [key, value] of Object.entries(options)) {
-            cookie += `; ${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
-        }
-        
-        document.cookie = cookie;
+    static set(name: string, value: string, days: number) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        const expires = "; expires=" + date.toUTCString();
+        const domain = "; domain=.moomoo.io";
+        const path = "; path=/";
+      
+        const cookieString = `${name}=${encodeURIComponent(value)}${expires}${domain}${path}`;
+        document.cookie = cookieString;
     }
 }

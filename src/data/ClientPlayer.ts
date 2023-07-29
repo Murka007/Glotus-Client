@@ -1,14 +1,19 @@
 import Glotus from "..";
+import { EAnimal } from "../constants/Animals";
+import Config from "../constants/Config";
 import { ItemGroups, Items, Projectiles, Weapons } from "../constants/Items";
+import { Accessories, Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import Controller from "../modules/Controller";
 import GameUI from "../modules/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TPlaceable, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
+import { ParentMethodParams } from "../types/Common";
+import { EItem, EWeapon, ItemGroup, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TPlaceable, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
 import { EHat, EStoreType, THat } from "../types/Store";
-import { pointInRiver } from "../utility/Common";
+import { getAngleFromBitmask, pointInRiver } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
+import Logger from "../utility/Logger";
 import settings from "../utility/Settings";
 import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
@@ -61,6 +66,15 @@ export class ClientPlayer extends Player {
         super();
         this.reset(true);
     }
+
+    // update(...args: ParentMethodParams<typeof Player.prototype.update>) {
+    //     const { current, future } = this.position;
+    //     console.log(current.copy(), future.copy());
+    //     super.update(...args);
+
+    //     const vec = this.getPlayerSpeed();
+    //     future.setVec(current.copy().add(vec));
+    // }
 
     /**
      * Checks if ID is ID of my player
@@ -180,52 +194,128 @@ export class ClientPlayer extends Player {
         return null;
     }
 
+    // Skip for now
+    // getPlayerSpeed() {
+    //     const weaponID = this.weaponData[Controller.weapon]!;
+    //     const weapon = Weapons[weaponID];
+    //     const hat = Hats[Controller.store[EStoreType.HAT].last];
+    //     const accessory = Accessories[Controller.store[EStoreType.ACCESSORY].last];
+
+    //     let speedMult = Controller.holdingItem ? 0.5 : 1;
+
+    //     if (!Controller.holdingItem && "spdMult" in weapon) {
+    //         speedMult *= weapon.spdMult;
+    //     }
+
+    //     if ("spdMult" in hat) {
+    //         speedMult *= hat.spdMult;
+    //     }
+    //     if ("spdMult" in accessory) {
+    //         speedMult *= accessory.spdMult;
+    //     }
+
+    //     if (this.position.current.y <= 2400 && hat.id !== EHat.WINTER_CAP) {
+    //         speedMult *= Config.snowSpeed;
+    //     }
+
+    //     const angle = getAngleFromBitmask(Controller.move, false) || 0;
+    //     const vec = Vector.fromAngle(angle, 1).normalize();
+    //     vec.mult(Config.playerSpeed * speedMult * PlayerManager.step);
+
+    //     const speed = vec.copy().mult(PlayerManager.step).length;
+    //     const depth = Math.min(4, Math.max(1, Math.round(speed / 40)));
+    //     const tMlt = 1 / depth;
+    //     vec.mult(PlayerManager.step * tMlt);
+
+    //     return vec;
+    // }
+
     /**
      * Returns the best hat to be equipped at the tick
      */
     getBestCurrentHat(): THat {
-        const { future } = this.position;
+        const { current, future } = this.position;
 
-        const inRiver = pointInRiver(future);
-        if (inRiver) {
-            // myPlayer is right on the platform
-            const platformActivated = this.checkCollision(EItem.PLATFORM, 30);
+        if (settings.autoflipper) {
+            const inRiver = pointInRiver(current) || pointInRiver(future);
+            if (inRiver) {
+                // myPlayer is right on the platform
+                const platformActivated = this.checkCollision(ItemGroup.PLATFORM, 30);
 
-            // myPlayer almost left the platform
-            const stillStandingOnPlatform = this.checkCollision(EItem.PLATFORM, -15);
+                // myPlayer almost left the platform
+                const stillStandingOnPlatform = this.checkCollision(ItemGroup.PLATFORM, -15);
 
-            if (!this.platformActivated && platformActivated) {
-                this.platformActivated = true;
-            }
+                if (!this.platformActivated && platformActivated) {
+                    this.platformActivated = true;
+                }
 
-            // myPlayer is not standing on platform
-            if (this.platformActivated && !stillStandingOnPlatform) {
-                this.platformActivated = false;
-            }
+                // myPlayer is not standing on platform
+                if (this.platformActivated && !stillStandingOnPlatform) {
+                    this.platformActivated = false;
+                }
 
-            if (!this.platformActivated) {
-                return EHat.FLIPPER_HAT;
-            }
-        }
-
-        const turret = Items[EItem.TURRET];
-        const objects = ObjectManager.retrieveObjects(future, turret.shootRange);
-        for (const object of objects) {
-            if (object instanceof PlayerObject && object.type === EItem.TURRET) {
-                if (ObjectManager.canTurretHitMyPlayer(object)) {
-                    return EHat.EMP_HELMET;
+                if (!this.platformActivated) {
+                    return EHat.FLIPPER_HAT;
                 }
             }
         }
 
-        // const nearestEntity = PlayerManager.getNearestEntity(this);
-        // if (
-        //     nearestEntity !== null &&
-        //     nearestEntity.position.future.distance(future) < 300
-        // ) return EHat.SOLDIER_HELMET;
+        if (settings.autoemp) {
+            const turret = Items[EItem.TURRET];
+            const objects = ObjectManager.retrieveObjects(future, turret.shootRange);
+            for (const object of objects) {
+                if (object instanceof PlayerObject && object.type === EItem.TURRET) {
+                    if (ObjectManager.canTurretHitMyPlayer(object)) {
+                        return EHat.EMP_HELMET;
+                    }
+                }
+            }
+        }
 
-        const inWinter = future.y <= 2400;
-        if (inWinter) return EHat.WINTER_CAP;
+        if (settings.spikeprotection) {
+            const collidingSpike = this.checkCollision(ItemGroup.SPIKE, -40, true);
+            if (collidingSpike) {
+                return EHat.SOLDIER_HELMET;
+            }
+        }
+
+        const nearestInstakill = PlayerManager.getInstakillEnemies(this);
+        if (nearestInstakill !== null) {
+            const distance = nearestInstakill.position.future.distance(future);
+            const range = nearestInstakill.getMaxWeaponRange() + this.hitScale;
+            if (distance <= range) {
+                return EHat.SOLDIER_HELMET;
+            }
+        }
+        // if (settings.antienemy) {
+        //     const nearestEntity = PlayerManager.getNearestEnemy(this);
+        //     if (nearestEntity !== null) {
+        //         // const distance = nearestEntity.position.future.distance(future);
+        //         if (/* distance < 300 ||  */nearestEntity.canInstakill()) {
+        //             return EHat.SOLDIER_HELMET;
+        //         }
+        //     }
+        // }
+
+        if (settings.antianimal) {
+            for (const animal of PlayerManager.animals) {
+                const currentDistance = animal.position.current.distance(current);
+                const futureDistance = animal.position.future.distance(future);
+                if (
+                    animal.isHostile &&
+                    (currentDistance <= animal.collisionRange || futureDistance <= animal.collisionRange) &&
+                    !animal.isTrapped
+                ) {
+                    return EHat.SOLDIER_HELMET;
+                }
+            }
+        }
+
+        if (settings.autowinter) {
+            const inWinter = current.y <= 2400 || future.y <= 2400;
+            if (inWinter) return EHat.WINTER_CAP;
+        }
+
         return Controller.store[EStoreType.HAT].actual;
     }
 
@@ -250,7 +340,7 @@ export class ClientPlayer extends Player {
             arrow.range,
             arrow.speed,
             secondary.projectile,
-            myPlayer.checkCollision(EItem.PLATFORM) ? 1 : 0,
+            myPlayer.checkCollision(ItemGroup.PLATFORM) ? 1 : 0,
             0
         )
     }

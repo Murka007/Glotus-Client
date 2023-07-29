@@ -51,12 +51,17 @@ module.exports = {
                     compress: {
                         defaults: false,
                         unused: true,
+                        dead_code: true,
+                        hoist_funs: true,
+                        hoist_props: true,
+                        hoist_vars: true,
+                        keep_infinity: true,
                     },
                     mangle: false,
                     parse: false,
-                    output: false,
                     format: {
                         beautify: true,
+                        braces: true,
                     },
                     keep_classnames: true,
                     keep_fnames: true,

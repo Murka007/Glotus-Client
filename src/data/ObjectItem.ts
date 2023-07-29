@@ -3,11 +3,12 @@ import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
 import Vector from "../modules/Vector";
 import { ValueOf } from "../types/Common";
-import { EItem, TPlaceable } from "../types/Items";
+import { EItem, TItemGroup, TPlaceable } from "../types/Items";
+import { pointInDesert, pointInRiver } from "../utility/Common";
 import Logger from "../utility/Logger";
 import myPlayer from "./ClientPlayer";
 
-const EResourceType = {
+export const EResourceType = {
     WOOD: 0,
     FOOD: 1,
     STONE: 2,
@@ -35,7 +36,7 @@ abstract class ObjectItem {
     ) {
         this.id = id;
         this.position = {
-            current: new Vector(x, y)
+            current: new Vector(x, y),
         };
         this.angle = angle;
         this.scale = scale;
@@ -74,6 +75,10 @@ export class Resource extends ObjectItem {
     get placementScale() {
         return this.formatScale(0.6);
     }
+
+    get isCactus() {
+        return this.type === EResourceType.FOOD && pointInDesert(this.position.current);
+    }
 }
 
 export class PlayerObject extends ObjectItem {
@@ -99,6 +104,7 @@ export class PlayerObject extends ObjectItem {
      */
     readonly seenPlacement: boolean;
     readonly layer: number;
+    readonly itemGroup: TItemGroup;
     constructor(
         id: number,
         x: number,
@@ -124,6 +130,7 @@ export class PlayerObject extends ObjectItem {
         const owner = PlayerManager.playerData.get(ownerID);
         this.seenPlacement = owner !== undefined && PlayerManager.players.includes(owner);
         this.layer = ItemGroups[item.itemGroup].layer;
+        this.itemGroup = item.itemGroup;
     }
 
     formatScale(placeCollision = false): number {

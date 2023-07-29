@@ -107,6 +107,10 @@ class Vector {
         this.y = clamp(this.y, min, max);
         return this;
     }
+
+    isEqual(vec: Vector) {
+        return this.x === vec.x && this.y === vec.y;
+    }
 }
 
 export default Vector;

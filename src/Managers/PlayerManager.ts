@@ -16,6 +16,7 @@ import { EHat, EStoreType } from "../types/Store";
 import { getAngleDist, lineIntersectsRect } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Logger from "../utility/Logger";
+import Sorting from "../utility/Sorting";
 import ObjectManager from "./ObjectManager";
 import ProjectileManager from "./ProjectileManager";
 import SocketManager from "./SocketManager";
@@ -192,7 +193,7 @@ const PlayerManager = new class PlayerManager {
      * true, if the projectile won't pass through entity
      */
     canShoot(ownerID: number, target: Player | Animal) {
-        return target instanceof Animal || target instanceof Player && this.isEnemyByID(ownerID, target);
+        return target instanceof Animal || this.isEnemyByID(ownerID, target);
     }
 
     /**
@@ -205,18 +206,33 @@ const PlayerManager = new class PlayerManager {
     /**
      * Returns nearest hostile entity to a specified player
      */
-    getNearestEntity(target: Player): Player | Animal | null {
-        const entities = this.getEntities();
-        return entities.filter(a => {
-            const notTarget = a !== target;
-            const isEnemy = a instanceof Player && this.isEnemy(target, a);
-            const isHostile = a instanceof Animal && Animals[a.type].hostile;
-            return notTarget && (isEnemy || isHostile);
-        }).sort((a, b) => {
-            const dist1 = target.position.future.distance(a.position.future);
-            const dist2 = target.position.future.distance(b.position.future);
-            return dist1 - dist2;
-        })[0] || null;
+    // getNearestEntity(target: Player): Player | Animal | null {
+    //     const entities = this.getEntities();
+    //     return entities.filter(a => {
+    //         const notTarget = a !== target;
+    //         const isEnemy = a instanceof Player && this.isEnemy(target, a);
+    //         const isHostile = a instanceof Animal && Animals[a.type].hostile;
+    //         return notTarget && (isEnemy || isHostile);
+    //     }).sort((a, b) => {
+    //         const dist1 = target.position.future.distance(a.position.future);
+    //         const dist2 = target.position.future.distance(b.position.future);
+    //         return dist1 - dist2;
+    //     })[0] || null;
+    // }
+
+    getEnemies(owner: Player): Player[] {
+        return this.players.filter(player => this.isEnemy(owner, player));
+    }
+
+    getNearestEnemy(owner: Player): Player | null {
+        const enemies = this.getEnemies(owner);
+        return enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
+    }
+
+    getInstakillEnemies(owner: Player): Player | null {
+        const enemies = this.getEnemies(owner);
+        return enemies.filter(enemy => enemy.canInstakill())
+            .sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
     }
 
     getPossibleShootEntity(): Player | Animal | null {
@@ -235,11 +251,7 @@ const PlayerManager = new class PlayerManager {
             const canShoot = this.canShoot(myPlayer.id, entity);
             const canHit = ProjectileManager.projectileCanHitEntity(projectile, entity);
             return notTarget && canShoot && canHit;
-        }).sort((a, b) => {
-            const dist1 = myPlayer.position.current.distance(a.position.current);
-            const dist2 = myPlayer.position.current.distance(b.position.current);
-            return dist1 - dist2;
-        })[0] || null;
+        }).sort(Sorting.byDistance(myPlayer, "current", "current"))[0] || null;
     }
 }
 

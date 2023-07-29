@@ -245,9 +245,9 @@ const Controller = new class Controller {
     }
 
     /**
-     * true, if myPlayer is placing an item
+     * true, if myPlayer is holding item
      */
-    private get placing(): boolean {
+    get holdingItem(): boolean {
         return this.currentType !== null;
     }
     
@@ -343,7 +343,6 @@ const Controller = new class Controller {
         SocketManager.equip(type, id);
         if (type === EStoreType.HAT) {
             this.sentHatEquip = true;
-            console.log("Equip", Hats[id as THat].name)
         } else {
             this.sentAccEquip = true;
         }
@@ -352,6 +351,7 @@ const Controller = new class Controller {
             store.current = id;
         } else if (equipType === "ACTUAL") {
             store.actual = id;
+            store.current = id;
         } else if (equipType === "UTILITY") {
             store.utility = id;
         }

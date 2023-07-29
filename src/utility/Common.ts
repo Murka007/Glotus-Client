@@ -181,3 +181,7 @@ export const pointInRiver = (position: Vector) => {
     const above = y <= (Config.mapScale / 2 + Config.riverWidth / 2);
     return below && above;
 }
+
+export const pointInDesert = (position: Vector) => {
+    return position.y >= (Config.mapScale - Config.snowBiomeTop);
+}

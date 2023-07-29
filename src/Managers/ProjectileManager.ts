@@ -4,6 +4,7 @@ import Projectile from "../data/Projectile";
 import Vector from "../modules/Vector";
 import { TTarget } from "../types/Common";
 import { lineIntersectsRect } from "../utility/Common";
+import Sorting from "../utility/Sorting";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 
@@ -74,11 +75,7 @@ const ProjectileManager = new class ProjectileManager {
         }
 
         // The closest target to my player is the only one that can be hit
-        return targets.sort((a, b) => {
-            const dist1 = owner.position.current.distance(a.position.current);
-            const dist2 = owner.position.current.distance(b.position.current);
-            return dist1 - dist2;
-        })[0] || null;
+        return targets.sort(Sorting.byDistance(owner, "current", "current"))[0] || null;
     }
 
     projectileCanHitEntity(projectile: Projectile, target: Player | Animal): TTarget | null {

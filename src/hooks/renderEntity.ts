@@ -30,6 +30,7 @@ const renderEntity = (
         if (settings.rainbow) Renderer.updateHSL();
 
         const currentPosition = myPlayer.position.current;
+        const futurePosition = myPlayer.position.future;
         const lerpPosition = new Vector(player.x, player.y);
 
         if (settings.projectileHitbox) {
@@ -59,7 +60,7 @@ const renderEntity = (
             const current = myPlayer.getItemByType(Controller.weapon);
             if (DataHandler.isMelee(current)) {
                 const weapon = Weapons[current];
-                Renderer.circle(ctx, player.x, player.y, weapon.range, "#3f4ec4", 1, 1);
+                Renderer.circle(ctx, player.x, player.y, weapon.range, "#f5cb42", 1, 1);
             }
         }
 
@@ -69,6 +70,8 @@ const renderEntity = (
             const color = ObjectManager.canPlaceItem(item.id, place) ? "#ffa552" : "#13d16f";
             Renderer.circle(ctx, place.x, place.y, item.scale, color, 1, 1);
         }
+
+        // Renderer.line(ctx, currentPosition, futurePosition, "red", 1);
     }
 
     if (entity.isPlayer) {

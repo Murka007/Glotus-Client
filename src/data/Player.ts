@@ -1,12 +1,13 @@
 import Glotus from "..";
+import Config from "../constants/Config";
 import { Projectiles, Weapons, weaponVariants } from "../constants/Items";
 import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
 import Controller from "../modules/Controller";
-import { IReload } from "../types/Common";
-import { TItem, TMelee, TPlaceable, TWeapon, TWeaponVariant, WeaponTypeString } from "../types/Items";
+import { IReload, TReload } from "../types/Common";
+import { EWeapon, EWeaponVariant, TItem, TMelee, TPlaceable, TWeapon, TWeaponData, TWeaponVariant, WeaponTypeString } from "../types/Items";
 import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
 import Entity from "./Entity";
@@ -125,6 +126,10 @@ class Player extends Entity {
         reload.current = Math.min(reload.current + PlayerManager.step, reload.max);
     }
 
+    isReloaded(type: TReload) {
+        return this.reload[type].current === this.reload[type].max;
+    }
+
     private updateReloads() {
         const current = this.position.current;
 
@@ -205,20 +210,40 @@ class Player extends Entity {
         return Weapons[id].speed * reloadSpeed;
     }
 
-    /**
-     * true, if player is colliding an item
-     * @param type ID of item, that can be placed
-     * @param subRadius Subtracts this amount from the item radius
-     */
-    checkCollision(type: TPlaceable, subRadius = 0): boolean {
-        const objects = ObjectManager.retrieveObjects(this.position.future, this.scale);
-        for (const object of objects) {
-            if (object.type !== type) continue;
-            const distance = this.position.future.distance(object.position.current);
-            const radius = this.scale + object.formatScale() - subRadius;
-            if (distance <= radius) return true;
+    getMaxWeaponRange() {
+        const { primary, secondary } = this.weapon;
+        const primaryRange = Weapons[primary as TWeaponData[0]].range;
+        if (DataHandler.isMelee(secondary)) {
+            const range = Weapons[secondary].range;
+            if (range > primaryRange) {
+                return range;
+            }
         }
-        return false;
+        return primaryRange;
+    }
+
+    canInstakill() {
+
+        // Only players who have all their weapons reloaded can instakill
+        const isReloaded = (
+            this.isReloaded("primary") &&
+            this.isReloaded("secondary") &&
+            this.isReloaded("turret")
+        );
+
+        if (!isReloaded) return false;
+
+        const { primary, secondary } = this.weapon;
+        const variant = this.weaponVariant;
+
+        // At the moment, I consider only basic instakill variants
+        const hasMusket = secondary === EWeapon.MUSKET;
+        if (primary === EWeapon.POLEARM) {
+            if (hasMusket) return true;
+            return variant >= EWeaponVariant.GOLD && secondary === EWeapon.CROSSBOW;
+        }
+
+        return primary === EWeapon.SHORT_SWORD && variant >= EWeaponVariant.DIAMOND && hasMusket;
     }
 }
 

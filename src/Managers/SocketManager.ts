@@ -92,7 +92,7 @@ const SocketManager = new class SocketManager {
 
         setTimeout(() => {
             this.pingRequest();
-        }, 2000);
+        }, 2500);
     }
 
     private message(event: MessageEvent<ArrayBuffer>) {
@@ -104,7 +104,6 @@ const SocketManager = new class SocketManager {
         if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
         if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
         if (temp[0] === SocketServer.UPDATE_AGE) return;
-
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
