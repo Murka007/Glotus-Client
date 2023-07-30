@@ -169,6 +169,8 @@ class Player extends Entity {
             const range = Projectiles[type].range * speedMult;
             const speed = Projectiles[type].speed * speedMult;
 
+            // It won't work if players have the same position, angle, hats and ranged weapons
+            // I could potentially check for secondary weapon reloading
             for (const [id, projectile] of ProjectileManager.projectiles) {
                 if (
                     type === projectile.type &&
@@ -189,7 +191,7 @@ class Player extends Entity {
     /**
      * Returns the number of damage, that can be dealt by the player weapon
      */
-    getWeaponDamage(id: TMelee): number {
+    getBuildingDamage(id: TMelee): number {
         const weapon = Weapons[id];
         const variant = weaponVariants[this.weaponVariant];
 

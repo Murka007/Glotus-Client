@@ -129,6 +129,8 @@ const Controller = new class Controller {
      */
     private move!: number;
 
+    needToHeal = false;
+
     private readonly reload: {
         readonly primary: IReload;
         readonly secondary: IReload;
@@ -418,6 +420,11 @@ const Controller = new class Controller {
         const isReloaded = this.isReloaded(type);
         if (isReloaded && this.attacked) {
             this.attacked = false;
+        }
+
+        if (this.needToHeal) {
+            this.needToHeal = false;
+            this.heal(true);
         }
 
         // Check if need to place, then place

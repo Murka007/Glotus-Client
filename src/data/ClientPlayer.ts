@@ -11,7 +11,7 @@ import Vector from "../modules/Vector";
 import { ParentMethodParams } from "../types/Common";
 import { EItem, EWeapon, ItemGroup, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TPlaceable, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
 import { EHat, EStoreType, THat } from "../types/Store";
-import { getAngleFromBitmask, pointInRiver } from "../utility/Common";
+import { clamp, getAngleFromBitmask, pointInRiver } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Logger from "../utility/Logger";
 import settings from "../utility/Settings";
@@ -57,6 +57,13 @@ export class ClientPlayer extends Player {
     inGame = false;
     private platformActivated = false;
 
+    private healDelay = 80;
+    private receivedDamage: number | null = null;
+
+    private shameActive = false;
+    private shameTimer = 0;
+    shameCount = 0;
+
     /**
      * A Set of teammate IDs
      */
@@ -66,15 +73,6 @@ export class ClientPlayer extends Player {
         super();
         this.reset(true);
     }
-
-    // update(...args: ParentMethodParams<typeof Player.prototype.update>) {
-    //     const { current, future } = this.position;
-    //     console.log(current.copy(), future.copy());
-    //     super.update(...args);
-
-    //     const vec = this.getPlayerSpeed();
-    //     future.setVec(current.copy().add(vec));
-    // }
 
     /**
      * Checks if ID is ID of my player
@@ -284,6 +282,7 @@ export class ClientPlayer extends Player {
             const distance = nearestInstakill.position.future.distance(future);
             const range = nearestInstakill.getMaxWeaponRange() + this.hitScale;
             if (distance <= range) {
+                Controller.needToHeal = true;
                 return EHat.SOLDIER_HELMET;
             }
         }
@@ -349,6 +348,18 @@ export class ClientPlayer extends Player {
      * Called after all received packets. Player and animal positions have been updated
      */
     tickUpdate() {
+        if (this.hatID === EHat.SHAME && this.shameTimer === 0) {
+            this.shameTimer = 30000;
+            this.shameCount = 8;
+            this.shameActive = true;
+        }
+
+        this.shameTimer = Math.max(0, this.shameTimer - PlayerManager.step);
+        if (this.shameTimer === 0 && this.shameActive) {
+            this.shameActive = false;
+            this.shameCount = 0;
+        }
+
         Controller.postTick();
         // Instakill.postTick();
     }
@@ -357,18 +368,37 @@ export class ClientPlayer extends Player {
         this.previousHealth = this.currentHealth;
         this.currentHealth = health;
 
+        if (this.shameActive) return;
+
+        // Shame count should be changed only when healing
+        if (this.currentHealth < this.previousHealth) {
+            this.receivedDamage = Date.now();
+        } else if (this.receivedDamage !== null) {
+            const step = Date.now() - this.receivedDamage;
+            this.receivedDamage = null;
+
+            if (step <= 120) {
+                this.shameCount = Math.min(this.shameCount + 1, 7);
+            } else {
+                this.shameCount = Math.max(this.shameCount - 2, 0);
+            }
+        }
+
         if (settings.autoheal && health < 100) {
-            const difference = Math.abs(health - this.previousHealth);
-            const delay = difference <= 10 ? 150 : 80;
+            // const difference = Math.abs(health - this.previousHealth);
+            // const delay = difference <= 10 ? 150 : 80;
+            if (this.healDelay === -1) return;
             setTimeout(() => {
                 Controller.heal(true);
-            }, delay);
+            }, this.healDelay);
         }
     }
 
     playerSpawn(id: number) {
         this.id = id;
         this.inGame = true;
+        this.shameTimer = 0;
+        this.shameCount = 0;
         this.reload.primary.max = this.reload.primary.current = -1;
         this.reload.secondary.max = this.reload.secondary.current = -1;
         this.reload.turret.max = this.reload.turret.current = 2500;
@@ -441,9 +471,7 @@ export class ClientPlayer extends Player {
         if (!first) {
             window.config.deathFadeout = settings.autospawn ? 0 : 3000;
             if (settings.autospawn) {
-                setTimeout(() => {
-                    GameUI.spawn();
-                }, 10);
+                setTimeout(() => GameUI.spawn(), 10);
             }
         }
     }

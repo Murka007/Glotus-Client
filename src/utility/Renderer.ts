@@ -251,10 +251,14 @@ class Renderer {
 
         const nameY = window.config.nameY;
         const { barHeight, barPad } = Config;
-        const text = `HP ${Math.floor(entity.health)}/${entity.maxHealth}`;
+        let text = `HP ${Math.floor(entity.health)}/${entity.maxHealth}`;
         const offset = entity.scale + barHeight + barPad;
         const x = entity.x - myPlayer.offset.x;
         const y = entity.y - myPlayer.offset.y + nameY + offset;
+
+        if (entity.isPlayer && myPlayer.isMyPlayerByID(entity.sid)) {
+            text += ` ${myPlayer.shameCount}/8`;
+        }
 
         ctx.save();
         ctx.fillStyle = "#fff";

@@ -93,7 +93,7 @@ const PlayerManager = new class PlayerManager {
                     getAngleDist(angle, player.angle) <= Config.gatherAngle
                 ) {
                     ObjectManager.attackedObjects.delete(id);
-                    const damage = player.getWeaponDamage(weaponID);
+                    const damage = player.getBuildingDamage(weaponID);
                     object.health -= damage;
                 }
             }
