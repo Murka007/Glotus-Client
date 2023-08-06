@@ -58,7 +58,7 @@ const Injector = new class Injector {
         Hook.prepend(
             "LockRotationClient",
             /return \w+\?\(/,
-            `return Glotus.Controller.mouse.angle;`
+            `return Glotus.ModuleHandler.mouse.angle;`
         );
 
         Hook.replace(
@@ -106,13 +106,13 @@ const Injector = new class Injector {
         Hook.replace(
             "handleEquip",
             /\w+\.send\("13c",0,(\w+),(\w+)\)/,
-            `Glotus.Controller.equip($2,$1,"ACTUAL")`
+            `Glotus.ModuleHandler.equip($2,$1,"ACTUAL")`
         );
 
         Hook.replace(
             "handleBuy",
             /\w+\.send\("13c",1,(\w+),(\w+)\)/,
-            `Glotus.Controller.buy($2,$1)`
+            `Glotus.ModuleHandler.buy($2,$1)`
         );
 
         Hook.replace(
@@ -136,7 +136,7 @@ const Injector = new class Injector {
         Hook.replace(
             "upgradeItem",
             /\w+\.send\("6",(\w+)\)/,
-            `Glotus.Controller.upgradeItem($1);`
+            `Glotus.ModuleHandler.upgradeItem($1);`
         );
 
         Hook.replace(

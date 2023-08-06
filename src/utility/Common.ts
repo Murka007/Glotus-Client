@@ -22,6 +22,10 @@ export const getAngleDist = (a: number, b: number) => {
     return (p > Math.PI ? (Math.PI * 2) - p : p);
 }
 
+export const toRadians = (degrees: number) => {
+    return degrees * (Math.PI / 180);
+}
+
 export const removeFast = (array: unknown[], index: number) => {
     if (index < 0 || index >= array.length) throw new RangeError("removeFast: Index out of range");
     

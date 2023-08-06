@@ -1,7 +1,6 @@
 import Config from "../constants/Config";
 import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
-import Controller from "../modules/Controller";
 import settings from "./Settings";
 import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";

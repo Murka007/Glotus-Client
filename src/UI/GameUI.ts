@@ -1,6 +1,8 @@
 import { Items } from "../constants/Items";
 import myPlayer from "../data/ClientPlayer";
+import ModuleHandler from "../features/ModuleHandler";
 import SocketManager from "../Managers/SocketManager";
+import ZoomHandler from "../modules/ZoomHandler";
 import { TItemGroup } from "../types/Items";
 import settings from "../utility/Settings";
 import Storage from "../utility/Storage";
@@ -78,6 +80,37 @@ const GameUI = new class GameUI {
         }
     }
 
+    private attachMouse() {
+        const { gameCanvas } = this.getElements();
+
+        const handleMouse = (event: MouseEvent) => {
+            if (myPlayer.inGame && event.target !== gameCanvas) return;
+            ModuleHandler.handleMouse(event);
+        }
+        window.addEventListener("mousemove", handleMouse);
+        window.addEventListener("mouseover", handleMouse);
+
+        gameCanvas.addEventListener("mousedown", event => ModuleHandler.handleMousedown(event));
+        window.addEventListener("mouseup", event => ModuleHandler.handleMouseup(event));
+        window.addEventListener("wheel", event => ZoomHandler.handler(event));
+    }
+
+    private modifyInputs() {
+        const { chatHolder, chatBox, nameInput } = this.getElements();
+        chatBox.onblur = () => {
+            chatHolder.style.display = "none";
+            const value = chatBox.value;
+            if (value.length > 0) {
+                SocketManager.chat(value);
+            }
+            chatBox.value = "";
+        }
+
+        nameInput.onchange = () => {
+            Storage.set("moo_name", nameInput.value, false);
+        }
+    }
+
     /**
      * When user switches option in the menu. It toggles item count
      */
@@ -102,20 +135,8 @@ const GameUI = new class GameUI {
     init() {
         this.formatMainMenu();
         this.attachItemCount();
-
-        const { chatHolder, chatBox, nameInput } = this.getElements();
-        chatBox.onblur = () => {
-            chatHolder.style.display = "none";
-            const value = chatBox.value;
-            if (value.length > 0) {
-                SocketManager.chat(value);
-            }
-            chatBox.value = "";
-        }
-
-        nameInput.onchange = () => {
-            Storage.set("moo_name", nameInput.value, false);
-        }
+        this.attachMouse();
+        this.modifyInputs();
     }
 
     /**
@@ -140,6 +161,11 @@ const GameUI = new class GameUI {
         }
     }
 
+    spawn() {
+        const { enterGame } = this.getElements();
+        enterGame.click();
+    }
+    
     handleEnter(event: KeyboardEvent) {
         if (UI.isMenuOpened) return;
         const { allianceInput, allianceButton } = this.getElements();
@@ -171,11 +197,6 @@ const GameUI = new class GameUI {
     updatePing(ping: number) {
         const { pingDisplay } = this.getElements();
         pingDisplay.textContent = `Ping: ${ping}ms`;
-    }
-
-    spawn() {
-        const { enterGame } = this.getElements();
-        enterGame.click();
     }
 }
 

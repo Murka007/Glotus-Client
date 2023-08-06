@@ -1,14 +1,8 @@
 import ObjectManager from "../Managers/ObjectManager";
 import Animals from "../constants/Animals";
-import Config from "../constants/Config";
-import Controller from "../modules/Controller";
 import Vector from "../modules/Vector";
 import { ItemGroup, TItemGroup, TPlaceable } from "../types/Items";
-import { pointInDesert } from "../utility/Common";
-import Animal from "./Animal";
-import { ClientPlayer } from "./ClientPlayer";
 import { EResourceType, PlayerObject, Resource } from "./ObjectItem";
-import Player from "./Player";
 
 /**
  * Abstract entity class. Represents players and animals

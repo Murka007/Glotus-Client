@@ -1,21 +1,18 @@
 import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
-import Controller from "../modules/Controller";
 import { TCTX } from "../types/Common";
 import { IRenderEntity } from "../types/RenderTargets";
 import Renderer from "../utility/Renderer";
-import { EItem, WeaponType } from "../types/Items";
 import DataHandler from "../utility/DataHandler";
 import { Items, Projectiles, Weapons } from "../constants/Items";
 import Vector from "../modules/Vector";
-import Projectile from "../data/Projectile";
 import settings from "../utility/Settings";
 import ObjectManager from "../Managers/ObjectManager";
 import { EHat } from "../types/Store";
 import ProjectileManager from "../Managers/ProjectileManager";
 import Animals, { EAnimal } from "../constants/Animals";
-import Config from "../constants/Config";
-import { getAngleDist } from "../utility/Common";
+import { toRadians } from "../utility/Common";
+import ModuleHandler from "../features/ModuleHandler";
 
 /**
  * Called when bundle rendering entities (player, animal)
@@ -57,7 +54,7 @@ const renderEntity = (
         }
 
         if (settings.weaponHitbox) {
-            const current = myPlayer.getItemByType(Controller.weapon);
+            const current = myPlayer.getItemByType(ModuleHandler.weapon);
             if (DataHandler.isMelee(current)) {
                 const weapon = Weapons[current];
                 Renderer.circle(ctx, player.x, player.y, weapon.range, "#f5cb42", 1, 1);
@@ -66,9 +63,20 @@ const renderEntity = (
 
         if (settings.placementHitbox && DataHandler.isPlaceable(myPlayer.currentItem)) {
             const item = Items[myPlayer.currentItem];
-            const place = myPlayer.getPlacePosition(lerpPosition, myPlayer.currentItem, Controller.mouse.sentAngle);
-            const color = ObjectManager.canPlaceItem(item.id, place) ? "#ffa552" : "#13d16f";
+            const place = myPlayer.getPlacePosition(lerpPosition, myPlayer.currentItem, ModuleHandler.mouse.sentAngle);
+            const obj = ObjectManager.canPlaceItem(item.id, place);
+            const color = obj !== null ? "#ffa552" : "#13d16f";
             Renderer.circle(ctx, place.x, place.y, item.scale, color, 1, 1);
+
+            // const itemScale = item.scale + item.placeOffset;
+            // const scale = myPlayer.scale + (item.scale + item.placeOffset);
+            // const mill1 = lerpPosition.direction(Controller.mouse.sentAngle, scale).add(itemScale);
+            // const mill2 = lerpPosition.direction(Controller.mouse.sentAngle, scale).sub(itemScale);
+            // const mill3 = lerpPosition.direction(Controller.mouse.sentAngle, scale);
+            // Renderer.circle(ctx, mill1.x, mill1.y, item.scale, "red", 1, 1);
+            // Renderer.circle(ctx, mill2.x, mill2.y, item.scale, "blue", 1, 1);
+            // Renderer.circle(ctx, mill3.x, mill3.y, item.scale, "green", 1, 1);
+
         }
 
         // Renderer.line(ctx, currentPosition, futurePosition, "red", 1);

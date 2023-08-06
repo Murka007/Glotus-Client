@@ -10,10 +10,10 @@ import Devtool from "../../public/menu-pages/Devtool.html";
 import Credits from "../../public/menu-pages/Credits.html";
 import { formatButton, formatCode, removeClass } from "../utility/Common";
 import settings, { defaultSettings, ISettings, SaveSettings } from "../utility/Settings";
-import Controller from "./Controller";
 import { KeysOfType } from "../types/Common";
 import GameUI from "./GameUI";
 import Logger from "../utility/Logger";
+import ModuleHandler from "../features/ModuleHandler";
 
 interface IFrame {
     readonly target: HTMLIFrameElement;
@@ -26,6 +26,7 @@ const UI = new class UI {
     activeHotkeyInput: HTMLButtonElement | null = null;
     private toggleTimeout: ReturnType<typeof setTimeout> | undefined;
     private menuOpened = false;
+    private menuLoaded = false;
 
     get isMenuOpened() {
         return this.menuOpened;
@@ -317,6 +318,7 @@ const UI = new class UI {
     }
 
     toggleMenu() {
+        if (!this.menuLoaded) return;
         if (this.menuOpened) {
             this.closeMenu();
         } else {
@@ -383,8 +385,8 @@ const UI = new class UI {
             }
         })
 
-        this.frame.window.addEventListener("keydown", event => Controller.handleKeydown(event));
-        this.frame.window.addEventListener("keyup", event => Controller.handleKeyup(event));
+        this.frame.window.addEventListener("keydown", event => ModuleHandler.handleKeydown(event));
+        this.frame.window.addEventListener("keyup", event => ModuleHandler.handleKeyup(event));
 
         this.openMenu();
     }
@@ -404,6 +406,7 @@ const UI = new class UI {
         if (settings.menuTransparency) {
             menuContainer.classList.add("transparent");
         }
+        this.menuLoaded = true;
     }
 }
 

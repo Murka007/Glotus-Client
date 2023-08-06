@@ -5,22 +5,22 @@ import ObjectManager from "./Managers/ObjectManager";
 import PlayerManager from "./Managers/PlayerManager";
 import ProjectileManager from "./Managers/ProjectileManager";
 import SocketManager from "./Managers/SocketManager";
-import Controller from "./modules/Controller";
 import DefaultHooks from "./modules/DefaultHooks";
-import GameUI from "./modules/GameUI";
+import GameUI from "./UI/GameUI";
 import Hooker from "./utility/Hooker";
 import Injector from "./modules/Injector";
 import settings from "./utility/Settings";
-import UI from "./modules/UI";
+import UI from "./UI/UI";
 import Renderer from "./utility/Renderer";
 import ZoomHandler from "./modules/ZoomHandler";
+import ModuleHandler from "./features/ModuleHandler";
 
 const Glotus = {
     ObjectManager,
     PlayerManager,
     ProjectileManager,
     SocketManager,
-    Controller,
+    ModuleHandler,
     GameUI,
     Hooker,
     UI,
@@ -39,10 +39,9 @@ window.Glotus = Glotus;
 Injector.init();
 
 window.addEventListener("DOMContentLoaded", () => {
-    Controller.init();
     UI.createMenu();
 });
 
-window.addEventListener("keydown", (event) => Controller.handleKeydown(event));
-window.addEventListener("keyup", (event) => Controller.handleKeyup(event));
+window.addEventListener("keydown", (event) => ModuleHandler.handleKeydown(event));
+window.addEventListener("keyup", (event) => ModuleHandler.handleKeyup(event));
 DefaultHooks();

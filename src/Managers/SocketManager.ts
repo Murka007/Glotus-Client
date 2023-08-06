@@ -1,7 +1,7 @@
 import myPlayer from "../data/ClientPlayer";
 import { PlayerObject } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
-import GameUI from "../modules/GameUI";
+import GameUI from "../UI/GameUI";
 import { TItem, TWeapon } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
 import { EStoreAction, TAccessory, THat, TStoreType } from "../types/Store";
@@ -290,11 +290,11 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.LEAVE_CLAN]);
     }
 
-    equip(type: TStoreType, id: THat | TAccessory) {
+    equip(type: TStoreType, id: number) {
         this.send([SocketClient.STORE, EStoreAction.EQUIP, id, type]);
     }
 
-    buy(type: TStoreType, id: THat | TAccessory) {
+    buy(type: TStoreType, id: number) {
         this.send([SocketClient.STORE, EStoreAction.BUY, id, type]);
     }
 

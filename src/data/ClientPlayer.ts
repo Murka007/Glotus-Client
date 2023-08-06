@@ -5,8 +5,7 @@ import { ItemGroups, Items, Projectiles, Weapons } from "../constants/Items";
 import { Accessories, Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
-import Controller from "../modules/Controller";
-import GameUI from "../modules/GameUI";
+import GameUI from "../UI/GameUI";
 import Vector from "../modules/Vector";
 import { ParentMethodParams } from "../types/Common";
 import { EItem, EWeapon, ItemGroup, ItemType, TData, TItem, TItemData, TItemGroup, TItemType, TPlaceable, TWeapon, TWeaponData, TWeaponType,  WeaponType } from "../types/Items";
@@ -18,6 +17,8 @@ import settings from "../utility/Settings";
 import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
 import Projectile from "./Projectile";
+import ModuleHandler from "../features/ModuleHandler";
+import ShameReset from "../features/modules/ShameReset";
 
 /**
  * Represents my player. Contains all data that are related to the game bundle and websocket
@@ -59,8 +60,9 @@ export class ClientPlayer extends Player {
 
     private healDelay = 80;
     private receivedDamage: number | null = null;
+    timerCount = 1000;
 
-    private shameActive = false;
+    shameActive = false;
     private shameTimer = 0;
     shameCount = 0;
 
@@ -98,7 +100,7 @@ export class ClientPlayer extends Player {
     /**
      * true if connected to the sandbox
      */
-    private get isSandbox() {
+    get isSandbox() {
         return window.vultr.scheme === "mm_exp";
     }
 
@@ -231,7 +233,7 @@ export class ClientPlayer extends Player {
     /**
      * Returns the best hat to be equipped at the tick
      */
-    getBestCurrentHat(): THat {
+    getBestCurrentHat(): number {
         const { current, future } = this.position;
 
         if (settings.autoflipper) {
@@ -277,13 +279,15 @@ export class ClientPlayer extends Player {
             }
         }
 
-        const nearestInstakill = PlayerManager.getInstakillEnemies(this);
-        if (nearestInstakill !== null) {
-            const distance = nearestInstakill.position.future.distance(future);
-            const range = nearestInstakill.getMaxWeaponRange() + this.hitScale;
-            if (distance <= range) {
-                Controller.needToHeal = true;
-                return EHat.SOLDIER_HELMET;
+        if (settings.antienemy) {
+            const nearestInstakill = PlayerManager.getInstakillEnemies(this);
+            if (nearestInstakill !== null) {
+                const distance = nearestInstakill.position.future.distance(future);
+                const range = nearestInstakill.getMaxWeaponRange() + this.hitScale + 40;
+                if (distance <= range) {
+                    ModuleHandler.needToHeal = true;
+                    return EHat.SOLDIER_HELMET;
+                }
             }
         }
         // if (settings.antienemy) {
@@ -315,7 +319,7 @@ export class ClientPlayer extends Player {
             if (inWinter) return EHat.WINTER_CAP;
         }
 
-        return Controller.store[EStoreType.HAT].actual;
+        return ModuleHandler.getHatStore().actual;
     }
 
     getPlacePosition(
@@ -332,7 +336,7 @@ export class ClientPlayer extends Player {
 
         const secondary = Weapons[weapon];
         const arrow = DataHandler.getProjectile(weapon);
-        const angle = Controller.mouse.sentAngle;
+        const angle = ModuleHandler.mouse.sentAngle;
         const start = position.direction(angle, 140 / 2);
         return new Projectile(
             start.x, start.y, angle,
@@ -360,8 +364,12 @@ export class ClientPlayer extends Player {
             this.shameCount = 0;
         }
 
-        Controller.postTick();
-        // Instakill.postTick();
+        this.timerCount = Math.min(this.timerCount + PlayerManager.step, 1000);
+        if (this.timerCount === 1000) {
+            this.timerCount = 0;
+        }
+
+        ModuleHandler.postTick();
     }
 
     updateHealth(health: number) {
@@ -385,11 +393,12 @@ export class ClientPlayer extends Player {
         }
 
         if (settings.autoheal && health < 100) {
+            ShameReset.healthUpdate();
             // const difference = Math.abs(health - this.previousHealth);
             // const delay = difference <= 10 ? 150 : 80;
             if (this.healDelay === -1) return;
             setTimeout(() => {
-                Controller.heal(true);
+                ModuleHandler.heal();
             }, this.healDelay);
         }
     }
@@ -462,7 +471,7 @@ export class ClientPlayer extends Player {
     reset(first = false) {
         this.resetResources();
         this.resetInventory();
-        Controller.reset();
+        ModuleHandler.reset();
         this.inGame = false;
 
         const weapon = this.weapon;

@@ -130,7 +130,7 @@ const ObjectManager = new class ObjectManager {
         return this.grid.retrieve(pos, radius);
     }
 
-    canPlaceItem(id: TPlaceable, position: Vector): boolean {
+    canPlaceItem(id: TPlaceable, position: Vector) {
         if (id !== EItem.PLATFORM && pointInRiver(position)) {
             return false;
         }
@@ -139,7 +139,9 @@ const ObjectManager = new class ObjectManager {
         const objects = this.retrieveObjects(position, item.scale);
         for (const object of objects) {
             const scale = item.scale + object.placementScale;
-            if (position.distance(object.position.current) < scale) return false;
+            if (position.distance(object.position.current) < scale) {
+                return false;
+            }
         }
 
         return true;

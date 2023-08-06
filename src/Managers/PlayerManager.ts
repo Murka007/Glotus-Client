@@ -1,25 +1,15 @@
-import Glotus from "..";
-import Animals from "../constants/Animals";
 import Config from "../constants/Config";
 import { Weapons } from "../constants/Items";
-import { Hats } from "../constants/Store";
 import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
 import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
-import Projectile from "../data/Projectile";
-import Controller from "../modules/Controller";
-import Vector from "../modules/Vector";
-import { TTarget } from "../types/Common";
 import { TMelee, TWeapon } from "../types/Items";
-import { EHat, EStoreType } from "../types/Store";
 import { getAngleDist, lineIntersectsRect } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
-import Logger from "../utility/Logger";
 import Sorting from "../utility/Sorting";
 import ObjectManager from "./ObjectManager";
 import ProjectileManager from "./ProjectileManager";
-import SocketManager from "./SocketManager";
 
 interface IPlayerData {
     readonly socketID?: string;

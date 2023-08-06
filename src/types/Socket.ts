@@ -116,7 +116,7 @@ export type OutcomingPacket =
     [SocketClient.JOIN_CLAN, string] |
     [SocketClient.CREATE_CLAN, string] |
     [SocketClient.LEAVE_CLAN] |
-    [SocketClient.STORE, TStoreAction, THat | TAccessory, TStoreType] |
+    [SocketClient.STORE, TStoreAction, number, TStoreType] |
     [SocketClient.CHAT, string] |
     [SocketClient.RESET_MOVE_DIR] |
     [SocketClient.ATTACK, 1 | 0, number | null] |

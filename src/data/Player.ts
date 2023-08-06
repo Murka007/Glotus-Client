@@ -5,7 +5,6 @@ import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
-import Controller from "../modules/Controller";
 import { IReload, TReload } from "../types/Common";
 import { EWeapon, EWeaponVariant, TItem, TMelee, TPlaceable, TWeapon, TWeaponData, TWeaponVariant, WeaponTypeString } from "../types/Items";
 import { EHat, EStoreType, TAccessory, THat } from "../types/Store";

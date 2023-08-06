@@ -36,6 +36,8 @@ export interface ISettings {
     autoheal: boolean;
     antiboostpad: boolean;
 
+    automill: boolean;
+
     // Visuals
     enemyTracers: boolean;
     enemyTracersColor: string;
@@ -110,6 +112,7 @@ export const defaultSettings = {
     autoreload: true,
     autoheal: true,
     antiboostpad: true,
+    automill: true,
     enemyTracers: true,
     enemyTracersColor: "#cc5151",
     teammateTracers: true,
