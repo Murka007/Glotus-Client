@@ -3,13 +3,13 @@ import GameUI from "../UI/GameUI";
 import UI from "../UI/UI";
 import { Accessories, Hats } from "../constants/Store";
 import myPlayer from "../data/ClientPlayer";
-import { ESentAngle } from "../types/Common";
-import { ItemType, TItemType, TWeaponType, WeaponType } from "../types/Items";
-import { EStoreType, TAccessory, TEquipType, THat, TStoreType } from "../types/Store";
-import { formatButton, getAngle, getAngleFromBitmask, getUniqueID, isActiveInput } from "../utility/Common";
-import Logger from "../utility/Logger";
+import { ESentAngle } from "../types/Enums";
+import { ItemType, WeaponType } from "../types/Items";
+import { EStoreType, TEquipType } from "../types/Store";
+import { formatButton, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
+import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
-import AntiInsta from "./modules/Antiinsta";
+import AntiInsta from "./modules/AntiInsta";
 import Autohat from "./modules/Autohat";
 import Automill from "./modules/Automill";
 import Placer from "./modules/Placer";
@@ -27,17 +27,17 @@ type TStore = [IStore, IStore];
 const ModuleHandler = new class ModuleHandler {
 
     private readonly modules = [
+        new Autohat,
         new AntiInsta,
         ShameReset,
         new Placer,
         new Automill,
-        new Autohat,
     ] as const;
 
     /**
      * A list of placement hotkeys that are currently pressed
      */
-    private readonly hotkeys = new Map<string, TItemType>();
+    private readonly hotkeys = new Map<string, ItemType>();
 
     private readonly store: TStore = [
         { utility: new Map, current: 0, actual: 0, last: 0 },
@@ -55,12 +55,12 @@ const ModuleHandler = new class ModuleHandler {
     /**
      * The type of weapon my player is holding
      */
-    weapon!: TWeaponType;
+    weapon!: WeaponType;
 
     /**
      * Current type of item which is placing
      */
-    currentType!: TItemType | null;
+    currentType!: ItemType | null;
 
     /**
      * true if autoattack is enabled
@@ -87,7 +87,7 @@ const ModuleHandler = new class ModuleHandler {
     sentAccEquip!: boolean;
 
     needToHeal!: boolean;
-    needToHealPrevious!: boolean;
+    didAntiInsta!: boolean;
 
     public readonly mouse = {
         x: 0,
@@ -115,6 +115,8 @@ const ModuleHandler = new class ModuleHandler {
 
     reset(): void {
         this.hotkeys.clear();
+        this.getHatStore().utility.clear();
+        this.getAccStore().utility.clear();
         this.weapon = WeaponType.PRIMARY;
         this.currentType = null;
         this.autoattack = false;
@@ -125,7 +127,7 @@ const ModuleHandler = new class ModuleHandler {
         this.sentHatEquip = false;
         this.sentAccEquip = false;
         this.needToHeal = false;
-        this.needToHealPrevious = false;
+        this.didAntiInsta = false;
 
         for (const module of this.modules) {
             if ("reset" in module) {
@@ -145,7 +147,7 @@ const ModuleHandler = new class ModuleHandler {
     /**
      * Returns true if myPlayer can place item
      */
-    canPlace(type: TItemType) {
+    canPlace(type: ItemType) {
         return (
             myPlayer.hasResourcesForType(type) &&
             myPlayer.hasItemCountForType(type)
@@ -169,7 +171,7 @@ const ModuleHandler = new class ModuleHandler {
 
     private upgradeItem(id: number) {
         SocketManager.upgradeItem(id);
-
+        myPlayer.upgradeItem(id);
         // if (DataHandler.isWeapon(id)) {
         //     const type = WeaponTypeString[Weapons[id].itemType];
         //     const reload = this.reload[type];
@@ -185,8 +187,8 @@ const ModuleHandler = new class ModuleHandler {
      * @param type Buy 0 - hat, 1 - accessory
      * @param id ID of the hat or accessory
      */
-    private buy(type: TStoreType, id: number): boolean {
-        const store = type === EStoreType.HAT ? Hats : Accessories;
+    private buy(type: EStoreType, id: number): boolean {
+        const store = DataHandler.getStore(type);
         const price = store[id as keyof typeof store].price;
         const bought = this.bought[type];
 
@@ -203,7 +205,7 @@ const ModuleHandler = new class ModuleHandler {
      * @param id ID of the hat or accessory
      * @param equipType Indicates the type of hat you want to equip.
      */
-    equip(type: TStoreType, id: number, equipType: TEquipType, force = false) {
+    equip(type: EStoreType, id: number, equipType: TEquipType, force = false) {
         if (!this.buy(type, id) || !myPlayer.inGame) return;
 
         const store = this.store[type];
@@ -239,8 +241,8 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.updateAngle(angle);
     }
 
-    private selectItem(type: TItemType) {
-        const item = myPlayer.getItemByType(type);
+    private selectItem(type: ItemType) {
+        const item = myPlayer.getItemByType(type)!;
         SocketManager.selectItemByID(item, false);
     }
 
@@ -256,15 +258,15 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.stopAttack();
     }
 
-    private whichWeapon(type: TWeaponType = this.weapon) {
-        if (!myPlayer.hasItemType(type)) return;
-        this.weapon = type;
+    private whichWeapon(type: WeaponType = this.weapon) {
+        const weapon = myPlayer.getItemByType(type);
+        if (weapon === null) return;
 
-        const weapon = myPlayer.getItemByType(this.weapon);
+        this.weapon = type;
         SocketManager.selectItemByID(weapon, true);
     }
 
-    place(type: TItemType, angle = this.mouse.angle) {
+    place(type: ItemType, angle = this.mouse.angle) {
         this.selectItem(type);
         this.attack(angle);
         this.stopAttack();
@@ -274,24 +276,27 @@ const ModuleHandler = new class ModuleHandler {
         }
     }
 
-    heal() {
+    heal(last: boolean) {
         this.selectItem(ItemType.FOOD);
         this.attack(null, ESentAngle.NONE);
-        this.stopAttack();
-        this.whichWeapon();
-        if (this.attacking) {
-            this.attack(this.mouse.angle);
+        if (last) {
+            this.stopAttack();
+            this.whichWeapon();
+            if (this.attacking) {
+                this.attack(this.mouse.angle);
+            }
         }
     }
 
-    private placementHandler(type: TItemType, code: string) {
-        if (!myPlayer.hasItemType(type)) return;
+    private placementHandler(type: ItemType, code: string) {
+        const item = myPlayer.getItemByType(type);
+        if (item === null) return;
         this.hotkeys.set(code, type);
         this.currentType = type;
 
         if (this.sentAngle === ESentAngle.NONE) {
             if (type === ItemType.FOOD) {
-                this.heal();
+                this.heal(true);
             } else {
                 this.place(type);
             }
@@ -319,19 +324,19 @@ const ModuleHandler = new class ModuleHandler {
         this.sentAngle = ESentAngle.NONE;
         this.sentHatEquip = false;
         this.sentAccEquip = false;
-        this.needToHealPrevious = this.needToHeal;
+        this.didAntiInsta = false;
 
-        const store = this.getHatStore();
-        for (const [hat, toRemove] of store.utility) {
-            if (toRemove) {
-                store.utility.delete(hat);
-            }
-        }
+        // const store = this.getHatStore();
+        // for (const [hat, toRemove] of store.utility) {
+        //     if (toRemove) {
+        //         store.utility.delete(hat);
+        //     }
+        // }
 
-        if (store.utility.size > 0) {
-            const last = [...store.utility].pop()!;
-            this.equip(EStoreType.HAT, last[0], "UTILITY");
-        }
+        // if (store.utility.size > 0) {
+        //     const last = [...store.utility].pop()!;
+        //     this.equip(EStoreType.HAT, last[0], "UTILITY");
+        // }
 
         for (const module of this.modules) {
             module.postTick();

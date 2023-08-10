@@ -1,8 +1,6 @@
-import ObjectManager from "../Managers/ObjectManager";
-import PlayerManager from "../Managers/PlayerManager";
 import Animals, { EAnimal } from "../constants/Animals";
 import Config from "../constants/Config";
-import { EItem, ItemGroup } from "../types/Items";
+import { ItemGroup } from "../types/Items";
 import Entity from "./Entity";
 
 /**
@@ -12,9 +10,7 @@ class Animal extends Entity {
     type = -1;
     health = 0;
     nameIndex = 0;
-    isHostile = false;
-    canBeTrapped = false;
-    isTrapped = false;
+    isDanger = false;
 
     constructor() {
         super();
@@ -22,7 +18,7 @@ class Animal extends Entity {
 
     update(
         id: number,
-        type: number,
+        type: EAnimal,
         x: number,
         y: number,
         angle: number,
@@ -41,9 +37,10 @@ class Animal extends Entity {
         this.health = health;
         this.nameIndex = nameIndex;
         this.scale = animal.scale;
-        this.isHostile = animal.hostile;
-        this.canBeTrapped = !("noTrap" in animal);
-        this.isTrapped = this.canBeTrapped && this.checkCollision(ItemGroup.TRAP);
+        const isHostile = animal.hostile;
+        const canBeTrapped = !("noTrap" in animal);
+        const isTrapped = canBeTrapped && this.checkCollision(ItemGroup.TRAP);
+        this.isDanger = isHostile && !isTrapped;
     }
 
     get attackRange() {
@@ -54,7 +51,7 @@ class Animal extends Entity {
         if (this.type === EAnimal.MOOSTAFA) {
             return Animals[this.type].hitRange + Config.playerScale;
         }
-        return this.scale + 40;
+        return this.scale + 60;
     }
 }
 

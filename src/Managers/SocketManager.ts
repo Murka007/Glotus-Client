@@ -2,15 +2,14 @@ import myPlayer from "../data/ClientPlayer";
 import { PlayerObject } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
-import { TItem, TWeapon } from "../types/Items";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
-import { EStoreAction, TAccessory, THat, TStoreType } from "../types/Store";
 import { getUniqueID } from "../utility/Common";
 import Hooker from "../utility/Hooker";
-import Logger from "../utility/Logger";
 import ObjectManager from "./ObjectManager";
 import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
+import { EItem, EWeapon } from "../types/Items";
+import { EStoreAction, EStoreType } from "../types/Store";
 
 const SocketManager = new class SocketManager {
 
@@ -75,14 +74,26 @@ const SocketManager = new class SocketManager {
             }
         );
 
+        let packetCount = 0;
         window.WebSocket = new Proxy(WebSocket, {
             construct(target, args: ConstructorParameters<typeof WebSocket>) {
                 const socket = new target(...args);
                 that.socket = socket;
+                const _send = socket.send;
+                socket.send = function(data) {
+                    packetCount += 1;
+                    return _send.call(this, data);
+                }
                 socket.addEventListener("message", that.message);
                 return socket;
             }
         })
+
+        setInterval(() => {
+            if (packetCount === 0) return;
+            console.log("PacketCount: ", packetCount);
+            packetCount = 0;
+        }, 1000);
     }
 
     private handlePing() {
@@ -124,11 +135,6 @@ const SocketManager = new class SocketManager {
             case SocketServer.MY_PLAYER_DEATH:
                 myPlayer.reset();
                 break;
-
-            case SocketServer.UPDATE_ITEMS: {
-                myPlayer.updateItems(temp[1], temp[2] === 1);
-                break;
-            }
 
             case SocketServer.UPDATE_RESOURCES: {
                 const type = temp[1] === "points" ? "gold" : temp[1];
@@ -240,16 +246,11 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.HIT_OBJECT: {
                 const object = ObjectManager.objects.get(temp[2]);
-                if (object instanceof PlayerObject) {
+                if (object instanceof PlayerObject && object.isDestroyable()) {
                     ObjectManager.attackedObjects.set(getUniqueID(), object);
                 }
                 break;
             }
-
-            // case SocketServer.REMOVE_PROJECTILE: {
-            //     ProjectileManager.removeProjectile(temp[1], temp[2]);
-            //     break;
-            // }
 
             default:
                 // Logger.log(temp);
@@ -290,11 +291,11 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.LEAVE_CLAN]);
     }
 
-    equip(type: TStoreType, id: number) {
+    equip(type: EStoreType, id: number) {
         this.send([SocketClient.STORE, EStoreAction.EQUIP, id, type]);
     }
 
-    buy(type: TStoreType, id: number) {
+    buy(type: EStoreType, id: number) {
         this.send([SocketClient.STORE, EStoreAction.BUY, id, type]);
     }
 
@@ -330,7 +331,7 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.PING_MAP]);
     }
 
-    selectItemByID(id: TWeapon | TItem, type: boolean) {
+    selectItemByID(id: EWeapon | EItem, type: boolean) {
         this.send([SocketClient.SELECT_ITEM, id, type]);
     }
 

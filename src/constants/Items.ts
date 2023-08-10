@@ -1,4 +1,4 @@
-import { EItem, EWeapon, EWeaponVariant, ItemGroup, ItemType, WeaponType } from "../types/Items";
+import { EItem, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVariant } from "../types/Items";
 
 /**
  * Constant array of weapon data, index represent weapon ID
@@ -184,7 +184,8 @@ export const Weapons = [{
     yOffset: 0,
     projectile: 0,
     spdMult: .75,
-    speed: 600
+    speed: 600,
+    range: 2200,
 }, {
     id: EWeapon.GREAT_HAMMER,
     itemType: WeaponType.SECONDARY,
@@ -241,7 +242,8 @@ export const Weapons = [{
     yOffset: 0,
     projectile: 2,
     spdMult: .7,
-    speed: 700
+    speed: 700,
+    range: 2200,
 }, {
     id: EWeapon.REPEATER_CROSSBOW,
     itemType: WeaponType.SECONDARY,
@@ -265,7 +267,8 @@ export const Weapons = [{
     yOffset: 0,
     projectile: 3,
     spdMult: .7,
-    speed: 230
+    speed: 230,
+    range: 2200,
 }, {
     id: EWeapon.MC_GRABBY,
     itemType: WeaponType.SECONDARY,
@@ -312,7 +315,8 @@ export const Weapons = [{
     projectile: 5,
     hideProjectile: true,
     spdMult: .6,
-    speed: 1500
+    speed: 1500,
+    range: 2200,
 }] as const;
 
 /**
@@ -830,23 +834,23 @@ export const Items = [{
 /**
  * All existing weapon variants
  */
-export const weaponVariants = [{
-    id: EWeaponVariant.STONE,
+export const WeaponVariants = [{
+    id: WeaponVariant.STONE,
     src: "",
     xp: 0,
     val: 1
 }, {
-    id: EWeaponVariant.GOLD,
+    id: WeaponVariant.GOLD,
     src: "_g",
     xp: 3000,
     val: 1.1
 }, {
-    id: EWeaponVariant.DIAMOND,
+    id: WeaponVariant.DIAMOND,
     src: "_d",
     xp: 7000,
     val: 1.18
 }, {
-    id: EWeaponVariant.RUBY,
+    id: WeaponVariant.RUBY,
     src: "_r",
     poison: true,
     xp: 12000,

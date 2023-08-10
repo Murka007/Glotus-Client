@@ -377,8 +377,6 @@ export const Hats = {
     }
 } as const;
 
-export type THats = typeof Hats;
-
 /**
  * Constant accessory data
  */
@@ -559,3 +557,5 @@ export const Accessories = {
         dmg: 0.25
     }
 } as const;
+
+export const store = [Hats, Accessories] as const;

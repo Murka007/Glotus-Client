@@ -1,4 +1,5 @@
 import Entity from "../data/Entity";
+import Player from "../data/Player";
 import Vector from "../modules/Vector";
 
 type TPosType = "previous" | "current" | "future";
@@ -25,6 +26,10 @@ class Sorting {
             const dist2 = target.position[typeA].distance(b.position[typeB]);
             return dist1 - dist2;
         }
+    }
+
+    static byDanger(a: Player, b: Player) {
+        return b.canInstakill() - a.canInstakill();
     }
 }
 

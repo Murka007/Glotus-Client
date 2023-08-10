@@ -1,15 +1,12 @@
 import { Items, Weapons } from "../constants/Items";
-import { ValueOf } from "./Common";
 
 /**
  * Weapon types that exist in the game
  */
-export const WeaponType = {
-    PRIMARY: 0,
-    SECONDARY: 1,
-} as const;
-
-export type TWeaponType = ValueOf<typeof WeaponType>;
+export const enum WeaponType {
+    PRIMARY,
+    SECONDARY,
+}
 
 export const WeaponTypeString = [
     "primary",
@@ -19,126 +16,109 @@ export const WeaponTypeString = [
 /**
  * Item types that exist in the game
  */
-export const ItemType = {
-    FOOD: 2,
-    WALL: 3,
-    SPIKE: 4,
-    WINDMILL: 5,
-    FARM: 6,
-    TRAP: 7,
-    TURRET: 8,
-    SPAWN: 9,
-} as const;
+export const enum ItemType {
+    FOOD = 2,
+    WALL,
+    SPIKE,
+    WINDMILL,
+    FARM,
+    TRAP,
+    TURRET,
+    SPAWN,
+}
 
-export type TItemType = ValueOf<typeof ItemType>;
-
-export const ItemGroup = {
-    WALL: 1,
-    SPIKE: 2,
-    WINDMILL: 3,
-    MINE: 4,
-    TRAP: 5,
-    BOOST: 6,
-    TURRET: 7,
-    PLATFORM: 8,
-    HEAL_PAD: 9,
-    SPAWN: 10,
-    SAPLING: 11,
-    BLOCKER: 12,
-    TELEPORTER: 13,
-} as const;
-
-export type TItemGroup = ValueOf<typeof ItemGroup>;
+export const enum ItemGroup {
+    WALL = 1,
+    SPIKE,
+    WINDMILL,
+    MINE,
+    TRAP,
+    BOOST,
+    TURRET,
+    PLATFORM,
+    HEAL_PAD,
+    SPAWN,
+    SAPLING,
+    BLOCKER,
+    TELEPORTER,
+}
 
 /**
  * Default weapon ID's
  */
-export const EWeapon = {
-    TOOL_HAMMER: 0,
-    HAND_AXE: 1,
-    GREAT_AXE: 2,
-    SHORT_SWORD: 3,
-    KATANA: 4,
-    POLEARM: 5,
-    BAT: 6,
-    DAGGERS: 7,
-    STICK: 8,
-    HUNTING_BOW: 9,
-    GREAT_HAMMER: 10,
-    WOODEN_SHIELD: 11,
-    CROSSBOW: 12,
-    REPEATER_CROSSBOW: 13,
-    MC_GRABBY: 14,
-    MUSKET: 15,
-} as const;
-
-export type TWeapon = ValueOf<typeof EWeapon>;
-
-export const EItem = {
-    APPLE: 0,
-    COOKIE: 1,
-    CHEESE: 2,
-    WOOD_WALL: 3,
-    STONE_WALL: 4,
-    CASTLE_WALL: 5,
-    SPIKES: 6,
-    GREATER_SPIKES: 7,
-    POISON_SPIKES: 8,
-    SPINNING_SPIKES: 9,
-    WINDMILL: 10,
-    FASTER_WINDMILL: 11,
-    POWER_MILL: 12,
-    MINE: 13,
-    SAPLING: 14,
-    PIT_TRAP: 15,
-    BOOST_PAD: 16,
-    TURRET: 17,
-    PLATFORM: 18,
-    HEALING_PAD: 19,
-    SPAWN_PAD: 20,
-    BLOCKER: 21,
-    TELEPORTER: 22,
-} as const;
-
-export type TItem = ValueOf<typeof EItem>;
-
-export const EWeaponVariant = {
-    STONE: 0,
-    GOLD: 1,
-    DIAMOND: 2,
-    RUBY: 3,
-} as const;
-
-export type TWeaponVariant = ValueOf<typeof EWeaponVariant>;
-
-export type TItems = typeof Items;
-export type TWeapons = typeof Weapons;
-
-export type ExtractType<
-    T extends TWeapons | TItems,
-    K extends TWeaponType | TItemType
-> = Extract<T[number], { itemType: K }>
-
-export type TWeaponData = {
-    [WeaponType.PRIMARY]: ExtractType<TWeapons, 0>["id"],
-    [WeaponType.SECONDARY]: ExtractType<TWeapons, 1>["id"] | null,
+export const enum EWeapon {
+    TOOL_HAMMER,
+    HAND_AXE,
+    GREAT_AXE,
+    SHORT_SWORD,
+    KATANA,
+    POLEARM,
+    BAT,
+    DAGGERS,
+    STICK,
+    HUNTING_BOW,
+    GREAT_HAMMER,
+    WOODEN_SHIELD,
+    CROSSBOW,
+    REPEATER_CROSSBOW,
+    MC_GRABBY,
+    MUSKET,
 }
 
-export type TItemData = {
-    [ItemType.FOOD]: ExtractType<TItems, 2>["id"],
-    [ItemType.WALL]: ExtractType<TItems, 3>["id"],
-    [ItemType.SPIKE]: ExtractType<TItems, 4>["id"],
-    [ItemType.WINDMILL]: ExtractType<TItems, 5>["id"],
-    [ItemType.FARM]: ExtractType<TItems, 6>["id"] | null,
-    [ItemType.TRAP]: ExtractType<TItems, 7>["id"] | null,
-    [ItemType.TURRET]: ExtractType<TItems, 8>["id"] | null,
-    [ItemType.SPAWN]: ExtractType<TItems, 9>["id"] | null,
-};
+export const enum EItem {
+    APPLE,
+    COOKIE,
+    CHEESE,
+    WOOD_WALL,
+    STONE_WALL,
+    CASTLE_WALL,
+    SPIKES,
+    GREATER_SPIKES,
+    POISON_SPIKES,
+    SPINNING_SPIKES,
+    WINDMILL,
+    FASTER_WINDMILL,
+    POWER_MILL,
+    MINE,
+    SAPLING,
+    PIT_TRAP,
+    BOOST_PAD,
+    TURRET,
+    PLATFORM,
+    HEALING_PAD,
+    SPAWN_PAD,
+    BLOCKER,
+    TELEPORTER,
+}
 
-export type TData<T> = T extends TWeaponType ? TWeaponData[T] : T extends TItemType ? TItemData[T] : never;
+export const enum WeaponVariant {
+    STONE,
+    GOLD,
+    DIAMOND,
+    RUBY,
+}
 
-export type TMelee = Extract<TWeapons[TWeapon], { damage: number }>["id"];
-export type TShootable = Extract<TWeapons[TWeapon], { projectile: number }>["id"];
-export type TPlaceable = Extract<TItems[TItem], { itemGroup: number }>["id"];
-export type THealable = Extract<TItems[TItem], { restore: number }>["id"];
-export type TDestroyable = Extract<TItems[TItem], { health: number }>["id"];
+type ExtractWeapon<T> = Extract<typeof Weapons[number], T>["id"];
+type ExtractItem<T> = Extract<typeof Items[number], T>["id"];
+
+export type TPrimary = ExtractWeapon<{ itemType: 0 }>;
+export type TSecondary = ExtractWeapon<{ itemType: 1 }>;
+export type TMelee = ExtractWeapon<{ damage: number }>;
+export type TAttackable = ExtractWeapon<{ range: number }>;
+export type TShootable = ExtractWeapon<{ projectile: number }>;
+export type TPlaceable = ExtractItem<{ itemGroup: number }>;
+export type THealable = ExtractItem<{ restore: number }>;
+export type TDestroyable = ExtractItem<{ health: number }>;
+
+export type TInventory = {
+    [WeaponType.PRIMARY]: TPrimary,
+    [WeaponType.SECONDARY]: TSecondary | null,
+    [ItemType.FOOD]: ExtractItem<{ itemType: 2 }>,
+    [ItemType.WALL]: ExtractItem<{ itemType: 3 }>,
+    [ItemType.SPIKE]: ExtractItem<{ itemType: 4 }>,
+    [ItemType.WINDMILL]: ExtractItem<{ itemType: 5 }>,
+    [ItemType.FARM]: ExtractItem<{ itemType: 6 }> | null,
+    [ItemType.TRAP]: ExtractItem<{ itemType: 7 }> | null,
+    [ItemType.TURRET]: ExtractItem<{ itemType: 8 }> | null,
+    [ItemType.SPAWN]: ExtractItem<{ itemType: 9 }> | null,
+}

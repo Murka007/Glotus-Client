@@ -1,14 +1,14 @@
-export const EAnimal = {
-    COW: 0,
-    PIG: 1,
-    BULL: 2,
-    BULLY: 3,
-    WOLF: 4,
-    QUACK: 5,
-    MOOSTAFA: 6,
-    TREASURE: 7,
-    MOOFIE: 8,
-} as const;
+export const enum EAnimal {
+    COW,
+    PIG,
+    BULL,
+    BULLY,
+    WOLF,
+    QUACK,
+    MOOSTAFA,
+    TREASURE,
+    MOOFIE,
+}
 
 /**
  * Constant animal data

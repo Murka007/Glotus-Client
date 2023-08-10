@@ -1,6 +1,5 @@
-import { ValueOf } from "./Common";
-import { TItem, TItemGroup, TMelee, TWeapon } from "./Items";
-import { TAccessory, THat, TStoreAction, TStoreType } from "./Store";
+import { EItem, EWeapon, ItemGroup, TMelee } from "./Items";
+import { EStoreAction, EStoreType } from "./Store";
 
 export enum SocketServer {
     CONNECTION_ESTABLISHED = "io-init",
@@ -88,8 +87,8 @@ export type IncomingPacket =
     [SocketServer.UPDATE_LEADERBOARD, any[]] |
     [SocketServer.LOAD_AI, [number, number, number, number, number, number, number] | undefined] |
     [SocketServer.UPDATE_MINIMAP] |
-    [SocketServer.UPDATE_ITEMS, [TWeapon], 1] |
-    [SocketServer.UPDATE_ITEMS, [TItem], undefined] |
+    [SocketServer.UPDATE_ITEMS, [EWeapon], 1] |
+    [SocketServer.UPDATE_ITEMS, [EItem], undefined] |
     [SocketServer.UPDATE_AGE, number, number?, number?] |
     [SocketServer.UPDATE_RESOURCES, "food" | "wood" | "stone" | "points" | "kills", number, 1] |
     [SocketServer.UPDATE_CLAN_MEMBERS, (number | string)[]] |
@@ -99,7 +98,7 @@ export type IncomingPacket =
     [SocketServer.REMOVE_PROJECTILE, number, number] |
     [SocketServer.ADD_OBJECT, any[]] |
     [SocketServer.REMOVE_OBJECT, number] |
-    [SocketServer.ITEM_COUNT, TItemGroup, number] |
+    [SocketServer.ITEM_COUNT, ItemGroup, number] |
     [SocketServer.UPDATE_PLAYER_HEALTH, number, number] |
     [SocketServer.HIT_OBJECT, number, number] |
     [SocketServer.SHOOT_TURRET, number, number];
@@ -116,14 +115,14 @@ export type OutcomingPacket =
     [SocketClient.JOIN_CLAN, string] |
     [SocketClient.CREATE_CLAN, string] |
     [SocketClient.LEAVE_CLAN] |
-    [SocketClient.STORE, TStoreAction, number, TStoreType] |
+    [SocketClient.STORE, EStoreAction, number, EStoreType] |
     [SocketClient.CHAT, string] |
     [SocketClient.RESET_MOVE_DIR] |
     [SocketClient.ATTACK, 1 | 0, number | null] |
     [SocketClient.MOVE, number | null] |
     [SocketClient.PLAYER_CONTROL, 1 | 0] |
     [SocketClient.PING_MAP] |
-    [SocketClient.SELECT_ITEM, TItem | TWeapon, boolean] |
+    [SocketClient.SELECT_ITEM, EItem | EWeapon, boolean] |
     [SocketClient.SPAWN, ISpawn] |
     [SocketClient.UPGRADE_ITEM, number] |
     [SocketClient.ANGLE, number] |

@@ -3,13 +3,17 @@ import myPlayer from "../data/ClientPlayer";
 import ModuleHandler from "../features/ModuleHandler";
 import SocketManager from "../Managers/SocketManager";
 import ZoomHandler from "../modules/ZoomHandler";
-import { TItemGroup } from "../types/Items";
+import { ItemGroup } from "../types/Items";
 import settings from "../utility/Settings";
 import Storage from "../utility/Storage";
 import UI from "./UI";
 
 
 const GameUI = new class GameUI {
+
+    constructor() {
+        this.spawn = this.spawn.bind(this);
+    }
 
     /**
      * Returns game html elements
@@ -124,7 +128,7 @@ const GameUI = new class GameUI {
     /**
      * Updates item count of items in inventory
      */
-    updateItemCount(group: TItemGroup) {
+    updateItemCount(group: ItemGroup) {
         const items = document.querySelectorAll<HTMLSpanElement>(`span.itemCounter[data-id='${group}']`);
         const { count, limit } = myPlayer.getItemCount(group);
         for (const item of items) {

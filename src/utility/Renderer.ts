@@ -60,6 +60,24 @@ class Renderer {
         ctx.restore();
     }
 
+    static fillCircle(
+        ctx: TCTX,
+        x: number, y: number,
+        radius: number,
+        color: string,
+        opacity = 1,
+    ) {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+    }
+
     static line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1) {
         ctx.save();
         ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);

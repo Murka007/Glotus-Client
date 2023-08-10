@@ -11,22 +11,27 @@ const ShameReset = new class ShameReset {
         return myPlayer.timerCount > 1000 - SocketManager.TICK;
     }
 
+    private get shouldReset() {
+        return myPlayer.shameCount > 0 && !myPlayer.shameActive && this.isEquipTime;
+    }
+
     postTick(): void {
         if (ModuleHandler.sentHatEquip) return;
-        if (ModuleHandler.needToHealPrevious) return;
-        if (!this.isEquipTime) return;
+        if (ModuleHandler.didAntiInsta) return;
 
         const store = ModuleHandler.getHatStore();
-        if (myPlayer.shameCount === 0) {
-            store.utility.delete(EHat.BULL_HELMET);
-        } else if (!store.utility.has(EHat.BULL_HELMET)) {
-            ModuleHandler.equip(EStoreType.HAT, EHat.BULL_HELMET, "UTILITY");
-            store.utility.set(EHat.BULL_HELMET, false);
-            Logger.end("gg");
+        const bull = EHat.BULL_HELMET;
+        const bullState = store.utility.get(bull);
+        if (bullState === undefined && this.shouldReset) {
+            store.utility.set(bull, false);
+            ModuleHandler.equip(EStoreType.HAT, bull, "UTILITY");
+        } else if (bullState) {
+            store.utility.delete(bull);
+            ModuleHandler.equip(EStoreType.HAT, store.current, "CURRENT");
         }
     }
 
-    healthUpdate() {
+    healthUpdate(): boolean {
         const { currentHealth, previousHealth, shameCount } = myPlayer;
         const difference = Math.abs(currentHealth - previousHealth);
         const isDmgOverTime = difference <= 5 && currentHealth < previousHealth;
@@ -35,10 +40,12 @@ const ShameReset = new class ShameReset {
         if (isDmgOverTime) {
             myPlayer.timerCount = 0;
         }
+        const store = ModuleHandler.getHatStore();
         if (shouldReset) {
-            const store = ModuleHandler.getHatStore();
             store.utility.set(EHat.BULL_HELMET, true);
+            return true;
         }
+        return false;
     }
 }
 

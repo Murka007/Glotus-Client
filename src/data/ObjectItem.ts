@@ -3,18 +3,11 @@ import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
 import Vector from "../modules/Vector";
 import { ValueOf } from "../types/Common";
-import { EItem, TItemGroup, TPlaceable } from "../types/Items";
+import { EResourceType } from "../types/Enums";
+import { EItem, ItemGroup, TPlaceable } from "../types/Items";
 import { pointInDesert, pointInRiver } from "../utility/Common";
 import Logger from "../utility/Logger";
 import myPlayer from "./ClientPlayer";
-
-export const EResourceType = {
-    WOOD: 0,
-    FOOD: 1,
-    STONE: 2,
-    GOLD: 3,
-} as const;
-type TResourceType = ValueOf<typeof EResourceType>;
 
 /**
  * Represents resources and player objects
@@ -48,7 +41,7 @@ abstract class ObjectItem {
 }
 
 export class Resource extends ObjectItem {
-    readonly type: TResourceType;
+    readonly type: EResourceType;
     readonly layer: number;
     constructor(
         id: number,
@@ -56,7 +49,7 @@ export class Resource extends ObjectItem {
         y: number,
         angle: number,
         scale: number,
-        type: TResourceType
+        type: EResourceType
     ) {
         super(id, x, y, angle, scale);
         this.type = type;
@@ -104,7 +97,7 @@ export class PlayerObject extends ObjectItem {
      */
     readonly seenPlacement: boolean;
     readonly layer: number;
-    readonly itemGroup: TItemGroup;
+    readonly itemGroup: ItemGroup;
     constructor(
         id: number,
         x: number,

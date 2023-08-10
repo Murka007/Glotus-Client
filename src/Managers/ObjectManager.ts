@@ -10,6 +10,7 @@ import myPlayer from "../data/ClientPlayer";
 import Projectile from "../data/Projectile";
 import SpatialHashGrid from "../modules/SpatialHashGrid";
 import ProjectileManager from "./ProjectileManager";
+import SocketManager from "./SocketManager";
 
 const ObjectManager = new class ObjectManager {
 
@@ -41,7 +42,7 @@ const ObjectManager = new class ObjectManager {
             );
             owner.objects.add(object);
 
-            if (object.type === EItem.TURRET) {
+            if (object.type === EItem.TURRET && PlayerManager.players.includes(owner)) {
                 this.resetTurret(object.id);
             }
         }
@@ -110,7 +111,7 @@ const ObjectManager = new class ObjectManager {
         const turret = this.reloadingTurrets.get(object.id);
         if (turret === undefined) return true;
 
-        const tick = 1000 / Config.serverUpdateRate * 1;
+        const tick = SocketManager.TICK;
         return turret.reload > turret.maxReload - tick;
     }
 
@@ -159,8 +160,8 @@ const ObjectManager = new class ObjectManager {
         const distance = pos.distance(myPlayer.position.current);
 
         if (distance > turret.shootRange) return false;
-        if (!this.isTurretReloaded(object)) return false;
         if (!this.isEnemyObject(object)) return false;
+        if (!this.isTurretReloaded(object)) return false;
 
         const projectile = new Projectile(
             pos.x, pos.y, angle,

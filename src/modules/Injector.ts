@@ -76,7 +76,7 @@ const Injector = new class Injector {
         Hook.append(
             "renderEntity",
             /=(\w+)==(\w+)\|\|.+?(\w+)\.fill\(\)\)/,
-            `;Glotus.hooks.renderEntity($3,$1,$2);`
+            `;Glotus.hooks.EntityRenderer.render($3,$1,$2);`
         );
 
         // Hook.append(
@@ -94,7 +94,7 @@ const Injector = new class Injector {
         Hook.append(
             "renderItem",
             /70, 0.35\)",(\w+).+?\w+\)/,
-            `,Glotus.hooks.renderObject($1)`
+            `,Glotus.hooks.ObjectRenderer.render($1)`
         );
 
         Hook.append(

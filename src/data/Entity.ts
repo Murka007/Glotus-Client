@@ -1,8 +1,8 @@
 import ObjectManager from "../Managers/ObjectManager";
 import Animals from "../constants/Animals";
 import Vector from "../modules/Vector";
-import { ItemGroup, TItemGroup, TPlaceable } from "../types/Items";
-import { EResourceType, PlayerObject, Resource } from "./ObjectItem";
+import { ItemGroup } from "../types/Items";
+import { PlayerObject, Resource } from "./ObjectItem";
 
 /**
  * Abstract entity class. Represents players and animals
@@ -40,20 +40,20 @@ abstract class Entity {
      * @param subRadius Subtracts this amount from the item radius
      * @param checkEnemy true, if you want to check if colliding enemy object. Works only for myPlayer
      */
-    checkCollision(itemGroup: TItemGroup, subRadius = 0, checkEnemy = false): boolean {
-        const objects = ObjectManager.retrieveObjects(this.position.future, this.scale);
+    checkCollision(itemGroup: ItemGroup, subRadius = 0, checkEnemy = false): boolean {
+        const objects = ObjectManager.retrieveObjects(this.position.current, this.collisionScale);
         for (const object of objects) {
-            const current = object.position.current;
             const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
             const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
 
             if (matchItem || isCactus) {
                 if (checkEnemy && !ObjectManager.isEnemyObject(object)) continue;
 
-                const currentDistance = this.position.current.distance(current);
-                const futureDistance = this.position.future.distance(current);
-                const radius = this.scale + object.formatScale() - subRadius;
-                if (currentDistance <= radius || futureDistance <= radius) return true;
+                const current = object.position.current;
+                const dist1 = this.position.current.distance(current);
+                const dist2 = this.position.future.distance(current);
+                const radius = this.scale + object.collisionScale - subRadius;
+                if (dist1 <= radius || dist2 <= radius) return true;
             }
         }
         return false;

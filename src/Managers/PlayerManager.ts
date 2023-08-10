@@ -4,8 +4,8 @@ import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
 import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
-import { TMelee, TWeapon } from "../types/Items";
-import { getAngleDist, lineIntersectsRect } from "../utility/Common";
+import { TMelee, WeaponTypeString} from "../types/Items";
+import { getAngleDist } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Sorting from "../utility/Sorting";
 import ObjectManager from "./ObjectManager";
@@ -66,15 +66,14 @@ const PlayerManager = new class PlayerManager {
         const { position, hatID, reload } = player;
 
         // When player hits, we must reset his reload
-        const type = DataHandler.isPrimary(weaponID) ? "primary" : "secondary";
+        const weapon = Weapons[weaponID];
+        const type = WeaponTypeString[weapon.itemType];
         reload[type].current = 0;
         reload[type].max = player.getWeaponSpeed(weaponID, hatID);
 
         if (gathering === 1) {
-            const weapon = Weapons[weaponID];
-            for (const [id, object] of ObjectManager.attackedObjects) {
-                if (!(object instanceof PlayerObject && object.isDestroyable())) continue;
-
+            const objects = ObjectManager.attackedObjects;
+            for (const [id, object] of objects) {
                 const pos = object.position.current;
                 const distance = position.current.distance(pos) - object.scale;
                 const angle = position.current.angle(pos);
@@ -82,7 +81,7 @@ const PlayerManager = new class PlayerManager {
                     distance <= weapon.range &&
                     getAngleDist(angle, player.angle) <= Config.gatherAngle
                 ) {
-                    ObjectManager.attackedObjects.delete(id);
+                    objects.delete(id);
                     const damage = player.getBuildingDamage(weaponID);
                     object.health -= damage;
                 }
@@ -122,7 +121,7 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 9],
                 buffer[i + 10],
                 buffer[i + 11]
-            );
+            )
         }
 
         // Call all other classes after updating player and animal positions
@@ -193,23 +192,6 @@ const PlayerManager = new class PlayerManager {
         return [...this.players, ...this.animals];
     }
 
-    /**
-     * Returns nearest hostile entity to a specified player
-     */
-    // getNearestEntity(target: Player): Player | Animal | null {
-    //     const entities = this.getEntities();
-    //     return entities.filter(a => {
-    //         const notTarget = a !== target;
-    //         const isEnemy = a instanceof Player && this.isEnemy(target, a);
-    //         const isHostile = a instanceof Animal && Animals[a.type].hostile;
-    //         return notTarget && (isEnemy || isHostile);
-    //     }).sort((a, b) => {
-    //         const dist1 = target.position.future.distance(a.position.future);
-    //         const dist2 = target.position.future.distance(b.position.future);
-    //         return dist1 - dist2;
-    //     })[0] || null;
-    // }
-
     getEnemies(owner: Player): Player[] {
         return this.players.filter(player => this.isEnemy(owner, player));
     }
@@ -219,30 +201,29 @@ const PlayerManager = new class PlayerManager {
         return enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
     }
 
-    getInstakillEnemies(owner: Player): Player | null {
+    getDangerousEnemies(owner: Player): Player[] {
         const enemies = this.getEnemies(owner);
-        return enemies.filter(enemy => enemy.canInstakill())
-            .sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
+        return enemies.sort(Sorting.byDanger);
     }
 
-    getPossibleShootEntity(): Player | Animal | null {
-        const projectile = myPlayer.getProjectile(myPlayer.position.future, myPlayer.weapon.secondary);
-        if (projectile === null) return null;
+    // getPossibleShootEntity(): Player | Animal | null {
+    //     const projectile = myPlayer.getProjectile(myPlayer.position.future, myPlayer.weapon.secondary!);
+    //     if (projectile === null) return null;
 
-        return this.getEntities().filter(entity => {
-            const { initial, current } = projectile.position;
-            current.setVec(initial);
+    //     return this.getEntities().filter(entity => {
+    //         const { initial, current } = projectile.position;
+    //         current.setVec(initial);
 
-            const angleTowardsEntity = myPlayer.position.future.angle(entity.position.future);
-            const vec = current.direction(angleTowardsEntity, 70);
-            current.setVec(vec);
+    //         const angleTowardsEntity = myPlayer.position.future.angle(entity.position.future);
+    //         const vec = current.direction(angleTowardsEntity, 70);
+    //         current.setVec(vec);
 
-            const notTarget = entity !== myPlayer;
-            const canShoot = this.canShoot(myPlayer.id, entity);
-            const canHit = ProjectileManager.projectileCanHitEntity(projectile, entity);
-            return notTarget && canShoot && canHit;
-        }).sort(Sorting.byDistance(myPlayer, "current", "current"))[0] || null;
-    }
+    //         const notTarget = entity !== myPlayer;
+    //         const canShoot = this.canShoot(myPlayer.id, entity);
+    //         const canHit = ProjectileManager.projectileCanHitEntity(projectile, entity);
+    //         return notTarget && canShoot && canHit;
+    //     }).sort(Sorting.byDistance(myPlayer, "current", "current"))[0] || null;
+    // }
 }
 
 export default PlayerManager;

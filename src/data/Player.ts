@@ -1,13 +1,13 @@
-import Glotus from "..";
-import Config from "../constants/Config";
-import { Projectiles, Weapons, weaponVariants } from "../constants/Items";
+import { Projectiles, Weapons, WeaponVariants } from "../constants/Items";
 import { Hats } from "../constants/Store";
-import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
+import SocketManager from "../Managers/SocketManager";
 import { IReload, TReload } from "../types/Common";
-import { EWeapon, EWeaponVariant, TItem, TMelee, TPlaceable, TWeapon, TWeaponData, TWeaponVariant, WeaponTypeString } from "../types/Items";
-import { EHat, EStoreType, TAccessory, THat } from "../types/Store";
+import { EDanger } from "../types/Enums";
+import { EItem, EWeapon, TMelee, TPrimary, TSecondary, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EAccessory, EHat, TAccessory, THat } from "../types/Store";
+import { inRange } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
@@ -23,8 +23,7 @@ class Player extends Entity {
      * 
      * `-1` means player is holding a weapon
      */
-    currentItem: TItem | -1 = -1;
-    private weaponVariant: TWeaponVariant = 0;
+    currentItem: EItem | -1 = -1;
 
     clanName: string | null = null;
     nickname = "unknown";
@@ -42,17 +41,23 @@ class Player extends Entity {
         /**
          * ID of weapon player is holding at the current tick
          */
-        current: TWeapon;
+        current: EWeapon;
 
         /**
          * ID of current primary weapon
          */
-        primary: TWeapon;
+        primary: TPrimary;
 
         /**
          * ID of current secondary weapon
          */
-        secondary: TWeapon;
+        secondary: TSecondary | null;
+    }
+
+    readonly variant: {
+        current: WeaponVariant;
+        primary: WeaponVariant;
+        secondary: WeaponVariant;
     }
 
     readonly reload: {
@@ -70,6 +75,12 @@ class Player extends Entity {
         super();
 
         this.weapon = {
+            current: 0,
+            primary: 0,
+            secondary: null,
+        }
+
+        this.variant = {
             current: 0,
             primary: 0,
             secondary: 0,
@@ -96,9 +107,9 @@ class Player extends Entity {
         x: number,
         y: number,
         angle: number,
-        currentItem: TItem | -1,
-        currentWeapon: TWeapon,
-        weaponVariant: TWeaponVariant,
+        currentItem: EItem | -1,
+        currentWeapon: EWeapon,
+        weaponVariant: WeaponVariant,
         clanName: string | null,
         isLeader: 1 | 0,
         hatID: THat,
@@ -114,7 +125,7 @@ class Player extends Entity {
         this.angle = angle;
         this.currentItem = currentItem;
         this.weapon.current = currentWeapon;
-        this.weaponVariant = weaponVariant;
+        this.variant.current = weaponVariant;
         this.clanName = clanName;
         this.hatID = hatID;
         this.accessoryID = accessoryID;
@@ -126,7 +137,10 @@ class Player extends Entity {
     }
 
     isReloaded(type: TReload) {
-        return this.reload[type].current === this.reload[type].max;
+        const reload = this.reload[type].current;
+        const min = SocketManager.TICK * 2;
+        const max = this.reload[type].max - SocketManager.TICK;
+        return reload < min || reload > max;
     }
 
     private updateReloads() {
@@ -146,7 +160,7 @@ class Player extends Entity {
 
         // We should not reload if player is holding item
         if (this.currentItem !== -1) return;
-
+        
         const type = WeaponTypeString[Weapons[this.weapon.current].itemType];
         const targetReload = this.reload[type];
         const weapon = Weapons[this.weapon.current];
@@ -159,7 +173,13 @@ class Player extends Entity {
         }
         
         this.increaseReload(targetReload);
-        this.weapon[type] = this.weapon.current;
+        if (DataHandler.isPrimary(this.weapon.current)) {
+            this.weapon.primary = this.weapon.current;
+        } else {
+            this.weapon.secondary = this.weapon.current;
+        }
+        // this.weapon[type] = this.weapon.current;
+        this.variant[type] = this.variant.current;
 
         // Handle reloading of shootable weapons
         if ("projectile" in weapon) {
@@ -187,12 +207,17 @@ class Player extends Entity {
         }
     }
 
+    getWeaponVariant(id: EWeapon) {
+        const type = Weapons[id].itemType;
+        return this.variant[WeaponTypeString[type]];
+    }
+
     /**
      * Returns the number of damage, that can be dealt by the player weapon
      */
     getBuildingDamage(id: TMelee): number {
         const weapon = Weapons[id];
-        const variant = weaponVariants[this.weaponVariant];
+        const variant = WeaponVariants[this.getWeaponVariant(id)];
 
         let damage = weapon.damage * variant.val;
         if ("sDmg" in weapon) {
@@ -206,14 +231,14 @@ class Player extends Entity {
         return damage;
     }
 
-    getWeaponSpeed(id: TWeapon, hat: THat): number {
+    getWeaponSpeed(id: EWeapon, hat: THat): number {
         const reloadSpeed = hat === EHat.SAMURAI_ARMOR ? Hats[hat].atkSpd : 1;
         return Weapons[id].speed * reloadSpeed;
     }
 
     getMaxWeaponRange() {
         const { primary, secondary } = this.weapon;
-        const primaryRange = Weapons[primary as TWeaponData[0]].range;
+        const primaryRange = Weapons[primary].range;
         if (DataHandler.isMelee(secondary)) {
             const range = Weapons[secondary].range;
             if (range > primaryRange) {
@@ -223,28 +248,37 @@ class Player extends Entity {
         return primaryRange;
     }
 
-    canInstakill() {
+    getMaxWeaponDamage(id: EWeapon | null) {
+        if (DataHandler.isMelee(id)) {
+            const bull = Hats[EHat.BULL_HELMET];
+            const variant = this.getWeaponVariant(id);
+            return Weapons[id].damage * bull.dmgMultO * WeaponVariants[variant].val;
+        } else if (DataHandler.isShootable(id)) {
+            const projectile = DataHandler.getProjectile(id);
+            return projectile.damage;
+        }
+        return 0;
+    }
 
-        // Only players who have all their weapons reloaded can instakill
-        const isReloaded = (
-            this.isReloaded("primary") &&
-            this.isReloaded("secondary") &&
-            this.isReloaded("turret")
-        );
+    canInstakill(): EDanger {
 
-        if (!isReloaded) return false;
+        const primaryDamage = this.getMaxWeaponDamage(this.weapon.primary);
+        const secondaryDamage = this.getMaxWeaponDamage(this.weapon.secondary);
+        const soldier = Hats[EHat.SOLDIER_HELMET];
 
-        const { primary, secondary } = this.weapon;
-        const variant = this.weaponVariant;
+        let totalDamage = 0;
+        if (this.isReloaded("primary")) totalDamage += primaryDamage;
+        if (this.isReloaded("secondary")) totalDamage += secondaryDamage;
+        if (this.isReloaded("turret")) totalDamage += 25;
 
-        // At the moment, I consider only basic instakill variants
-        const hasMusket = secondary === EWeapon.MUSKET;
-        if (primary === EWeapon.POLEARM) {
-            if (hasMusket) return true;
-            return variant >= EWeaponVariant.GOLD && secondary === EWeapon.CROSSBOW;
+        if (totalDamage * soldier.dmgMult >= 100) {
+            return EDanger.HIGH;
         }
 
-        return primary === EWeapon.SHORT_SWORD && variant >= EWeaponVariant.DIAMOND && hasMusket;
+        if (totalDamage >= 100) {
+            return EDanger.MEDIUM;
+        }
+        return EDanger.NONE;
     }
 }
 

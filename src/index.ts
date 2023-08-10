@@ -1,6 +1,4 @@
 import myPlayer from "./data/ClientPlayer";
-import renderEntity from "./hooks/renderEntity";
-import renderObject from "./hooks/renderObject";
 import ObjectManager from "./Managers/ObjectManager";
 import PlayerManager from "./Managers/PlayerManager";
 import ProjectileManager from "./Managers/ProjectileManager";
@@ -14,6 +12,8 @@ import UI from "./UI/UI";
 import Renderer from "./utility/Renderer";
 import ZoomHandler from "./modules/ZoomHandler";
 import ModuleHandler from "./features/ModuleHandler";
+import ObjectRenderer from "./hooks/renderObject";
+import EntityRenderer from "./hooks/renderEntity";
 
 const Glotus = {
     ObjectManager,
@@ -29,8 +29,8 @@ const Glotus = {
     Renderer,
     ZoomHandler,
     hooks: {
-        renderEntity,
-        renderObject,
+        EntityRenderer,
+        ObjectRenderer,
     }
 } as const;
 export default Glotus;

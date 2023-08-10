@@ -1,6 +1,7 @@
+import ObjectManager from "../../Managers/ObjectManager";
 import { Items } from "../../constants/Items";
 import myPlayer from "../../data/ClientPlayer";
-import { ESentAngle } from "../../types/Common";
+import { ESentAngle } from "../../types/Enums";
 import { ItemType } from "../../types/Items";
 import { getAngleFromBitmask, toRadians } from "../../utility/Common";
 import settings from "../../utility/Settings";
@@ -39,8 +40,12 @@ class Automill {
         if (angle === null) return;
 
         const item = Items[myPlayer.getItemByType(ItemType.WINDMILL)];
-        ModuleHandler.place(ItemType.WINDMILL, angle - toRadians(item.scale));
-        ModuleHandler.place(ItemType.WINDMILL, angle + toRadians(item.scale));
+        const angle1 = angle - toRadians(item.scale);
+        const angle2 = angle + toRadians(item.scale);
+        const mill1 = myPlayer.getPlacePosition(myPlayer.position.current, item.id, angle1);
+        const mill2 = myPlayer.getPlacePosition(myPlayer.position.current, item.id, angle2);
+        if (ObjectManager.canPlaceItem(item.id, mill1)) ModuleHandler.place(ItemType.WINDMILL, angle1);
+        if (ObjectManager.canPlaceItem(item.id, mill2)) ModuleHandler.place(ItemType.WINDMILL, angle2);
     }
 }
 

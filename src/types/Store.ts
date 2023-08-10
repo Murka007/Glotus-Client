@@ -77,17 +77,15 @@ export const EAccessory = {
 } as const;
 export type TAccessory = ValueOf<typeof EAccessory>;
 
-export const EStoreAction = {
-    EQUIP: 0,
-    BUY: 1
-} as const;
-export type TStoreAction = ValueOf<typeof EStoreAction>;
+export const enum EStoreAction {
+    EQUIP,
+    BUY,
+}
 
-export const EStoreType = {
-    HAT: 0,
-    ACCESSORY: 1
-} as const;
-export type TStoreType = ValueOf<typeof EStoreType>;
+export const enum EStoreType {
+    HAT,
+    ACCESSORY,
+}
 
 export const EEquipType = {
     ACTUAL: "ACTUAL",

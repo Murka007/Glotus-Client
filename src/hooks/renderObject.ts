@@ -1,79 +1,143 @@
-import Glotus from "..";
-import { Items, Projectiles } from "../constants/Items";
-import myPlayer from "../data/ClientPlayer";
-import { PlayerObject } from "../data/ObjectItem";
-import Projectile from "../data/Projectile";
+import { Items } from "../constants/Items";
+import { PlayerObject, TObject } from "../data/ObjectItem";
 import ObjectManager from "../Managers/ObjectManager";
-import PlayerManager from "../Managers/PlayerManager";
-import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";
 import { EItem, ItemType } from "../types/Items";
-import { clamp } from "../utility/Common";
-import Logger from "../utility/Logger";
+import { IRenderObject } from "../types/RenderTargets";
 import Renderer from "../utility/Renderer";
 import settings from "../utility/Settings";
 
 /**
  * Called when game bundle rendering objects
  */
-const renderObject = (ctx: TCTX) => {
-    if (Renderer.objects.length === 0) return;
-    
-    for (const object of Renderer.objects) {
-        const playerObject = ObjectManager.objects.get(object.sid);
+const ObjectRenderer = new class ObjectRenderer {
 
-        Renderer.renderMarker(ctx, object);
-        if (playerObject instanceof PlayerObject) {
-            const { position, type, angle, health, maxHealth, reload, maxReload } = playerObject;
-            let scale = 0;
+    private healthBar(ctx: TCTX, entity: IRenderObject, object: PlayerObject): number {
+        if (!(settings.itemHealthBar &&
+            object.seenPlacement && 
+            object.isDestroyable()
+        )) return 0;
 
-            if (
-                settings.itemHealthBar &&
-                playerObject.seenPlacement && 
-                playerObject.isDestroyable()
-            ) {
-                const perc = clamp(health / maxHealth, 0, 1);
-                const color = settings.itemHealthBarColor;
-                scale += Renderer.circularBar(ctx, object, perc, angle, color);
-            }
+        const { health, maxHealth, angle } = object;
+        const perc = health / maxHealth;
+        const color = settings.itemHealthBarColor;
+        return Renderer.circularBar(ctx, entity, perc, angle, color);
+    }
 
-            if (type === EItem.TURRET) {
-                if (settings.objectTurretReloadBar) {
-                    const perc = clamp(reload / maxReload, 0, 1);
-                    const color = settings.objectTurretReloadBarColor;
-                    Renderer.circularBar(ctx, object, perc, angle, color, scale);
-                }
+    private renderTurret(ctx: TCTX, entity: IRenderObject, object: PlayerObject, scale: number) {
+        if (object.type !== EItem.TURRET) return;
 
-                if (settings.turretHitbox) {
-
-                    const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(playerObject);
-                    Renderer.circle(ctx, object.x, object.y, 700, canShootMyPlayer ? "#73272d" : "#3e2773", 1, 1);
-                }
-            }
-
-            const item = Items[object.id];
-            if (item.itemType === ItemType.WINDMILL) {
-                object.turnSpeed = settings.windmillRotation ? item.turnSpeed : 0;
-            }
+        if (settings.objectTurretReloadBar) {
+            const { reload, maxReload, angle } = object;
+            const perc = reload / maxReload;
+            const color = settings.objectTurretReloadBarColor;
+            Renderer.circularBar(ctx, entity, perc, angle, color, scale);
         }
 
-        const item = ObjectManager.objects.get(object.sid);
-        if (item !== undefined) {
-            const x = object.x + object.xWiggle;
-            const y = object.y + object.yWiggle;
-            const radius = item.formatScale();
-            if (settings.collisionHitbox) {
-                Renderer.circle(ctx, x, y, radius, "#c7fff2", 1, 1);
-            }
-            if (settings.weaponHitbox) {
-                Renderer.circle(ctx, x, y, item.hitScale, "#3f4ec4", 1, 1);
-            }
-            if (settings.placementHitbox) {
-                Renderer.circle(ctx, x, y, item.placementScale, "#13d16f", 1, 1);
-            }
+        if (settings.turretHitbox) {
+            const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(object);
+            const color = canShootMyPlayer ? "#73272d" : "#3e2773";
+            Renderer.circle(ctx, entity.x, entity.y, 700, color, 1, 1);
         }
     }
-    Renderer.objects.length = 0;
+
+    private renderWindmill(entity: IRenderObject) {
+        const item = Items[entity.id];
+        if (item.itemType === ItemType.WINDMILL) {
+            entity.turnSpeed = settings.windmillRotation ? item.turnSpeed : 0;
+        }
+    }
+
+    private renderCollisions(ctx: TCTX, entity: IRenderObject, object: TObject) {
+        const x = entity.x + entity.xWiggle;
+        const y = entity.y + entity.yWiggle;
+        if (settings.collisionHitbox) {
+            Renderer.circle(ctx, x, y, object.collisionScale, "#c7fff2", 1, 1);
+        }
+        if (settings.weaponHitbox) {
+            Renderer.circle(ctx, x, y, object.hitScale, "#3f4ec4", 1, 1);
+        }
+        if (settings.placementHitbox) {
+            Renderer.circle(ctx, x, y, object.placementScale, "#13d16f", 1, 1);
+        }
+    }
+
+    render(ctx: TCTX) {
+        if (Renderer.objects.length === 0) return;
+        for (const entity of Renderer.objects) {
+            const object = ObjectManager.objects.get(entity.sid);
+            if (object === undefined) continue;
+            Renderer.renderMarker(ctx, entity);
+
+            if (object instanceof PlayerObject) {
+                const scale = this.healthBar(ctx, entity, object);
+                this.renderTurret(ctx, entity, object, scale);
+                this.renderWindmill(entity);
+            }
+            this.renderCollisions(ctx, entity, object);
+        }
+        Renderer.objects.length = 0;
+    }
 }
 
-export default renderObject;
+export default ObjectRenderer;
+// const renderObject = (ctx: TCTX) => {
+//     if (Renderer.objects.length === 0) return;
+    
+//     for (const object of Renderer.objects) {
+//         const playerObject = ObjectManager.objects.get(object.sid);
+
+//         Renderer.renderMarker(ctx, object);
+//         if (playerObject instanceof PlayerObject) {
+//             const { position, type, angle, health, maxHealth, reload, maxReload } = playerObject;
+//             let scale = 0;
+
+//             if (
+//                 settings.itemHealthBar &&
+//                 playerObject.seenPlacement && 
+//                 playerObject.isDestroyable()
+//             ) {
+//                 const perc = health / maxHealth;
+//                 const color = settings.itemHealthBarColor;
+//                 scale += Renderer.circularBar(ctx, object, perc, angle, color);
+//             }
+
+//             if (type === EItem.TURRET) {
+//                 if (settings.objectTurretReloadBar) {
+//                     const perc = reload / maxReload;
+//                     const color = settings.objectTurretReloadBarColor;
+//                     Renderer.circularBar(ctx, object, perc, angle, color, scale);
+//                 }
+
+//                 if (settings.turretHitbox) {
+//                     const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(playerObject);
+//                     const color = canShootMyPlayer ? "#73272d" : "#3e2773";
+//                     Renderer.circle(ctx, object.x, object.y, 700, color, 1, 1);
+//                 }
+//             }
+
+//             const item = Items[object.id];
+//             if (item.itemType === ItemType.WINDMILL) {
+//                 object.turnSpeed = settings.windmillRotation ? item.turnSpeed : 0;
+//             }
+//         }
+
+//         const item = ObjectManager.objects.get(object.sid);
+//         if (item !== undefined) {
+//             const x = object.x + object.xWiggle;
+//             const y = object.y + object.yWiggle;
+//             if (settings.collisionHitbox) {
+//                 Renderer.circle(ctx, x, y, item.collisionScale, "#c7fff2", 1, 1);
+//             }
+//             if (settings.weaponHitbox) {
+//                 Renderer.circle(ctx, x, y, item.hitScale, "#3f4ec4", 1, 1);
+//             }
+//             if (settings.placementHitbox) {
+//                 Renderer.circle(ctx, x, y, item.placementScale, "#13d16f", 1, 1);
+//             }
+//         }
+//     }
+//     Renderer.objects.length = 0;
+// }
+
+// export default renderObject;

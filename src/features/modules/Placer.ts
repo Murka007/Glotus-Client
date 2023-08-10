@@ -8,11 +8,13 @@ class Placer {
             !ModuleHandler.canPlace(ModuleHandler.currentType)
         ) return;
         
-        if (ModuleHandler.currentType === ItemType.FOOD) {
-            ModuleHandler.heal();
-        } else {
+        if (ModuleHandler.currentType !== ItemType.FOOD) {
             ModuleHandler.place(ModuleHandler.currentType);
+            return;
         }
+
+        if (ModuleHandler.didAntiInsta) return;
+        ModuleHandler.heal(true);
     }
 }
 
