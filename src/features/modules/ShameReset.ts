@@ -1,8 +1,6 @@
 import SocketManager from "../../Managers/SocketManager";
-import Config from "../../constants/Config";
 import myPlayer from "../../data/ClientPlayer";
 import { EHat, EStoreType } from "../../types/Store";
-import Logger from "../../utility/Logger";
 import ModuleHandler from "../ModuleHandler";
 
 const ShameReset = new class ShameReset {
@@ -12,10 +10,18 @@ const ShameReset = new class ShameReset {
     }
 
     private get shouldReset() {
-        return myPlayer.shameCount > 0 && !myPlayer.shameActive && this.isEquipTime;
+        return (
+            myPlayer.shameCount > 0 &&
+            !myPlayer.shameActive &&
+            this.isEquipTime
+        )
     }
 
     postTick(): void {
+        this.handleShameReset();
+    }
+
+    private handleShameReset(isDmgOverTime?: boolean) {
         if (ModuleHandler.sentHatEquip) return;
         if (ModuleHandler.didAntiInsta) return;
 
@@ -23,11 +29,13 @@ const ShameReset = new class ShameReset {
         const bull = EHat.BULL_HELMET;
         const bullState = store.utility.get(bull);
         if (bullState === undefined && this.shouldReset) {
-            store.utility.set(bull, false);
-            ModuleHandler.equip(EStoreType.HAT, bull, "UTILITY");
+            const isEquipped = ModuleHandler.equip(EStoreType.HAT, bull, "UTILITY");
+            if (isEquipped) store.utility.set(bull, false);
+        } else if (isDmgOverTime && bullState !== undefined) {
+            store.utility.set(bull, true);
         } else if (bullState) {
-            store.utility.delete(bull);
-            ModuleHandler.equip(EStoreType.HAT, store.current, "CURRENT");
+            const isEquipped = ModuleHandler.equip(EStoreType.HAT, store.current, "CURRENT");
+            if (isEquipped) store.utility.delete(bull);
         }
     }
 
@@ -35,17 +43,14 @@ const ShameReset = new class ShameReset {
         const { currentHealth, previousHealth, shameCount } = myPlayer;
         const difference = Math.abs(currentHealth - previousHealth);
         const isDmgOverTime = difference <= 5 && currentHealth < previousHealth;
-        const shouldReset = isDmgOverTime && shameCount > 0;
+        const shouldRemoveBull = isDmgOverTime && shameCount > 0;
 
-        if (isDmgOverTime) {
-            myPlayer.timerCount = 0;
-        }
-        const store = ModuleHandler.getHatStore();
-        if (shouldReset) {
-            store.utility.set(EHat.BULL_HELMET, true);
-            return true;
-        }
-        return false;
+        // if (isDmgOverTime) {
+        //     myPlayer.timerCount = 0;
+        // }
+
+        this.handleShameReset(isDmgOverTime);
+        return shouldRemoveBull;
     }
 }
 

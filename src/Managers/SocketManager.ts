@@ -79,21 +79,21 @@ const SocketManager = new class SocketManager {
             construct(target, args: ConstructorParameters<typeof WebSocket>) {
                 const socket = new target(...args);
                 that.socket = socket;
-                const _send = socket.send;
-                socket.send = function(data) {
-                    packetCount += 1;
-                    return _send.call(this, data);
-                }
+                // const _send = socket.send;
+                // socket.send = function(data) {
+                //     packetCount += 1;
+                //     return _send.call(this, data);
+                // }
                 socket.addEventListener("message", that.message);
                 return socket;
             }
         })
 
-        setInterval(() => {
-            if (packetCount === 0) return;
-            console.log("PacketCount: ", packetCount);
-            packetCount = 0;
-        }, 1000);
+        // setInterval(() => {
+        //     if (packetCount === 0) return;
+        //     console.log("PacketCount: ", packetCount);
+        //     packetCount = 0;
+        // }, 1000);
     }
 
     private handlePing() {
@@ -114,7 +114,9 @@ const SocketManager = new class SocketManager {
         const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
         if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
         if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
-        if (temp[0] === SocketServer.UPDATE_AGE) return;
+        // if (temp[0] === SocketServer.UPDATE_AGE) {
+        //     console.log(temp);
+        // }
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -137,8 +139,15 @@ const SocketManager = new class SocketManager {
                 break;
 
             case SocketServer.UPDATE_RESOURCES: {
-                const type = temp[1] === "points" ? "gold" : temp[1];
-                myPlayer.resources[type] = temp[2];
+                this.PacketQueue.push(
+                    () => {
+                        const type = temp[1] === "points" ? "gold" : temp[1];
+                        myPlayer.updateResources(type, temp[2]);
+                    }
+                )
+                // const type = temp[1] === "points" ? "gold" : temp[1];
+                // myPlayer.resources[type] = temp[2];
+                // console.log(temp);
                 break;
             }
 

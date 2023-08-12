@@ -13,3 +13,4 @@ export interface IReload {
 }
 
 export type TReload = "primary" | "secondary" | "turret";
+export type TResource = "food" | "wood" | "stone" | "gold" | "kills";

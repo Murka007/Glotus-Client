@@ -12,8 +12,8 @@ import UI from "./UI/UI";
 import Renderer from "./utility/Renderer";
 import ZoomHandler from "./modules/ZoomHandler";
 import ModuleHandler from "./features/ModuleHandler";
-import ObjectRenderer from "./hooks/renderObject";
-import EntityRenderer from "./hooks/renderEntity";
+import ObjectRenderer from "./hooks/ObjectRenderer";
+import EntityRenderer from "./hooks/EntityRenderer";
 
 const Glotus = {
     ObjectManager,

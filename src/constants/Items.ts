@@ -837,24 +837,32 @@ export const Items = [{
 export const WeaponVariants = [{
     id: WeaponVariant.STONE,
     src: "",
-    xp: 0,
-    val: 1
+    xp: 1,
+    needXP: 0,
+    val: 1,
+    color: "#7e7e90",
 }, {
     id: WeaponVariant.GOLD,
     src: "_g",
     xp: 3000,
-    val: 1.1
+    needXP: 3000,
+    val: 1.1,
+    color: "#f7cf45",
 }, {
     id: WeaponVariant.DIAMOND,
     src: "_d",
     xp: 7000,
-    val: 1.18
+    needXP: 4000,
+    val: 1.18,
+    color: "#6d91cb",
 }, {
     id: WeaponVariant.RUBY,
     src: "_r",
     poison: true,
     xp: 12000,
-    val: 1.18
+    needXP: 5000,
+    val: 1.18,
+    color: "#be5454",
 }] as const;
 
 /**

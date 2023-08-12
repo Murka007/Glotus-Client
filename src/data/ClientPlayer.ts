@@ -1,9 +1,9 @@
-import { ItemGroups, Items, Weapons } from "../constants/Items";
+import { ItemGroups, Items, WeaponVariants, Weapons } from "../constants/Items";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import GameUI from "../UI/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType } from "../types/Items";
+import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType, WeaponVariant } from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
 import { pointInRiver } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
@@ -14,6 +14,13 @@ import Projectile from "./Projectile";
 import ModuleHandler from "../features/ModuleHandler";
 import ShameReset from "../features/modules/ShameReset";
 import { EDanger } from "../types/Enums";
+import { TResource } from "../types/Common";
+import SocketManager from "../Managers/SocketManager";
+
+interface IWeaponXP {
+    current: number;
+    max: number;
+}
 
 /**
  * Represents my player. Contains all data that are related to the game bundle and websocket
@@ -21,22 +28,17 @@ import { EDanger } from "../types/Enums";
 export class ClientPlayer extends Player {
 
     private readonly inventory = {} as TInventory;
+    readonly weaponXP = [{}, {}] as [IWeaponXP, IWeaponXP];
 
     /**
      * Current count of placed items grouped by type
      */
-    readonly itemCount: Map<ItemGroup, number> = new Map;
+    readonly itemCount = new Map<ItemGroup, number>;
 
     /**
      * My player's current resources
      */
-    readonly resources = {
-        food: 100,
-        wood: 100,
-        stone: 100,
-        gold: 100,
-        kills: 0
-    }
+    readonly resources = {} as { [key in TResource]: number };
     readonly offset = new Vector;
 
     /**
@@ -45,9 +47,8 @@ export class ClientPlayer extends Player {
     inGame = false;
     private platformActivated = false;
 
-    private readonly healDelay = 80;
     private receivedDamage: number | null = null;
-    timerCount = 1000;
+    timerCount = SocketManager.TICK;
 
     /**
      * true, if my player has clown
@@ -60,6 +61,11 @@ export class ClientPlayer extends Player {
      * A Set of teammate IDs
      */
     readonly teammates = new Set<number>();
+
+    /**
+     * Shows how much gold the mills produce
+     */
+    totalGoldAmount = 0;
 
     constructor() {
         super();
@@ -102,9 +108,9 @@ export class ClientPlayer extends Player {
     }
 
     /**
-     * Checks if item has enough resources to be placed
+     * Checks if item has enough resources to be used
      */
-    hasResourcesForType(type: ItemType) {
+    hasResourcesForType(type: ItemType): boolean {
         if (this.isSandbox) return true;
 
         const res = this.resources;
@@ -129,14 +135,15 @@ export class ClientPlayer extends Player {
 
     /**
      * Checks if my player can place item by type
+     * 
+     * Automatically ignores food and returns true
      */
     hasItemCountForType(type: ItemType): boolean {
+        if (type === ItemType.FOOD) return true;
+
         const item = DataHandler.getItemByType(type);
-        if ("itemGroup" in item) {
-            const { count, limit } = this.getItemCount(item.itemGroup);
-            return count < limit;
-        }
-        return true;
+        const { count, limit } = this.getItemCount(item.itemGroup);
+        return count < limit;
     }
 
     /**
@@ -189,12 +196,15 @@ export class ClientPlayer extends Player {
                 const danger = enemy.canInstakill();
                 if (danger === EDanger.NONE) break;
 
+                // It is important to check for all position variants cuz enemy can move in different directions
                 const dist0 = enemy.position.previous.distance(previous);
                 const dist1 = enemy.position.current.distance(current);
                 const dist2 = enemy.position.future.distance(future);
                 const range = enemy.getMaxWeaponRange() + this.hitScale + 60;
                 if (dist0 <= range || dist1 <= range || dist2 <= range) {
-                    ModuleHandler.needToHeal = true;
+                    if (danger === EDanger.HIGH) {
+                        ModuleHandler.needToHeal = true;
+                    }
                     return EHat.SOLDIER_HELMET;
                 }
             }
@@ -215,7 +225,7 @@ export class ClientPlayer extends Player {
                 }
             }
 
-            if (turretAttackCount > 4 || turretAttackCount > 0 && ModuleHandler.move === 0) {
+            if (turretAttackCount > 4 || turretAttackCount > 0 && !ModuleHandler.isMoving) {
                 return EHat.EMP_HELMET;
             } else if (turretAttackCount > 2) {
                 return EHat.SOLDIER_HELMET;
@@ -233,10 +243,11 @@ export class ClientPlayer extends Player {
             for (const animal of PlayerManager.animals) {
                 if (!animal.isDanger) continue;
 
+                const dist0 = animal.position.previous.distance(previous);
                 const dist1 = animal.position.current.distance(current);
                 const dist2 = animal.position.future.distance(future);
                 const range = animal.collisionRange;
-                if (dist1 <= range || dist2 <= range) {
+                if (dist0 <= range || dist1 <= range || dist2 <= range) {
                     return EHat.SOLDIER_HELMET;
                 }
             }
@@ -250,11 +261,7 @@ export class ClientPlayer extends Player {
         return ModuleHandler.getHatStore().actual;
     }
 
-    getPlacePosition(
-        start: Vector,
-        itemID: TPlaceable,
-        angle: number
-    ): Vector {
+    getPlacePosition(start: Vector, itemID: TPlaceable, angle: number): Vector {
         const item = Items[itemID];
         return start.direction(angle, this.scale + item.scale + item.placeOffset);
     }
@@ -321,11 +328,12 @@ export class ClientPlayer extends Player {
         }
 
         if (health < 100) {
+            const healDelay = Math.max(0, 120 - SocketManager.pong + 10);
             const needReset = ShameReset.healthUpdate();
-            if (settings.autoheal && !ModuleHandler.didAntiInsta || needReset) {
+            if (settings.autoheal || needReset) {
                 setTimeout(() => {
                     ModuleHandler.heal(true);
-                }, this.healDelay);
+                }, healDelay);
             }
         }
     }
@@ -345,6 +353,9 @@ export class ClientPlayer extends Player {
         if (id < 16) {
             const weapon = Weapons[id];
             this.inventory[weapon.itemType] = id as EWeapon & null;
+            const XP = this.weaponXP[weapon.itemType];
+            XP.current = 0;
+            XP.max = -1;
         } else {
             id -= 16;
             const item = Items[id];
@@ -366,6 +377,36 @@ export class ClientPlayer extends Player {
     updateItemCount(group: ItemGroup, count: number) {
         this.itemCount.set(group, count);
         GameUI.updateItemCount(group);
+    }
+
+    updateResources(type: TResource, amount: number) {
+        const previousAmount = this.resources[type];
+        this.resources[type] = amount;
+
+        const difference = amount - previousAmount;
+        if (type === "gold" || type === "kills") return;
+        if (amount < previousAmount) return;
+
+        const { next } = this.getWeaponVariant(this.weapon.current);
+        const XP = this.weaponXP[Weapons[this.weapon.current].itemType];
+        const maxXP = WeaponVariants[next].needXP;
+
+        XP.current += difference;
+
+        if (XP.max !== -1 && XP.current >= XP.max) {
+            XP.current -= XP.max;
+            XP.max = maxXP;
+            return;
+        }
+
+        if (XP.max === -1) {
+            XP.max = maxXP;
+        }
+
+        if (XP.current >= XP.max) {
+            XP.current -= XP.max;
+            XP.max = -1;
+        }
     }
 
     private resetResources() {
@@ -399,6 +440,11 @@ export class ClientPlayer extends Player {
         this.reload.primary.max = this.reload.primary.current = -1;
         this.reload.secondary.max = this.reload.secondary.current = -1;
         this.reload.turret.max = this.reload.turret.current = 2500;
+
+        for (const XP of this.weaponXP) {
+            XP.current = 0;
+            XP.max = -1;
+        }
     }
 
     /**
@@ -410,6 +456,7 @@ export class ClientPlayer extends Player {
         this.resetWeapon();
         this.resetReload();
         ModuleHandler.reset();
+
         this.inGame = false;
         this.shameTimer = 0;
         this.shameCount = 0;
@@ -418,7 +465,7 @@ export class ClientPlayer extends Player {
 
         window.config.deathFadeout = settings.autospawn ? 0 : 3000;
         if (settings.autospawn) {
-            setTimeout(GameUI.spawn, 10);
+            setTimeout(() => GameUI.spawn(), 10);
         }
     }
 }

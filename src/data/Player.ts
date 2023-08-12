@@ -6,8 +6,7 @@ import SocketManager from "../Managers/SocketManager";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
 import { EItem, EWeapon, TMelee, TPrimary, TSecondary, WeaponTypeString, WeaponVariant } from "../types/Items";
-import { EAccessory, EHat, TAccessory, THat } from "../types/Store";
-import { inRange } from "../utility/Common";
+import { EHat, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
@@ -136,13 +135,6 @@ class Player extends Entity {
         reload.current = Math.min(reload.current + PlayerManager.step, reload.max);
     }
 
-    isReloaded(type: TReload) {
-        const reload = this.reload[type].current;
-        const min = SocketManager.TICK * 2;
-        const max = this.reload[type].max - SocketManager.TICK;
-        return reload < min || reload > max;
-    }
-
     private updateReloads() {
         const current = this.position.current;
 
@@ -178,7 +170,9 @@ class Player extends Entity {
         } else {
             this.weapon.secondary = this.weapon.current;
         }
-        // this.weapon[type] = this.weapon.current;
+        if (this.weapon.secondary === null) {
+            this.weapon.secondary = this.predictSecondary(this.weapon.primary);
+        }
         this.variant[type] = this.variant.current;
 
         // Handle reloading of shootable weapons
@@ -207,17 +201,31 @@ class Player extends Entity {
         }
     }
 
+    predictSecondary(id: TPrimary): TSecondary | null {
+        if (
+            id === EWeapon.POLEARM ||
+            id === EWeapon.SHORT_SWORD
+        ) return EWeapon.MUSKET;
+        if (id === EWeapon.KATANA) return EWeapon.GREAT_HAMMER;
+        return null;
+    }
+
     getWeaponVariant(id: EWeapon) {
         const type = Weapons[id].itemType;
-        return this.variant[WeaponTypeString[type]];
+        const variant = this.variant[WeaponTypeString[type]];
+        return {
+            previous: Math.max(variant - 1, WeaponVariant.STONE) as WeaponVariant,
+            current: variant,
+            next: Math.min(variant + 1, WeaponVariant.RUBY) as WeaponVariant,
+        } as const;
     }
 
     /**
-     * Returns the number of damage, that can be dealt by the player weapon
+     * Returns the number of damage, that can be dealt by the player weapon to buildings
      */
     getBuildingDamage(id: TMelee): number {
         const weapon = Weapons[id];
-        const variant = WeaponVariants[this.getWeaponVariant(id)];
+        const variant = WeaponVariants[this.getWeaponVariant(id).current];
 
         let damage = weapon.damage * variant.val;
         if ("sDmg" in weapon) {
@@ -248,16 +256,29 @@ class Player extends Entity {
         return primaryRange;
     }
 
-    getMaxWeaponDamage(id: EWeapon | null) {
+    /**
+     * Returns the maximum possible damage of the specified weapon to entities, including bull and weapon level.
+     */
+    getMaxWeaponDamage(id: EWeapon | null, excludeVariant?: boolean): number {
         if (DataHandler.isMelee(id)) {
             const bull = Hats[EHat.BULL_HELMET];
-            const variant = this.getWeaponVariant(id);
-            return Weapons[id].damage * bull.dmgMultO * WeaponVariants[variant].val;
+            const damage = Weapons[id].damage * bull.dmgMultO;
+            if (excludeVariant) return damage;
+
+            const variant = this.getWeaponVariant(id).current;
+            return damage * WeaponVariants[variant].val;
         } else if (DataHandler.isShootable(id)) {
             const projectile = DataHandler.getProjectile(id);
             return projectile.damage;
         }
         return 0;
+    }
+
+    private isReloaded(type: TReload) {
+        const reload = this.reload[type].current;
+        const min = SocketManager.TICK;
+        const max = this.reload[type].max - SocketManager.TICK;
+        return reload <= min || reload >= max;
     }
 
     canInstakill(): EDanger {
@@ -278,6 +299,7 @@ class Player extends Entity {
         if (totalDamage >= 100) {
             return EDanger.MEDIUM;
         }
+
         return EDanger.NONE;
     }
 }

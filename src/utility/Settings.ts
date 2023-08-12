@@ -55,6 +55,7 @@ export interface ISettings {
     enemyMarkers: boolean;
     enemyMarkersColor: string;
 
+    weaponXPBar: boolean;
     playerTurretReloadBar: boolean;
     playerTurretReloadBarColor: string;
     weaponReloadBar: boolean;
@@ -69,6 +70,7 @@ export interface ISettings {
     itemCounter: boolean;
     renderGrid: boolean;
     windmillRotation: boolean;
+    entityDanger: boolean;
 
     displayPlayerAngle: boolean;
     projectileHitbox: boolean;
@@ -127,6 +129,7 @@ export const defaultSettings = {
     teammateMarkersColor: "#bdb14b",
     enemyMarkers: true,
     enemyMarkersColor: "#ba4949",
+    weaponXPBar: true,
     playerTurretReloadBar: true,
     playerTurretReloadBarColor: "#cf7148",
     weaponReloadBar: true,
@@ -139,6 +142,7 @@ export const defaultSettings = {
     itemCounter: true,
     renderGrid: false,
     windmillRotation: false,
+    entityDanger: true,
     displayPlayerAngle: false,
     projectileHitbox: false,
     possibleShootTarget: false,

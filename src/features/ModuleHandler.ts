@@ -136,6 +136,11 @@ const ModuleHandler = new class ModuleHandler {
         }
     }
 
+    get isMoving(): boolean {
+        const angle = getAngleFromBitmask(this.move, false);
+        return angle !== null;
+    }
+
     getHatStore() {
         return this.store[EStoreType.HAT];
     }
@@ -205,11 +210,11 @@ const ModuleHandler = new class ModuleHandler {
      * @param id ID of the hat or accessory
      * @param equipType Indicates the type of hat you want to equip.
      */
-    equip(type: EStoreType, id: number, equipType: TEquipType, force = false) {
-        if (!this.buy(type, id) || !myPlayer.inGame) return;
+    equip(type: EStoreType, id: number, equipType: TEquipType, force = false): boolean {
+        if (!this.buy(type, id) || !myPlayer.inGame) return false;
 
         const store = this.store[type];
-        if (!force && store.last === id) return;
+        if (!force && store.last === id) return false;
         store.last = id;
 
         SocketManager.equip(type, id);
@@ -223,10 +228,11 @@ const ModuleHandler = new class ModuleHandler {
             store.current = id;
         } else if (equipType === "ACTUAL") {
             store.actual = id;
-            store.current = id;
+            // store.current = id;
         } else if (equipType === "UTILITY") {
             // store.utility.set(id, false);
         }
+        return true;
 
         // if (type === EStoreType.HAT && id === EHat.TURRET_GEAR) {
         //     this.reload.turret.current = -this.timeToNextTick;

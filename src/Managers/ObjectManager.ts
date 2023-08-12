@@ -3,7 +3,7 @@ import { Items, Projectiles } from "../constants/Items";
 import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
-import { EItem, TPlaceable } from "../types/Items";
+import { EItem, ItemType, TPlaceable } from "../types/Items";
 import { pointInRiver } from "../utility/Common";
 import PlayerManager from "./PlayerManager";
 import myPlayer from "../data/ClientPlayer";
@@ -42,8 +42,11 @@ const ObjectManager = new class ObjectManager {
             );
             owner.objects.add(object);
 
+            const item = Items[object.type];
             if (object.type === EItem.TURRET && PlayerManager.players.includes(owner)) {
                 this.resetTurret(object.id);
+            } else if (owner === myPlayer && item.itemType === ItemType.WINDMILL) {
+                myPlayer.totalGoldAmount += item.pps;
             }
         }
     }
@@ -72,6 +75,11 @@ const ObjectManager = new class ObjectManager {
             const player = PlayerManager.playerData.get(object.ownerID);
             if (player !== undefined) {
                 player.objects.delete(object);
+
+                const item = Items[object.type];
+                if (player === myPlayer && item.itemType === ItemType.WINDMILL) {
+                    myPlayer.totalGoldAmount -= item.pps;
+                }
             }
         }
     }

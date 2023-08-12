@@ -73,10 +73,16 @@ const Injector = new class Injector {
             `Glotus.myPlayer.offset.setXY($1,$2);`
         );
 
-        Hook.append(
+        Hook.prepend(
             "renderEntity",
+            /\w+\.health>NUM{0}.+?(\w+)\.fillStyle=(\w+)==(\w+)/,
+            `;Glotus.hooks.EntityRenderer.render($1,$2,$3);`
+        );
+
+        Hook.append(
+            "ReturnNameY",
             /=(\w+)==(\w+)\|\|.+?(\w+)\.fill\(\)\)/,
-            `;Glotus.hooks.EntityRenderer.render($3,$1,$2);`
+            `;window.config.nameY=Glotus.Renderer.getNameY(false);`
         );
 
         // Hook.append(

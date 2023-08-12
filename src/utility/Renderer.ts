@@ -5,6 +5,10 @@ import settings from "./Settings";
 import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";
 import { IRenderEntity, IRenderObject } from "../types/RenderTargets";
+import { WeaponVariants, Weapons } from "../constants/Items";
+import { WeaponVariant } from "../types/Items";
+import Player from "../data/Player";
+import { clamp } from "./Common";
 
 class Renderer {
     static HSL = 0;
@@ -84,7 +88,7 @@ class Renderer {
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
         ctx.lineCap = "round";
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(end.x, end.y);
@@ -189,78 +193,96 @@ class Renderer {
         ctx.restore();
     }
 
-    static bar(
+    static barContainer(
         ctx: TCTX,
         x: number,
         y: number,
         w: number,
         h: number,
-        scale: number,
-        fill: number,
-        color: string,
     ) {
-        const { barWidth, barPad } = Config;
-        const nameY = window.config.nameY;
-        x -= barWidth + barPad;
-        y += scale + nameY;
-
-        ctx.save();
         ctx.fillStyle = "#3d3f42";
         this.roundRect(ctx, x, y, w, h, 8);
         ctx.fill();
+    }
 
+    static barContent(
+        ctx: TCTX,
+        x: number,
+        y: number,
+        w: number,
+        h: number,
+        fill: number,
+        color: string,
+    ) {
+        const barPad = Config.barPad;
         ctx.fillStyle = color;
         this.roundRect(ctx, x + barPad, y + barPad, (w - barPad * 2) * fill, h - barPad * 2, 7);
         ctx.fill();
-        ctx.restore();
+    }
+
+    private static getNameY(isBar: boolean, player?: Player) {
+        let nameY = 34;
+        const height = isBar ? 11 : 7;
+        if (settings.weaponReloadBar) nameY += height;
+        if (settings.playerTurretReloadBar) nameY += height;
+        if (player === myPlayer && settings.weaponXPBar) nameY += height;
+        return nameY;
     }
 
     static renderBar(ctx: TCTX, entity: IRenderEntity) {
         const player = PlayerManager.playerData.get(entity.sid);
         if (player === undefined) return;
 
-        const { barWidth, barHeight, barPad } = Config;
-        const x = entity.x - myPlayer.offset.x;
-        const y = entity.y - myPlayer.offset.y;
-        const scale = entity.scale;
-        let height = barHeight;
+        ctx.save();
 
         const { primary, secondary, turret } = player.reload;
+        const { barWidth, barHeight, barPad } = Config;
+
+        const nameY = this.getNameY(true, player);
+        window.config.nameY = nameY;
+
+        const totalWidth = barWidth + barPad;
+        const scale = entity.scale + nameY;
+        let x = entity.x - myPlayer.offset.x;
+        let y = entity.y - myPlayer.offset.y + scale;
+
+        // Secondary Reload bar
         if (settings.weaponReloadBar) {
-            this.bar(
-                ctx,
-                x, y - height,
-                barWidth + barPad, barHeight,
-                scale,
-                primary.current / primary.max,
-                settings.weaponReloadBarColor
-            );
+            y -= barHeight;
+            this.barContainer(ctx, x, y, totalWidth, barHeight);
+            this.barContent(ctx, x, y, totalWidth, barHeight, secondary.current / secondary.max, settings.weaponReloadBarColor);
+        }
+        
+        x -= totalWidth;
 
-            this.bar(
-                ctx,
-                x + barWidth + barPad, y - height,
-                barWidth + barPad, barHeight,
-                scale,
-                secondary.current / secondary.max,
-                settings.weaponReloadBarColor
-            );
-
-            height += barHeight;
+        // Primary Reload bar
+        if (settings.weaponReloadBar) {
+            this.barContainer(ctx, x, y, totalWidth, barHeight);
+            this.barContent(ctx, x, y, totalWidth, barHeight, primary.current / primary.max, settings.weaponReloadBarColor);
         }
 
+        const smallBarHeight = barHeight - 4;
+
+        // Turret Reload Bar
         if (settings.playerTurretReloadBar) {
-            this.bar(
-                ctx,
-                x, y - height + 4,
-                barWidth * 2 + barPad * 2, barHeight - 4,
-                scale,
-                turret.current / turret.max,
-                settings.playerTurretReloadBarColor
-            );
-            height += barHeight - 4;
+            y -= smallBarHeight;
+            this.barContainer(ctx, x, y, totalWidth * 2, smallBarHeight);
+            this.barContent(ctx, x, y, totalWidth * 2, smallBarHeight, turret.current / turret.max, settings.playerTurretReloadBarColor);
         }
 
-        window.config.nameY = height !== barHeight ? 45 : 34;
+        // Weapon XP Bar
+        if (player === myPlayer && settings.weaponXPBar) {
+            const weapon = Weapons[myPlayer.weapon.current];
+            const current = WeaponVariants[myPlayer.getWeaponVariant(weapon.id).current].color;
+            const next = WeaponVariants[myPlayer.getWeaponVariant(weapon.id).next].color;
+            const XP = myPlayer.weaponXP[weapon.itemType];
+
+            y -= smallBarHeight;
+            this.barContainer(ctx, x, y, totalWidth * 2, smallBarHeight);
+            this.barContent(ctx, x, y, totalWidth * 2, smallBarHeight, 1, current);
+            this.barContent(ctx, x, y, totalWidth * 2, smallBarHeight, clamp(XP.current / XP.max, 0, 1), next);
+        }
+        ctx.restore();
     }
 
     static renderHP(ctx: TCTX, entity: IRenderEntity) {

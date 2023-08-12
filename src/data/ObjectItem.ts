@@ -1,13 +1,9 @@
 import { ItemGroups, Items } from "../constants/Items";
 import PlayerManager from "../Managers/PlayerManager";
-import SocketManager from "../Managers/SocketManager";
 import Vector from "../modules/Vector";
-import { ValueOf } from "../types/Common";
 import { EResourceType } from "../types/Enums";
 import { EItem, ItemGroup, TPlaceable } from "../types/Items";
-import { pointInDesert, pointInRiver } from "../utility/Common";
-import Logger from "../utility/Logger";
-import myPlayer from "./ClientPlayer";
+import { pointInDesert } from "../utility/Common";
 
 /**
  * Represents resources and player objects
