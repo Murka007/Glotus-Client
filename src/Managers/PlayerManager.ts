@@ -4,7 +4,9 @@ import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
 import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
+import { EResourceType } from "../types/Enums";
 import { TMelee, WeaponTypeString} from "../types/Items";
+import { EHat } from "../types/Store";
 import { getAngleDist } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import Sorting from "../utility/Sorting";
@@ -82,8 +84,16 @@ const PlayerManager = new class PlayerManager {
                     getAngleDist(angle, player.angle) <= Config.gatherAngle
                 ) {
                     objects.delete(id);
-                    const damage = player.getBuildingDamage(weaponID);
-                    object.health -= damage;
+                    if (object instanceof PlayerObject) {
+                        const damage = player.getBuildingDamage(weaponID);
+                        object.health -= damage;
+                    } else if (player === myPlayer) {
+                        let amount = (hatID === EHat.MINERS_HELMET ? 1 : 0);
+                        if (object.type === EResourceType.GOLD) {
+                            amount += weapon.gather + 4;
+                        }
+                        myPlayer.updateWeaponXP(amount);
+                    }
                 }
             }
         }

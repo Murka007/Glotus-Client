@@ -28,7 +28,7 @@ const ObjectManager = new class ObjectManager {
     /**
      * A Map of attacked objects at current tick
      */
-    readonly attackedObjects = new Map<number, PlayerObject>();
+    readonly attackedObjects = new Map<number, TObject>();
 
     private insertObject(object: TObject) {
         this.grid.insert(object);

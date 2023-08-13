@@ -4,7 +4,7 @@ import ObjectManager from "../Managers/ObjectManager";
 import { TCTX } from "../types/Common";
 import { EItem, ItemType } from "../types/Items";
 import { IRenderObject } from "../types/RenderTargets";
-import Renderer from "../utility/Renderer";
+import Renderer from "./Renderer";
 import settings from "../utility/Settings";
 
 /**
@@ -14,8 +14,8 @@ const ObjectRenderer = new class ObjectRenderer {
 
     private healthBar(ctx: TCTX, entity: IRenderObject, object: PlayerObject): number {
         if (!(settings.itemHealthBar &&
-            object.seenPlacement && 
-            object.isDestroyable()
+            object.seenPlacement &&
+            object.isDestroyable
         )) return 0;
 
         const { health, maxHealth, angle } = object;

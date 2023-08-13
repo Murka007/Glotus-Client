@@ -87,6 +87,7 @@ export class PlayerObject extends ObjectItem {
     readonly maxHealth: number;
     reload: number = -1;
     readonly maxReload: number = -1;
+    readonly isDestroyable: boolean;
 
     /**
      * true, if my player saw how this item was placed
@@ -111,6 +112,7 @@ export class PlayerObject extends ObjectItem {
         this.collisionDivider = "colDiv" in item ? item.colDiv : 1;
         this.health = "health" in item ? item.health : Infinity;
         this.maxHealth = this.health;
+        this.isDestroyable = this.maxHealth !== Infinity;
 
         if (item.id === EItem.TURRET) {
             this.reload = item.shootRate;
@@ -124,13 +126,6 @@ export class PlayerObject extends ObjectItem {
 
     formatScale(placeCollision = false): number {
         return this.scale * (placeCollision ? 1 : this.collisionDivider);
-    }
-
-    /**
-     * true, if it is possible to destroy this item
-     */
-    isDestroyable() {
-        return this.maxHealth !== Infinity;
     }
 
     get collisionScale(): number {

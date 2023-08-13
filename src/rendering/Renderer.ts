@@ -1,18 +1,19 @@
 import Config from "../constants/Config";
 import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
-import settings from "./Settings";
+import settings from "../utility/Settings";
 import Vector from "../modules/Vector";
 import { TCTX } from "../types/Common";
 import { IRenderEntity, IRenderObject } from "../types/RenderTargets";
 import { WeaponVariants, Weapons } from "../constants/Items";
 import { WeaponVariant } from "../types/Items";
 import Player from "../data/Player";
-import { clamp } from "./Common";
+import { clamp, lerp } from "../utility/Common";
 
 class Renderer {
     static HSL = 0;
     static readonly objects: IRenderObject[] = [];
+    private static lerpDistance = 0;
 
     static updateHSL() {
         this.HSL = (this.HSL + 0.5) % 360;
@@ -144,8 +145,9 @@ class Renderer {
         if (settings.arrows) {
             const w = 8;
             const distance = Math.min(100 + w * 2, pos1.distance(pos2) - w * 2);
+            this.lerpDistance = lerp(this.lerpDistance, distance, 0.6);
             const angle = pos1.angle(pos2);
-            const pos = pos1.direction(angle, distance);
+            const pos = pos1.direction(angle, this.lerpDistance);
             this.arrow(ctx, w, pos.x, pos.y, angle, color);
         } else {
             this.line(ctx, pos1, pos2, color, 0.75);
@@ -246,21 +248,16 @@ class Renderer {
         let x = entity.x - myPlayer.offset.x;
         let y = entity.y - myPlayer.offset.y + scale;
 
-        // Secondary Reload bar
+        x -= totalWidth;
         if (settings.weaponReloadBar) {
             y -= barHeight;
-            this.barContainer(ctx, x, y, totalWidth, barHeight);
-            this.barContent(ctx, x, y, totalWidth, barHeight, secondary.current / secondary.max, settings.weaponReloadBarColor);
+            
+            const extraPad = 2.25;
+            this.barContainer(ctx, x, y, totalWidth * 2, barHeight);
+            this.barContent(ctx, x, y, totalWidth + extraPad, barHeight, primary.current / primary.max, settings.weaponReloadBarColor);
+            this.barContent(ctx, x + totalWidth - extraPad, y, totalWidth + extraPad, barHeight, secondary.current / secondary.max, settings.weaponReloadBarColor);
         }
         
-        x -= totalWidth;
-
-        // Primary Reload bar
-        if (settings.weaponReloadBar) {
-            this.barContainer(ctx, x, y, totalWidth, barHeight);
-            this.barContent(ctx, x, y, totalWidth, barHeight, primary.current / primary.max, settings.weaponReloadBarColor);
-        }
-
         const smallBarHeight = barHeight - 4;
 
         // Turret Reload Bar

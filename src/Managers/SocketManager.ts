@@ -1,5 +1,5 @@
 import myPlayer from "../data/ClientPlayer";
-import { PlayerObject } from "../data/ObjectItem";
+import { PlayerObject, Resource } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
@@ -10,6 +10,7 @@ import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
 import { EItem, EWeapon } from "../types/Items";
 import { EStoreAction, EStoreType } from "../types/Store";
+import { EResourceType } from "../types/Enums";
 
 const SocketManager = new class SocketManager {
 
@@ -255,7 +256,7 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.HIT_OBJECT: {
                 const object = ObjectManager.objects.get(temp[2]);
-                if (object instanceof PlayerObject && object.isDestroyable()) {
+                if (object instanceof Resource || object && object.isDestroyable) {
                     ObjectManager.attackedObjects.set(getUniqueID(), object);
                 }
                 break;

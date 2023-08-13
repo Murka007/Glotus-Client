@@ -196,11 +196,13 @@ export class ClientPlayer extends Player {
                 const danger = enemy.canInstakill();
                 if (danger === EDanger.NONE) break;
 
+                const collidingBoost = enemy.checkCollision(ItemGroup.BOOST);
                 // It is important to check for all position variants cuz enemy can move in different directions
                 const dist0 = enemy.position.previous.distance(previous);
                 const dist1 = enemy.position.current.distance(current);
                 const dist2 = enemy.position.future.distance(future);
-                const range = enemy.getMaxWeaponRange() + this.hitScale + 60;
+                const extraRange = collidingBoost ? 200 : 60;
+                const range = enemy.getMaxWeaponRange() + this.hitScale + extraRange;
                 if (dist0 <= range || dist1 <= range || dist2 <= range) {
                     if (danger === EDanger.HIGH) {
                         ModuleHandler.needToHeal = true;
@@ -297,6 +299,9 @@ export class ClientPlayer extends Player {
         if (this.shameTimer === 0 && this.shameActive) {
             this.shameActive = false;
             this.shameCount = 0;
+            if (settings.autoheal && this.currentHealth < 100) {
+                ModuleHandler.heal(true);
+            }
         }
 
         this.timerCount = Math.min(this.timerCount + PlayerManager.step, 1000);
@@ -383,15 +388,19 @@ export class ClientPlayer extends Player {
         const previousAmount = this.resources[type];
         this.resources[type] = amount;
 
-        const difference = amount - previousAmount;
         if (type === "gold" || type === "kills") return;
         if (amount < previousAmount) return;
+        
+        const difference = amount - previousAmount;
+        this.updateWeaponXP(difference);
+    }
 
+    updateWeaponXP(amount: number) {
         const { next } = this.getWeaponVariant(this.weapon.current);
         const XP = this.weaponXP[Weapons[this.weapon.current].itemType];
         const maxXP = WeaponVariants[next].needXP;
 
-        XP.current += difference;
+        XP.current += amount;
 
         if (XP.max !== -1 && XP.current >= XP.max) {
             XP.current -= XP.max;

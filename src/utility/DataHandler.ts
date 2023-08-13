@@ -1,5 +1,5 @@
 import { Items, Projectiles, Weapons } from "../constants/Items";
-import { Accessories, Hats, store } from "../constants/Store";
+import { store } from "../constants/Store";
 import myPlayer from "../data/ClientPlayer";
 import { EItem, EWeapon, ItemType, TAttackable, TDestroyable, THealable, TMelee, TPlaceable, TPrimary, TSecondary, TShootable, WeaponType } from "../types/Items";
 import { EStoreType } from "../types/Store";

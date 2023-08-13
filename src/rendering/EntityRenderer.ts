@@ -2,7 +2,7 @@ import myPlayer from "../data/ClientPlayer";
 import PlayerManager from "../Managers/PlayerManager";
 import { TCTX } from "../types/Common";
 import { IRenderEntity } from "../types/RenderTargets";
-import Renderer from "../utility/Renderer";
+import Renderer from "./Renderer";
 import DataHandler from "../utility/DataHandler";
 import { Items, Weapons } from "../constants/Items";
 import Vector from "../modules/Vector";

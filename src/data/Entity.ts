@@ -50,10 +50,11 @@ abstract class Entity {
                 if (checkEnemy && !ObjectManager.isEnemyObject(object)) continue;
 
                 const current = object.position.current;
+                const dist0 = this.position.previous.distance(current);
                 const dist1 = this.position.current.distance(current);
                 const dist2 = this.position.future.distance(current);
                 const radius = this.scale + object.collisionScale - subRadius;
-                if (dist1 <= radius || dist2 <= radius) return true;
+                if (dist0 <= radius || dist1 <= radius || dist2 <= radius) return true;
             }
         }
         return false;

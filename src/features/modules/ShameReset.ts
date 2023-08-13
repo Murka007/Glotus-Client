@@ -45,9 +45,9 @@ const ShameReset = new class ShameReset {
         const isDmgOverTime = difference <= 5 && currentHealth < previousHealth;
         const shouldRemoveBull = isDmgOverTime && shameCount > 0;
 
-        // if (isDmgOverTime) {
-        //     myPlayer.timerCount = 0;
-        // }
+        if (isDmgOverTime) {
+            myPlayer.timerCount = 0;
+        }
 
         this.handleShameReset(isDmgOverTime);
         return shouldRemoveBull;

@@ -150,7 +150,7 @@ const ModuleHandler = new class ModuleHandler {
     }
 
     /**
-     * Returns true if myPlayer can place item
+     * Returns true if myPlayer is capable of using item
      */
     canPlace(type: ItemType) {
         return (
@@ -331,18 +331,6 @@ const ModuleHandler = new class ModuleHandler {
         this.sentHatEquip = false;
         this.sentAccEquip = false;
         this.didAntiInsta = false;
-
-        // const store = this.getHatStore();
-        // for (const [hat, toRemove] of store.utility) {
-        //     if (toRemove) {
-        //         store.utility.delete(hat);
-        //     }
-        // }
-
-        // if (store.utility.size > 0) {
-        //     const last = [...store.utility].pop()!;
-        //     this.equip(EStoreType.HAT, last[0], "UTILITY");
-        // }
 
         for (const module of this.modules) {
             module.postTick();

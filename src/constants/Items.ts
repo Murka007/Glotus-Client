@@ -1,3 +1,4 @@
+import { EResourceType } from "../types/Enums";
 import { EItem, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVariant } from "../types/Items";
 
 /**

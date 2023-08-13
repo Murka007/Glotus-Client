@@ -9,11 +9,11 @@ import Hooker from "./utility/Hooker";
 import Injector from "./modules/Injector";
 import settings from "./utility/Settings";
 import UI from "./UI/UI";
-import Renderer from "./utility/Renderer";
+import Renderer from "./rendering/Renderer";
 import ZoomHandler from "./modules/ZoomHandler";
 import ModuleHandler from "./features/ModuleHandler";
-import ObjectRenderer from "./hooks/ObjectRenderer";
-import EntityRenderer from "./hooks/EntityRenderer";
+import ObjectRenderer from "./rendering/ObjectRenderer";
+import EntityRenderer from "./rendering/EntityRenderer";
 
 const Glotus = {
     ObjectManager,

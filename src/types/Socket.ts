@@ -1,7 +1,7 @@
 import { EItem, EWeapon, ItemGroup, TMelee } from "./Items";
 import { EStoreAction, EStoreType } from "./Store";
 
-export enum SocketServer {
+export const enum SocketServer {
     CONNECTION_ESTABLISHED = "io-init",
     CLAN_INFO_INIT = "id",
     PING_RESPONSE = "pp",
@@ -32,7 +32,7 @@ export enum SocketServer {
     SHOOT_TURRET = "sp",
 }
 
-export enum SocketClient {
+export const enum SocketClient {
     ACCEPT_CLAN_JOIN_REQUEST = "11",
     KICK_FROM_CLAN = "12",
     JOIN_CLAN = "10",
