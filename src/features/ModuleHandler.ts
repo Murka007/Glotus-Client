@@ -15,6 +15,7 @@ import Automill from "./modules/Automill";
 import Placer from "./modules/Placer";
 import ShameReset from "./modules/ShameReset";
 import UpdateAngle from "./modules/UpdateAngle";
+import UpdateAttack from "./modules/UpdateAttack";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -33,6 +34,7 @@ const ModuleHandler = new class ModuleHandler {
         ShameReset,
         new Placer,
         new Automill,
+        new UpdateAttack,
         new UpdateAngle,
     ] as const;
 
@@ -250,7 +252,7 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.selectItemByID(item, false);
     }
 
-    private attack(angle: number | null, priority = ESentAngle.LOW) {
+    attack(angle: number | null, priority = ESentAngle.LOW) {
         if (angle !== null) {
             this.mouse.sentAngle = angle;
         }
@@ -327,10 +329,6 @@ const ModuleHandler = new class ModuleHandler {
 
         for (const module of this.modules) {
             module.postTick();
-        }
-
-        if (this.attacking && this.sentAngle !== ESentAngle.NONE) {
-            this.attack(this.mouse.angle);
         }
     }
 
