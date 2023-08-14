@@ -75,7 +75,8 @@ const SocketManager = new class SocketManager {
             }
         );
 
-        let packetCount = 0;
+        // 130 packets per second is the limit
+        // let packetCount = 0;
         window.WebSocket = new Proxy(WebSocket, {
             construct(target, args: ConstructorParameters<typeof WebSocket>) {
                 const socket = new target(...args);
@@ -91,7 +92,6 @@ const SocketManager = new class SocketManager {
         })
 
         // setInterval(() => {
-        //     if (packetCount === 0) return;
         //     console.log("PacketCount: ", packetCount);
         //     packetCount = 0;
         // }, 1000);
@@ -115,9 +115,6 @@ const SocketManager = new class SocketManager {
         const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
         if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
         if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
-        // if (temp[0] === SocketServer.UPDATE_AGE) {
-        //     console.log(temp);
-        // }
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -126,7 +123,7 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.CONNECTION_ESTABLISHED: {
-                this.pingRequest();
+                // this.pingRequest();
                 GameUI.init();
                 break;
             }
@@ -146,9 +143,6 @@ const SocketManager = new class SocketManager {
                         myPlayer.updateResources(type, temp[2]);
                     }
                 )
-                // const type = temp[1] === "points" ? "gold" : temp[1];
-                // myPlayer.resources[type] = temp[2];
-                // console.log(temp);
                 break;
             }
 

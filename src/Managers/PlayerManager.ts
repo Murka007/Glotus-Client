@@ -59,6 +59,8 @@ const PlayerManager = new class PlayerManager {
         player.id = id;
         player.nickname = nickname || "";
         player.skinID = skinID || -1;
+        player.newlyCreated = true;
+        player.usingBoost = false;
         return player;
     }
 

@@ -1,13 +1,15 @@
-import { Projectiles, Weapons, WeaponVariants } from "../constants/Items";
+import { Items, Projectiles, Weapons, WeaponVariants } from "../constants/Items";
 import { Hats } from "../constants/Store";
+import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
 import SocketManager from "../Managers/SocketManager";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
-import { EItem, EWeapon, TMelee, TPrimary, TSecondary, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EItem, EWeapon, ItemType, TMelee, TPrimary, TSecondary, WeaponTypeString, WeaponVariant } from "../types/Items";
 import { EHat, TAccessory, THat } from "../types/Store";
 import DataHandler from "../utility/DataHandler";
+import myPlayer, { ClientPlayer } from "./ClientPlayer";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
 
@@ -69,6 +71,8 @@ class Player extends Entity {
      * Set of items placed by the player
      */
     readonly objects = new Set<PlayerObject>();
+    newlyCreated = true;
+    usingBoost = false;
 
     constructor() {
         super();
@@ -128,6 +132,7 @@ class Player extends Entity {
         this.clanName = clanName;
         this.hatID = hatID;
         this.accessoryID = accessoryID;
+        this.newlyCreated = false;
         this.updateReloads();
     }
 
@@ -198,6 +203,21 @@ class Player extends Entity {
                     break;
                 }
             }
+        }
+    }
+
+    handleObjectPlacement(object: PlayerObject) {
+        this.objects.add(object);
+
+        const item = Items[object.type];
+        if (object.type === EItem.TURRET && PlayerManager.players.includes(this)) {
+            ObjectManager.resetTurret(object.id);
+        } else if (this instanceof ClientPlayer && item.itemType === ItemType.WINDMILL) {
+            myPlayer.totalGoldAmount += item.pps;
+        }
+
+        if (object.type === EItem.BOOST_PAD && !this.newlyCreated) {
+            this.usingBoost = true;
         }
     }
 

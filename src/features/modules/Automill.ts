@@ -19,12 +19,13 @@ class Automill {
     }
 
     private get canAutomill() {
+        const { sentAngle, autoattack, attacking } = ModuleHandler;
         return (
             settings.automill &&
             myPlayer.isSandbox &&
-            ModuleHandler.sentAngle === ESentAngle.NONE &&
-            !ModuleHandler.autoattack &&
-            !ModuleHandler.attacking &&
+            sentAngle === ESentAngle.NONE &&
+            !autoattack &&
+            !attacking &&
             this.toggle
         )
     }

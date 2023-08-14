@@ -40,14 +40,7 @@ const ObjectManager = new class ObjectManager {
                 PlayerManager.playerData.get(object.ownerID) ||
                 PlayerManager.createPlayer({ id: object.ownerID })
             );
-            owner.objects.add(object);
-
-            const item = Items[object.type];
-            if (object.type === EItem.TURRET && PlayerManager.players.includes(owner)) {
-                this.resetTurret(object.id);
-            } else if (owner === myPlayer && item.itemType === ItemType.WINDMILL) {
-                myPlayer.totalGoldAmount += item.pps;
-            }
+            owner.handleObjectPlacement(object);
         }
     }
 

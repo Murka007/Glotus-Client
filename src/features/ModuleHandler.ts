@@ -14,6 +14,7 @@ import Autohat from "./modules/Autohat";
 import Automill from "./modules/Automill";
 import Placer from "./modules/Placer";
 import ShameReset from "./modules/ShameReset";
+import UpdateAngle from "./modules/UpdateAngle";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -32,6 +33,7 @@ const ModuleHandler = new class ModuleHandler {
         ShameReset,
         new Placer,
         new Automill,
+        new UpdateAngle,
     ] as const;
 
     /**
@@ -228,19 +230,15 @@ const ModuleHandler = new class ModuleHandler {
             store.current = id;
         } else if (equipType === "ACTUAL") {
             store.actual = id;
-            // store.current = id;
+            store.current = id;
         } else if (equipType === "UTILITY") {
             // store.utility.set(id, false);
         }
         return true;
-
-        // if (type === EStoreType.HAT && id === EHat.TURRET_GEAR) {
-        //     this.reload.turret.current = -this.timeToNextTick;
-        // }
     }
 
 
-    private updateAngle(angle: number) {
+    updateAngle(angle: number) {
         if (angle === this.mouse.sentAngle) return;
         this.mouse.sentAngle = angle;
         this.updateSentAngle(ESentAngle.HIGH);
@@ -272,26 +270,22 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.selectItemByID(weapon, true);
     }
 
-    place(type: ItemType, angle = this.mouse.angle) {
+    place(type: ItemType, angle = this.mouse.angle, last = true) {
         this.selectItem(type);
         this.attack(angle);
-        this.stopAttack();
-        this.whichWeapon();
-        if (this.attacking) {
-            this.attack(angle);
+        if (!this.attacking) {
+            this.stopAttack();
         }
+        this.whichWeapon();
     }
 
     heal(last: boolean) {
         this.selectItem(ItemType.FOOD);
-        this.attack(null, ESentAngle.NONE);
-        if (last) {
+        this.attack(null);
+        if (!this.attacking && last) {
             this.stopAttack();
-            this.whichWeapon();
-            if (this.attacking) {
-                this.attack(this.mouse.angle);
-            }
         }
+        this.whichWeapon();
     }
 
     private placementHandler(type: ItemType, code: string) {
@@ -300,12 +294,11 @@ const ModuleHandler = new class ModuleHandler {
         this.hotkeys.set(code, type);
         this.currentType = type;
 
-        if (this.sentAngle === ESentAngle.NONE) {
-            if (type === ItemType.FOOD) {
-                this.heal(true);
-            } else {
-                this.place(type);
-            }
+        if (this.sentAngle !== ESentAngle.NONE || this.didAntiInsta) return;
+        if (type === ItemType.FOOD) {
+            this.heal(true);
+        } else {
+            this.place(type);
         }
     }
 
@@ -336,8 +329,8 @@ const ModuleHandler = new class ModuleHandler {
             module.postTick();
         }
 
-        if (this.sentAngle === ESentAngle.NONE) {
-            this.updateAngle(this.mouse.angle);
+        if (this.attacking && this.sentAngle !== ESentAngle.NONE) {
+            this.attack(this.mouse.angle);
         }
     }
 

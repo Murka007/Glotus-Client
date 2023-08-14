@@ -196,12 +196,11 @@ export class ClientPlayer extends Player {
                 const danger = enemy.canInstakill();
                 if (danger === EDanger.NONE) break;
 
-                const collidingBoost = enemy.checkCollision(ItemGroup.BOOST);
                 // It is important to check for all position variants cuz enemy can move in different directions
                 const dist0 = enemy.position.previous.distance(previous);
                 const dist1 = enemy.position.current.distance(current);
                 const dist2 = enemy.position.future.distance(future);
-                const extraRange = collidingBoost ? 200 : 60;
+                const extraRange = enemy.usingBoost ? 300 : 60;
                 const range = enemy.getMaxWeaponRange() + this.hitScale + extraRange;
                 if (dist0 <= range || dist1 <= range || dist2 <= range) {
                     if (danger === EDanger.HIGH) {
@@ -235,7 +234,7 @@ export class ClientPlayer extends Player {
         }
 
         if (settings.spikeprotection) {
-            const collidingSpike = this.checkCollision(ItemGroup.SPIKE, -40, true);
+            const collidingSpike = this.checkCollision(ItemGroup.SPIKE, -35, true);
             if (collidingSpike) {
                 return EHat.SOLDIER_HELMET;
             }

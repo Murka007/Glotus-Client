@@ -44,9 +44,12 @@ class Animal extends Entity {
     }
 
     get attackRange() {
-        return this.type === EAnimal.MOOSTAFA ? Animals[this.type].hitRange : this.scale;
+        if (this.type === EAnimal.MOOSTAFA) {
+            return Animals[this.type].hitRange + Config.playerScale;
+        }
+        return this.scale;
     }
-
+    
     get collisionRange() {
         if (this.type === EAnimal.MOOSTAFA) {
             return Animals[this.type].hitRange + Config.playerScale;

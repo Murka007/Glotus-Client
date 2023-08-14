@@ -1,19 +1,25 @@
 import { ItemType } from "../../types/Items";
+import Logger from "../../utility/Logger";
 import ModuleHandler from "../ModuleHandler";
 
 class Placer {
+    private placeCount = 0;
+    
     postTick() {
-        if (
-            ModuleHandler.currentType === null ||
-            !ModuleHandler.canPlace(ModuleHandler.currentType)
-        ) return;
+        const { currentType, didAntiInsta } = ModuleHandler;
+        if (currentType === null || !ModuleHandler.canPlace(currentType)) return;
         
-        if (ModuleHandler.currentType !== ItemType.FOOD) {
-            ModuleHandler.place(ModuleHandler.currentType);
+
+        if (currentType !== ItemType.FOOD) {
+            // If it won't work, check if myPlayer can actually place item
+            if (this.placeCount === 0) {
+                ModuleHandler.place(currentType);
+            }
+            this.placeCount = (didAntiInsta ? ((this.placeCount + 1) % 2) : 0);
             return;
         }
 
-        if (ModuleHandler.didAntiInsta) return;
+        if (didAntiInsta) return;
         ModuleHandler.heal(true);
     }
 }
