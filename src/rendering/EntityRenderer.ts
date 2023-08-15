@@ -68,9 +68,8 @@ const EntityRenderer = new class EntityRenderer {
 
         if (entity.isPlayer) {
             const player = PlayerManager.playerData.get(entity.sid);
-            if (player !== undefined && player.canInstakill() !== 0) {
-                const danger = player.canInstakill();
-                const color = danger === EDanger.HIGH ? (player.usingBoost ? "blue" : "red") : "orange"
+            if (player !== undefined && player.danger !== 0) {
+                const color = player.danger === EDanger.HIGH ? (player.usingBoost ? "blue" : "red") : "orange"
                 Renderer.fillCircle(ctx, entity.x, entity.y, player.scale, color, 0.35);
             }
         }

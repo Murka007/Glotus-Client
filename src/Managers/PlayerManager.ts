@@ -4,8 +4,9 @@ import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
 import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
+import { TTarget } from "../types/Common";
 import { EResourceType } from "../types/Enums";
-import { TMelee, WeaponTypeString} from "../types/Items";
+import { TMelee, WeaponTypeString, WeaponVariant} from "../types/Items";
 import { EHat } from "../types/Store";
 import { getAngleDist } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
@@ -64,10 +65,18 @@ const PlayerManager = new class PlayerManager {
         return player;
     }
 
+    canHitTarget(player: Player, weaponID: TMelee, target: TTarget) {
+        const pos = target.position.current;
+        const distance = player.position.current.distance(pos) - target.hitScale;
+        const angle = player.position.current.angle(pos);
+        const range = Weapons[weaponID].range;
+        return distance <= range && getAngleDist(angle, player.angle) <= Config.gatherAngle;
+    }
+
     attackPlayer(id: number, gathering: 0 | 1, weaponID: TMelee) {
         const player = this.playerData.get(id);
         if (player === undefined) return;
-        const { position, hatID, reload } = player;
+        const { hatID, reload } = player;
 
         // When player hits, we must reset his reload
         const weapon = Weapons[weaponID];
@@ -75,17 +84,23 @@ const PlayerManager = new class PlayerManager {
         reload[type].current = 0;
         reload[type].max = player.getWeaponSpeed(weaponID, hatID);
 
+        if (
+            myPlayer.isEnemyByID(id) &&
+            this.canHitTarget(player, weaponID, myPlayer)
+        ) {
+            const { isAble, count } = player.canDealPoison(weaponID);
+            if (isAble) {
+                myPlayer.poisonCount = count;
+            }
+        }
+
+        // Handle building HP and weaponXP
         if (gathering === 1) {
             const objects = ObjectManager.attackedObjects;
             for (const [id, object] of objects) {
-                const pos = object.position.current;
-                const distance = position.current.distance(pos) - object.scale;
-                const angle = position.current.angle(pos);
-                if (
-                    distance <= weapon.range &&
-                    getAngleDist(angle, player.angle) <= Config.gatherAngle
-                ) {
+                if (this.canHitTarget(player, weaponID, object)) {
                     objects.delete(id);
+
                     if (object instanceof PlayerObject) {
                         const damage = player.getBuildingDamage(weaponID);
                         object.health -= damage;

@@ -1,7 +1,7 @@
 import ObjectManager from "../Managers/ObjectManager";
 import Animals from "../constants/Animals";
 import Vector from "../modules/Vector";
-import { ItemGroup } from "../types/Items";
+import { EItem, ItemGroup } from "../types/Items";
 import { PlayerObject, Resource } from "./ObjectItem";
 
 /**
@@ -48,13 +48,9 @@ abstract class Entity {
 
             if (matchItem || isCactus) {
                 if (checkEnemy && !ObjectManager.isEnemyObject(object)) continue;
-
-                const current = object.position.current;
-                const dist0 = this.position.previous.distance(current);
-                const dist1 = this.position.current.distance(current);
-                const dist2 = this.position.future.distance(current);
-                const radius = this.scale + object.collisionScale - subRadius;
-                if (dist0 <= radius || dist1 <= radius || dist2 <= radius) return true;
+                if (ObjectManager.entityColliding(this, object, subRadius)) {
+                    return true;
+                }
             }
         }
         return false;

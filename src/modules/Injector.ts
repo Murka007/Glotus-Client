@@ -112,7 +112,7 @@ const Injector = new class Injector {
         Hook.replace(
             "handleEquip",
             /\w+\.send\("13c",0,(\w+),(\w+)\)/,
-            `Glotus.ModuleHandler.equip($2,$1,"ACTUAL")`
+            `Glotus.ModuleHandler.equip($2,$1,true)`
         );
 
         Hook.replace(

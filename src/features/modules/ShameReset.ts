@@ -13,6 +13,7 @@ const ShameReset = new class ShameReset {
         return (
             myPlayer.shameCount > 0 &&
             !myPlayer.shameActive &&
+            myPlayer.poisonCount === 0 &&
             this.isEquipTime
         )
     }
@@ -29,12 +30,12 @@ const ShameReset = new class ShameReset {
         const bull = EHat.BULL_HELMET;
         const bullState = store.utility.get(bull);
         if (bullState === undefined && this.shouldReset) {
-            const isEquipped = ModuleHandler.equip(EStoreType.HAT, bull, "UTILITY");
+            const isEquipped = ModuleHandler.equip(EStoreType.HAT, bull);
             if (isEquipped) store.utility.set(bull, false);
         } else if (isDmgOverTime && bullState !== undefined) {
             store.utility.set(bull, true);
         } else if (bullState) {
-            const isEquipped = ModuleHandler.equip(EStoreType.HAT, store.current, "CURRENT");
+            const isEquipped = ModuleHandler.equip(EStoreType.HAT, store.best);
             if (isEquipped) store.utility.delete(bull);
         }
     }

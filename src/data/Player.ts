@@ -1,5 +1,5 @@
 import { Items, Projectiles, Weapons, WeaponVariants } from "../constants/Items";
-import { Hats } from "../constants/Store";
+import { Accessories, Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
@@ -73,6 +73,9 @@ class Player extends Entity {
     readonly objects = new Set<PlayerObject>();
     newlyCreated = true;
     usingBoost = false;
+
+    private readonly dangerList: EDanger[] = [];
+    danger = EDanger.NONE;
 
     constructor() {
         super();
@@ -204,6 +207,13 @@ class Player extends Entity {
                 }
             }
         }
+
+        // this.dangerList.push(this.canInstakill());
+        // if (this.dangerList.length >= 2) {
+        //     this.dangerList.shift();
+        // }
+        // this.danger = Math.max(...this.dangerList);
+        this.danger = this.canInstakill();
     }
 
     handleObjectPlacement(object: PlayerObject) {
@@ -259,6 +269,16 @@ class Player extends Entity {
         return damage;
     }
 
+    canDealPoison(weaponID: TMelee) {
+        const variant = this.getWeaponVariant(weaponID).current;
+        const isRuby = variant === WeaponVariant.RUBY;
+        const hasPlague = this.hatID === EHat.PLAGUE_MASK;
+        return {
+            isAble: isRuby || hasPlague,
+            count: isRuby ? 5 : hasPlague ? 6 : 0
+        } as const;
+    }
+
     getWeaponSpeed(id: EWeapon, hat: THat): number {
         const reloadSpeed = hat === EHat.SAMURAI_ARMOR ? Hats[hat].atkSpd : 1;
         return Weapons[id].speed * reloadSpeed;
@@ -299,9 +319,10 @@ class Player extends Entity {
         const min = SocketManager.TICK;
         const max = this.reload[type].max - SocketManager.TICK;
         return reload <= min || reload >= max;
+        // return reload <= min || reload >= max;
     }
 
-    canInstakill(): EDanger {
+    private canInstakill(): EDanger {
 
         const primaryDamage = this.getMaxWeaponDamage(this.weapon.primary);
         const secondaryDamage = this.getMaxWeaponDamage(this.weapon.secondary);

@@ -16,6 +16,7 @@ import ShameReset from "../features/modules/ShameReset";
 import { EDanger } from "../types/Enums";
 import { TResource } from "../types/Common";
 import SocketManager from "../Managers/SocketManager";
+import { Accessories, Hats } from "../constants/Store";
 
 interface IWeaponXP {
     current: number;
@@ -66,6 +67,9 @@ export class ClientPlayer extends Player {
      * Shows how much gold the mills produce
      */
     totalGoldAmount = 0;
+
+    poisonCount = 0;
+    private isTrapped = false;
 
     constructor() {
         super();
@@ -160,6 +164,25 @@ export class ClientPlayer extends Player {
         return null;
     }
 
+    // getDmgOverTime() {
+    //     const hat = Hats[this.hatID];
+    //     const accessory = Accessories[this.accessoryID];
+    //     let damage = 0;
+    //     if ("healthRegen" in hat) {
+    //         damage += hat.healthRegen;
+    //     }
+
+    //     if ("healthRegen" in accessory) {
+    //         damage += accessory.healthRegen;
+    //     }
+
+    //     if (this.poisonCount !== 0) {
+    //         damage += -5;
+    //     }
+
+    //     return Math.abs(damage);
+    // }
+
     /**
      * Returns the best hat to be equipped at the tick
      */
@@ -193,17 +216,16 @@ export class ClientPlayer extends Player {
         if (settings.antienemy) {
             const enemies = PlayerManager.getDangerousEnemies(this);
             for (const enemy of enemies) {
-                const danger = enemy.canInstakill();
-                if (danger === EDanger.NONE) break;
+                if (enemy.danger === EDanger.NONE) break;
 
                 // It is important to check for all position variants cuz enemy can move in different directions
                 const dist0 = enemy.position.previous.distance(previous);
                 const dist1 = enemy.position.current.distance(current);
                 const dist2 = enemy.position.future.distance(future);
-                const extraRange = enemy.usingBoost ? 300 : 60;
+                const extraRange = enemy.usingBoost ? 350 : 60;
                 const range = enemy.getMaxWeaponRange() + this.hitScale + extraRange;
                 if (dist0 <= range || dist1 <= range || dist2 <= range) {
-                    if (danger === EDanger.HIGH) {
+                    if (enemy.danger === EDanger.HIGH) {
                         ModuleHandler.needToHeal = true;
                     }
                     return EHat.SOLDIER_HELMET;
@@ -216,7 +238,7 @@ export class ClientPlayer extends Player {
             const objects = ObjectManager.retrieveObjects(future, turret.shootRange);
             let turretAttackCount = 0;
             for (const object of objects) {
-                if (turretAttackCount > 4) {
+                if (turretAttackCount > 3) {
                     break;
                 }
                 if (object instanceof PlayerObject && object.type === EItem.TURRET) {
@@ -226,9 +248,9 @@ export class ClientPlayer extends Player {
                 }
             }
 
-            if (turretAttackCount > 4 || turretAttackCount > 0 && !ModuleHandler.isMoving) {
+            if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
                 return EHat.EMP_HELMET;
-            } else if (turretAttackCount > 2) {
+            } else if (turretAttackCount > 1) {
                 return EHat.SOLDIER_HELMET;
             }
         }
@@ -306,7 +328,9 @@ export class ClientPlayer extends Player {
         this.timerCount = Math.min(this.timerCount + PlayerManager.step, 1000);
         if (this.timerCount === 1000) {
             this.timerCount = 0;
+            this.poisonCount = Math.max(this.poisonCount - 1, 0);
         }
+        this.isTrapped = this.checkCollision(ItemGroup.TRAP, 0, true);
 
         ModuleHandler.postTick();
     }
@@ -336,7 +360,7 @@ export class ClientPlayer extends Player {
             const needReset = ShameReset.healthUpdate();
             if (settings.autoheal || needReset) {
                 setTimeout(() => {
-                    ModuleHandler.heal(true);
+                    ModuleHandler.heal(true, true);
                 }, healDelay);
             }
         }
@@ -350,7 +374,7 @@ export class ClientPlayer extends Player {
         }
 
         const store = ModuleHandler.getHatStore();
-        ModuleHandler.equip(EStoreType.HAT, store.current, "CURRENT");
+        ModuleHandler.equip(EStoreType.HAT, store.best);
     }
 
     upgradeItem(id: number) {

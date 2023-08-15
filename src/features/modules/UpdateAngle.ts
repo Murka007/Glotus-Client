@@ -8,10 +8,10 @@ class UpdateAngle {
         const { sentAngle, mouse } = ModuleHandler;
         if (sentAngle !== ESentAngle.NONE) return;
         
-        if (this.tickCount === 0) {
-            ModuleHandler.updateAngle(mouse.angle);
-        }
-        this.tickCount = (this.tickCount + 1) % 2;
+        ModuleHandler.updateAngle(mouse.angle);
+        // if (this.tickCount === 0) {
+        // }
+        // this.tickCount = (this.tickCount + 1) % 2;
     }
 }
 

@@ -1,9 +1,10 @@
 import { TObject } from "../data/ObjectItem";
 import Vector from "./Vector";
 
-class SpatialHashGrid {
+
+class SpatialHashGrid<T extends TObject> {
     private readonly cellSize: number;
-    private cells: TObject[][][];
+    private cells: T[][][];
 
     constructor(cellSize: number) {
         this.cellSize = cellSize;
@@ -16,7 +17,7 @@ class SpatialHashGrid {
         return [cellX, cellY] as const;
     }
 
-    insert(object: TObject) {
+    insert(object: T) {
         const { x, y } = object.position.current;
         const [cellX, cellY] = this.hashPosition(x, y);
 
@@ -31,11 +32,11 @@ class SpatialHashGrid {
         this.cells[cellX][cellY].push(object);
     }
 
-    retrieve(position: Vector, radius: number): TObject[] {
+    retrieve(position: Vector, radius: number): T[] {
         const { x, y } = position;
         const [startX, startY] = this.hashPosition(x - radius, y - radius);
         const [endX, endY] = this.hashPosition(x + radius, y + radius);
-        const results: TObject[] = [];
+        const results: T[] = [];
 
         for (let cellX = startX - 1; cellX <= endX + 1; cellX++) {
             for (let cellY = startY - 1; cellY <= endY + 1; cellY++) {
@@ -51,7 +52,7 @@ class SpatialHashGrid {
         return results;
     }
 
-    remove(object: TObject): boolean {
+    remove(object: T): boolean {
         const { x, y } = object.position.current;
         const [cellX, cellY] = this.hashPosition(x, y);
 
@@ -59,7 +60,13 @@ class SpatialHashGrid {
             const objects = this.cells[cellX][cellY];
             const index = objects.indexOf(object);
             if (index !== -1) {
-                objects.splice(index, 1);
+                const lastIndex = objects.length - 1;
+                if (index === lastIndex) {
+                    objects.pop();
+                } else {
+                    objects[index] = objects.pop()!;
+                }
+                // objects.splice(index, 1);
                 return true;
             }
         }

@@ -11,6 +11,7 @@ import Projectile from "../data/Projectile";
 import SpatialHashGrid from "../modules/SpatialHashGrid";
 import ProjectileManager from "./ProjectileManager";
 import SocketManager from "./SocketManager";
+import Entity from "../data/Entity";
 
 const ObjectManager = new class ObjectManager {
 
@@ -176,6 +177,15 @@ const ObjectManager = new class ObjectManager {
         // Turrets attacks exactly on the player, so this function works perfect.
         const shootTarget = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
         return shootTarget === myPlayer;
+    }
+
+    entityColliding(entity: Entity, object: TObject, subRadius: number) {
+        const current = object.position.current;
+        const dist0 = entity.position.previous.distance(current);
+        const dist1 = entity.position.current.distance(current);
+        const dist2 = entity.position.future.distance(current);
+        const radius = entity.scale + object.collisionScale - subRadius;
+        return dist0 <= radius || dist1 <= radius || dist2 <= radius;
     }
 }
 

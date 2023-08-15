@@ -19,7 +19,9 @@ import UpdateAttack from "./modules/UpdateAttack";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
+    best: number;
     current: number;
+    oldCurrent: number;
     actual: number;
     last: number;
 }
@@ -44,8 +46,8 @@ const ModuleHandler = new class ModuleHandler {
     private readonly hotkeys = new Map<string, ItemType>();
 
     private readonly store: TStore = [
-        { utility: new Map, current: 0, actual: 0, last: 0 },
-        { utility: new Map, current: 0, actual: 0, last: 0 },
+        { utility: new Map, best: 0, current: 0, oldCurrent: 0, actual: 0, last: 0 },
+        { utility: new Map, best: 0, current: 0, oldCurrent: 0, actual: 0, last: 0 },
     ];
 
     /**
@@ -214,7 +216,7 @@ const ModuleHandler = new class ModuleHandler {
      * @param id ID of the hat or accessory
      * @param equipType Indicates the type of hat you want to equip.
      */
-    equip(type: EStoreType, id: number, equipType: TEquipType, force = false): boolean {
+    equip(type: EStoreType, id: number, force = false): boolean {
         if (!this.buy(type, id) || !myPlayer.inGame) return false;
 
         const store = this.store[type];
@@ -228,17 +230,11 @@ const ModuleHandler = new class ModuleHandler {
             this.sentAccEquip = true;
         }
 
-        if (equipType === "CURRENT") {
-            store.current = id;
-        } else if (equipType === "ACTUAL") {
+        if (force) {
             store.actual = id;
-            store.current = id;
-        } else if (equipType === "UTILITY") {
-            // store.utility.set(id, false);
         }
         return true;
     }
-
 
     updateAngle(angle: number) {
         if (angle === this.mouse.sentAngle) return;
@@ -281,13 +277,16 @@ const ModuleHandler = new class ModuleHandler {
         this.whichWeapon();
     }
 
-    heal(last: boolean) {
+    heal(last: boolean, shouldAttack?: boolean) {
         this.selectItem(ItemType.FOOD);
         this.attack(null);
         if (!this.attacking && last) {
             this.stopAttack();
         }
         this.whichWeapon();
+        if (this.attacking && last && shouldAttack) {
+            this.attack(this.mouse.angle);
+        }
     }
 
     private placementHandler(type: ItemType, code: string) {

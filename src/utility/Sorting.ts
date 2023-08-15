@@ -1,4 +1,3 @@
-import Entity from "../data/Entity";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
 
@@ -29,7 +28,8 @@ class Sorting {
     }
 
     static byDanger(a: Player, b: Player) {
-        return b.canInstakill() - a.canInstakill();
+        return b.danger - a.danger;
+        // return b.canInstakill() - a.canInstakill();
     }
 }
 

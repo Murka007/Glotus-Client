@@ -37,7 +37,7 @@ class Animal extends Entity {
         this.health = health;
         this.nameIndex = nameIndex;
         this.scale = animal.scale;
-        const isHostile = animal.hostile;
+        const isHostile = animal.hostile && type !== EAnimal.TREASURE;
         const canBeTrapped = !("noTrap" in animal);
         const isTrapped = canBeTrapped && this.checkCollision(ItemGroup.TRAP);
         this.isDanger = isHostile && !isTrapped;
