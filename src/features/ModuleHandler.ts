@@ -248,7 +248,7 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.selectItemByID(item, false);
     }
 
-    attack(angle: number | null, priority = ESentAngle.LOW) {
+    attack(angle: number | null, priority = ESentAngle.MEDIUM) {
         if (angle !== null) {
             this.mouse.sentAngle = angle;
         }
@@ -279,7 +279,7 @@ const ModuleHandler = new class ModuleHandler {
 
     heal(last: boolean, shouldAttack?: boolean) {
         this.selectItem(ItemType.FOOD);
-        this.attack(null);
+        this.attack(null, ESentAngle.LOW);
         if (!this.attacking && last) {
             this.stopAttack();
         }

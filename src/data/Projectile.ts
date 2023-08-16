@@ -1,20 +1,21 @@
 import { Projectiles } from "../constants/Items";
 import Vector from "../modules/Vector";
+import { fixTo } from "../utility/Common";
 
 class Projectile {
     readonly position: {
 
-        readonly initial: Vector;
+        // readonly initial: Vector;
 
         /**
          * When received a packet, position is ahead of the length 70. We subtract this length to equalize the position of player and projectile
          */
         readonly current: Vector;
 
-        /**
-         * The longest possible point for the projectile
-         */
-        readonly end: Vector;
+        // /**
+        //  * The longest possible point for the projectile
+        //  */
+        // readonly end: Vector;
     }
     readonly angle: number;
     readonly range: number;
@@ -29,11 +30,6 @@ class Projectile {
     readonly isTurret: boolean;
     readonly scale: typeof Projectiles[number]["scale"];
 
-    /**
-     * Distance between start and end points
-     */
-    readonly length: number;
-
     constructor(
         x: number,
         y: number,
@@ -44,12 +40,10 @@ class Projectile {
         onPlatform: 1 | 0,
         id: number
     ) {
-        this.isTurret = type === 1 && range === 700 && speed === 1.5;
-        const current = this.isTurret ? new Vector(x, y) : new Vector(x, y).direction(angle, -70);
+        this.isTurret = type === 1;
+        const current = new Vector(x, y);
         this.position = {
-            initial: current.copy(),
-            current,
-            end: current.direction(angle, 2200),
+            current: this.isTurret ? current : current.direction(angle, - 70),
         }
         this.angle = angle;
         this.range = range;
@@ -58,7 +52,6 @@ class Projectile {
         this.onPlatform = onPlatform;
         this.id = id;
         this.scale = Projectiles[type].scale;
-        this.length = current.distance(this.position.end);
     }
 }
 

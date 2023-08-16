@@ -68,12 +68,7 @@ const ObjectManager = new class ObjectManager {
         if (object instanceof PlayerObject) {
             const player = PlayerManager.playerData.get(object.ownerID);
             if (player !== undefined) {
-                player.objects.delete(object);
-
-                const item = Items[object.type];
-                if (player === myPlayer && item.itemType === ItemType.WINDMILL) {
-                    myPlayer.totalGoldAmount -= item.pps;
-                }
+                player.handleObjectDeletion(object);
             }
         }
     }
@@ -122,8 +117,9 @@ const ObjectManager = new class ObjectManager {
      */
     postTick() {
         for (const [id, turret] of this.reloadingTurrets) {
-            turret.reload = Math.min(turret.reload + PlayerManager.step, turret.maxReload);
-            if (turret.reload === turret.maxReload) {
+            turret.reload += PlayerManager.step;
+            if (turret.reload >= turret.maxReload) {
+                turret.reload = turret.maxReload;
                 this.reloadingTurrets.delete(id);
             }
         }
@@ -153,31 +149,31 @@ const ObjectManager = new class ObjectManager {
     /**
      * Returns true if current turret object can hit myPlayer
      */
-    canTurretHitMyPlayer(object: PlayerObject) {
-        const turret = Items[EItem.TURRET];
-        const bullet = Projectiles[turret.projectile];
+    // canTurretHitMyPlayer(object: PlayerObject) {
+    //     const turret = Items[EItem.TURRET];
+    //     const bullet = Projectiles[turret.projectile];
 
-        const pos = object.position.current;
-        const angle = pos.angle(myPlayer.position.current);
-        const distance = pos.distance(myPlayer.position.current);
+    //     const pos = object.position.current;
+    //     const angle = pos.angle(myPlayer.position.current);
+    //     const distance = pos.distance(myPlayer.position.current);
 
-        if (distance > turret.shootRange) return false;
-        if (!this.isEnemyObject(object)) return false;
-        if (!this.isTurretReloaded(object)) return false;
+    //     if (distance > turret.shootRange) return false;
+    //     if (!this.isEnemyObject(object)) return false;
+    //     if (!this.isTurretReloaded(object)) return false;
 
-        const projectile = new Projectile(
-            pos.x, pos.y, angle,
-            bullet.range,
-            bullet.speed,
-            bullet.index,
-            bullet.layer,
-            -1
-        );
+    //     const projectile = new Projectile(
+    //         pos.x, pos.y, angle,
+    //         bullet.range,
+    //         bullet.speed,
+    //         bullet.index,
+    //         bullet.layer,
+    //         -1
+    //     );
 
-        // Turrets attacks exactly on the player, so this function works perfect.
-        const shootTarget = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
-        return shootTarget === myPlayer;
-    }
+    //     // Turrets attacks exactly on the player, so this function works perfect.
+    //     const shootTarget = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
+    //     return shootTarget === myPlayer;
+    // }
 
     entityColliding(entity: Entity, object: TObject, subRadius: number) {
         const current = object.position.current;

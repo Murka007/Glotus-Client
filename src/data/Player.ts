@@ -6,8 +6,9 @@ import ProjectileManager from "../Managers/ProjectileManager";
 import SocketManager from "../Managers/SocketManager";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
-import { EItem, EWeapon, ItemType, TMelee, TPrimary, TSecondary, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EItem, EWeapon, ItemType, TMelee, TPrimary, TSecondary, TWeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
 import { EHat, TAccessory, THat } from "../types/Store";
+import { fixTo, removeFast } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import myPlayer, { ClientPlayer } from "./ClientPlayer";
 import Entity from "./Entity";
@@ -38,7 +39,7 @@ class Player extends Entity {
     currentHealth = 100;
     readonly maxHealth = 100;
 
-    readonly weapon: {
+    readonly weapon = {} as {
         /**
          * ID of weapon player is holding at the current tick
          */
@@ -55,13 +56,13 @@ class Player extends Entity {
         secondary: TSecondary | null;
     }
 
-    readonly variant: {
+    private readonly variant = {} as {
         current: WeaponVariant;
         primary: WeaponVariant;
         secondary: WeaponVariant;
     }
 
-    readonly reload: {
+    readonly reload = { primary: {}, secondary: {}, turret: {} } as {
         readonly primary: IReload;
         readonly secondary: IReload;
         readonly turret: IReload;
@@ -73,6 +74,7 @@ class Player extends Entity {
     readonly objects = new Set<PlayerObject>();
     newlyCreated = true;
     usingBoost = false;
+    isFullyUpgraded = false;
 
     private readonly dangerList: EDanger[] = [];
     danger = EDanger.NONE;
@@ -80,32 +82,31 @@ class Player extends Entity {
     constructor() {
         super();
 
-        this.weapon = {
-            current: 0,
-            primary: 0,
-            secondary: null,
-        }
+        this.init();
+    }
 
-        this.variant = {
-            current: 0,
-            primary: 0,
-            secondary: 0,
-        }
+    init() {
+        this.weapon.current = 0;
+        this.weapon.primary = 0;
+        this.weapon.secondary = null;
 
-        this.reload = {
-            primary: {
-                current: -1,
-                max: -1,
-            },
-            secondary: {
-                current: -1,
-                max: -1,
-            },
-            turret: {
-                current: 2500,
-                max: 2500,
-            }
-        }
+        this.variant.current = 0;
+        this.variant.primary = 0;
+        this.variant.secondary = 0;
+
+        const reload = this.reload;
+        reload.primary.current = -1;
+        reload.primary.max = -1;
+
+        reload.secondary.current = -1;
+        reload.secondary.max = -1;
+
+        reload.turret.current = 2500;
+        reload.turret.max = 2500;
+
+        this.newlyCreated = true;
+        this.usingBoost = false;
+        this.isFullyUpgraded = false;
     }
 
     update(
@@ -139,70 +140,72 @@ class Player extends Entity {
         this.updateReloads();
     }
 
-    increaseReload(reload: IReload) {
+    private increaseReload(reload: IReload) {
         reload.current = Math.min(reload.current + PlayerManager.step, reload.max);
+    }
+    
+    private updateTurretReload() {
+        const reload = this.reload.turret;
+        this.increaseReload(reload);
+        if (this.hatID !== EHat.TURRET_GEAR) return;
+
+        const speed = Projectiles[1].speed;
+        const list = ProjectileManager.projectiles.get(speed);
+        if (list === undefined) return;
+
+        const current = this.position.current;
+        for (let i=0;i<list.length;i++) {
+            const projectile = list[i];
+            const distance = current.distance(projectile.position.current);
+            if (distance < 2) {
+                reload.current = 0;
+                removeFast(list, i);
+                break;
+            }
+        }
     }
 
     private updateReloads() {
-        const current = this.position.current;
-
-        const turretReload = this.reload.turret;
-        this.increaseReload(turretReload);
-        if (this.hatID === EHat.TURRET_GEAR) {
-            for (const [id, turret] of ProjectileManager.turrets) {
-                if (current.distance(turret.position.current) < 2) {
-                    ProjectileManager.turrets.delete(id);
-                    turretReload.current = 0;
-                    break;
-                }
-            }
-        }
+        this.updateTurretReload();
 
         // We should not reload if player is holding item
         if (this.currentItem !== -1) return;
         
-        const type = WeaponTypeString[Weapons[this.weapon.current].itemType];
-        const targetReload = this.reload[type];
         const weapon = Weapons[this.weapon.current];
-        const weaponSpeed = this.getWeaponSpeed(this.weapon.current, this.hatID);
+        const type = WeaponTypeString[weapon.itemType];
+        const reload = this.reload[type];
 
-        // Set default reload based on current weapon
-        if (targetReload.max === -1) {
-            targetReload.current = weaponSpeed;
-            targetReload.max = weaponSpeed;
+        const weaponSpeed = this.getWeaponSpeed(weapon.id, this.hatID);
+        if (reload.max === -1) {
+            reload.current = weaponSpeed;
         }
-        
-        this.increaseReload(targetReload);
-        if (DataHandler.isPrimary(this.weapon.current)) {
-            this.weapon.primary = this.weapon.current;
-        } else {
-            this.weapon.secondary = this.weapon.current;
-        }
+        reload.max = weaponSpeed;
+        this.increaseReload(reload);
+
+        this.weapon[type] = weapon.id as EWeapon & null;
+        this.variant[type] = this.variant.current;
+
         if (this.weapon.secondary === null) {
             this.weapon.secondary = this.predictSecondary(this.weapon.primary);
         }
-        this.variant[type] = this.variant.current;
 
         // Handle reloading of shootable weapons
         if ("projectile" in weapon) {
-            const speedMult = this.hatID === EHat.MARKSMAN_CAP ? Hats[this.hatID].aMlt : 1;
+            const speedMult = this.getWeaponSpeedMult();
             const type = weapon.projectile;
-            const range = Projectiles[type].range * speedMult;
             const speed = Projectiles[type].speed * speedMult;
+            const list = ProjectileManager.projectiles.get(speed);
+            if (list === undefined) return;
 
             // It won't work if players have the same position, angle, hats and ranged weapons
             // I could potentially check for secondary weapon reloading
-            for (const [id, projectile] of ProjectileManager.projectiles) {
-                if (
-                    type === projectile.type &&
-                    range === projectile.range &&
-                    speed === projectile.speed &&
-                    this.angle === projectile.angle &&
-                    current.distance(projectile.position.current) < 2
-                ) {
-                    ProjectileManager.projectiles.delete(id);
-                    targetReload.current = 0;
-                    targetReload.max = weaponSpeed;
+            const current = this.position.current;
+            for (let i=0;i<list.length;i++) {
+                const projectile = list[i];
+                const distance = current.distance(projectile.position.current);
+                if (distance < 2 && this.angle === projectile.angle) {
+                    reload.current = 0;
+                    removeFast(list, i);
                     break;
                 }
             }
@@ -220,14 +223,25 @@ class Player extends Entity {
         this.objects.add(object);
 
         const item = Items[object.type];
-        if (object.type === EItem.TURRET && PlayerManager.players.includes(this)) {
-            ObjectManager.resetTurret(object.id);
-        } else if (this instanceof ClientPlayer && item.itemType === ItemType.WINDMILL) {
-            myPlayer.totalGoldAmount += item.pps;
+        if (object.seenPlacement) {
+            if (object.type === EItem.TURRET) {
+                ObjectManager.resetTurret(object.id);
+            } else if (object.type === EItem.BOOST_PAD && !this.newlyCreated) {
+                this.usingBoost = true;
+            }
         }
 
-        if (object.type === EItem.BOOST_PAD && !this.newlyCreated) {
-            this.usingBoost = true;
+        if (myPlayer.isMyPlayerByID(this.id) && item.itemType === ItemType.WINDMILL) {
+            myPlayer.totalGoldAmount += item.pps;
+        }
+    }
+
+    handleObjectDeletion(object: PlayerObject) {
+        this.objects.delete(object);
+
+        const item = Items[object.type];
+        if (myPlayer.isMyPlayerByID(this.id) && item.itemType === ItemType.WINDMILL) {
+            myPlayer.totalGoldAmount -= item.pps;
         }
     }
 
@@ -244,7 +258,6 @@ class Player extends Entity {
         const type = Weapons[id].itemType;
         const variant = this.variant[WeaponTypeString[type]];
         return {
-            previous: Math.max(variant - 1, WeaponVariant.STONE) as WeaponVariant,
             current: variant,
             next: Math.min(variant + 1, WeaponVariant.RUBY) as WeaponVariant,
         } as const;
@@ -282,6 +295,13 @@ class Player extends Entity {
     getWeaponSpeed(id: EWeapon, hat: THat): number {
         const reloadSpeed = hat === EHat.SAMURAI_ARMOR ? Hats[hat].atkSpd : 1;
         return Weapons[id].speed * reloadSpeed;
+    }
+
+    getWeaponSpeedMult() {
+        if (this.hatID === EHat.MARKSMAN_CAP) {
+            return Hats[this.hatID].aMlt;
+        }
+        return 1;
     }
 
     getMaxWeaponRange() {

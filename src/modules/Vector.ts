@@ -111,6 +111,10 @@ class Vector {
     isEqual(vec: Vector) {
         return this.x === vec.x && this.y === vec.y;
     }
+
+    stringify() {
+        return this.x + ":" + this.y;
+    }
 }
 
 export default Vector;

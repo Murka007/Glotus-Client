@@ -1,5 +1,4 @@
 import { ItemType } from "../../types/Items";
-import Logger from "../../utility/Logger";
 import ModuleHandler from "../ModuleHandler";
 
 class Placer {

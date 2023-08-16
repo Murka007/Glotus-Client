@@ -233,27 +233,27 @@ export class ClientPlayer extends Player {
             }
         }
 
-        if (settings.autoemp) {
-            const turret = Items[EItem.TURRET];
-            const objects = ObjectManager.retrieveObjects(future, turret.shootRange);
-            let turretAttackCount = 0;
-            for (const object of objects) {
-                if (turretAttackCount > 3) {
-                    break;
-                }
-                if (object instanceof PlayerObject && object.type === EItem.TURRET) {
-                    if (ObjectManager.canTurretHitMyPlayer(object)) {
-                        turretAttackCount += 1;
-                    }
-                }
-            }
+        // if (settings.autoemp) {
+        //     const turret = Items[EItem.TURRET];
+        //     const objects = ObjectManager.retrieveObjects(future, turret.shootRange);
+        //     let turretAttackCount = 0;
+        //     for (const object of objects) {
+        //         if (turretAttackCount > 3) {
+        //             break;
+        //         }
+        //         if (object instanceof PlayerObject && object.type === EItem.TURRET) {
+        //             if (ObjectManager.canTurretHitMyPlayer(object)) {
+        //                 turretAttackCount += 1;
+        //             }
+        //         }
+        //     }
 
-            if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
-                return EHat.EMP_HELMET;
-            } else if (turretAttackCount > 1) {
-                return EHat.SOLDIER_HELMET;
-            }
-        }
+        //     if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
+        //         return EHat.EMP_HELMET;
+        //     } else if (turretAttackCount > 1) {
+        //         return EHat.SOLDIER_HELMET;
+        //     }
+        // }
 
         if (settings.spikeprotection) {
             const collidingSpike = this.checkCollision(ItemGroup.SPIKE, -35, true);
@@ -366,13 +366,15 @@ export class ClientPlayer extends Player {
         }
     }
 
-    playerSpawn(id: number) {
+    playerInit(id: number) {
         this.id = id;
         this.inGame = true;
         if (!PlayerManager.playerData.has(id)) {
             PlayerManager.playerData.set(id, myPlayer);
         }
+    }
 
+    playerSpawn() {
         const store = ModuleHandler.getHatStore();
         ModuleHandler.equip(EStoreType.HAT, store.best);
     }
@@ -462,17 +464,7 @@ export class ClientPlayer extends Player {
         this.inventory[ItemType.SPAWN] = null;
     }
 
-    private resetWeapon() {
-        this.weapon.current = 0;
-        this.weapon.primary = 0;
-        this.weapon.secondary = null;
-    }
-
-    private resetReload() {
-        this.reload.primary.max = this.reload.primary.current = -1;
-        this.reload.secondary.max = this.reload.secondary.current = -1;
-        this.reload.turret.max = this.reload.turret.current = 2500;
-
+    private resetWeaponXP() {
         for (const XP of this.weaponXP) {
             XP.current = 0;
             XP.max = -1;
@@ -485,8 +477,7 @@ export class ClientPlayer extends Player {
     reset(first = false) {
         this.resetResources();
         this.resetInventory();
-        this.resetWeapon();
-        this.resetReload();
+        this.resetWeaponXP();
         ModuleHandler.reset();
 
         this.inGame = false;

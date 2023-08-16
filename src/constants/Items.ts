@@ -879,6 +879,7 @@ export const Projectiles = [{
     range: 1000,
     speed: 1.6,
 }, {
+    name: "Turret",
     index: 1,
     layer: 1,
     damage: 25,

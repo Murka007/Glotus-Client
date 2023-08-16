@@ -11,10 +11,6 @@ import UI from "./UI";
 
 const GameUI = new class GameUI {
 
-    constructor() {
-        this.spawn = this.spawn.bind(this);
-    }
-
     /**
      * Returns game html elements
      */

@@ -18,6 +18,7 @@ interface IPlayerData {
     readonly socketID?: string;
     readonly id: number;
     readonly nickname?: string;
+    readonly health?: number;
     readonly skinID?: number;
 }
 
@@ -50,7 +51,7 @@ const PlayerManager = new class PlayerManager {
      */
     step = 0;
 
-    createPlayer({ socketID, id, nickname, skinID }: IPlayerData) {
+    createPlayer({ socketID, id, nickname, health, skinID }: IPlayerData) {
         const player = this.playerData.get(id) || new Player;
         if (!this.playerData.has(id)) {
             this.playerData.set(id, player);
@@ -59,9 +60,14 @@ const PlayerManager = new class PlayerManager {
         player.socketID = socketID || "";
         player.id = id;
         player.nickname = nickname || "";
-        player.skinID = skinID || -1;
-        player.newlyCreated = true;
-        player.usingBoost = false;
+        player.currentHealth = health || 100;
+        player.skinID = typeof skinID === "undefined" ? -1 : skinID;
+        player.init();
+
+        if (myPlayer.isMyPlayerByID(id)) {
+            myPlayer.playerSpawn();
+        }
+        
         return player;
     }
 
@@ -148,13 +154,15 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 9],
                 buffer[i + 10],
                 buffer[i + 11]
-            )
+            );
         }
 
         // Call all other classes after updating player and animal positions
-        ObjectManager.postTick();
-        if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
         ProjectileManager.postTick();
+        ObjectManager.postTick();
+
+        // Once we updated every player, animal, turret reloadings we proceed to the combat logic
+        if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
     }
 
     updateAnimal(buffer: any[]) {

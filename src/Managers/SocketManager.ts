@@ -123,13 +123,13 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.CONNECTION_ESTABLISHED: {
-                // this.pingRequest();
+                this.pingRequest();
                 GameUI.init();
                 break;
             }
 
             case SocketServer.MY_PLAYER_SPAWN:
-                myPlayer.playerSpawn(temp[1]);
+                myPlayer.playerInit(temp[1]);
                 break;
 
             case SocketServer.MY_PLAYER_DEATH:
@@ -152,6 +152,7 @@ const SocketManager = new class SocketManager {
                     socketID: data[0],
                     id: data[1],
                     nickname: data[2],
+                    health: data[6],
                     skinID: data[9],
                 })
                 break;
@@ -186,7 +187,6 @@ const SocketManager = new class SocketManager {
                 this.startTick = Date.now();
                 this.nextTick = this.startTick + this.TICK;
                 
-
                 PlayerManager.updatePlayer(temp[1]);
                 for (let i=0;i<this.PacketQueue.length;i++) {
                     this.PacketQueue[i]();
@@ -203,12 +203,38 @@ const SocketManager = new class SocketManager {
                 break;
             }
 
+            case SocketServer.SHOOT_TURRET: {
+                const id = temp[1];
+                const angle = temp[2];
+
+                const turret = ObjectManager.objects.get(id);
+                if (turret !== undefined) {
+                    const creations = ProjectileManager.ignoreCreation;
+                    const pos = turret.position.current.stringify();
+                    creations.add(pos + ":" + angle);
+                }
+
+                this.PacketQueue.push(
+                    () => ObjectManager.resetTurret(id)
+                )
+                break;
+            }
+
             case SocketServer.CREATE_PROJECTILE: {
+                const x = temp[1];
+                const y = temp[2];
+                const angle = temp[3];
+
+                const key = `${x}:${y}:${angle}`;
+                if (ProjectileManager.ignoreCreation.delete(key)) {
+                    return;
+                }
+
                 ProjectileManager.createProjectile(
                     new Projectile(
-                        temp[1],
-                        temp[2],
-                        temp[3],
+                        x,
+                        y,
+                        angle,
                         temp[4],
                         temp[5],
                         temp[6],
@@ -238,13 +264,6 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.ITEM_COUNT: {
                 myPlayer.updateItemCount(temp[1], temp[2]);
-                break;
-            }
-
-            case SocketServer.SHOOT_TURRET: {
-                this.PacketQueue.push(
-                    () => ObjectManager.resetTurret(temp[1])
-                )
                 break;
             }
 

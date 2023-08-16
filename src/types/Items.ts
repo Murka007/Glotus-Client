@@ -13,6 +13,8 @@ export const WeaponTypeString = [
     "secondary",
 ] as const;
 
+export type TWeaponType = typeof WeaponTypeString[number];
+
 /**
  * Item types that exist in the game
  */
