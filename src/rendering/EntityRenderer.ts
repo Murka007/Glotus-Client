@@ -12,6 +12,8 @@ import { EHat } from "../types/Store";
 import Animals, { EAnimal } from "../constants/Animals";
 import ModuleHandler from "../features/ModuleHandler";
 import { EDanger } from "../types/Enums";
+import ProjectileManager from "../Managers/ProjectileManager";
+import { fixTo } from "../utility/Common";
 
 /**
  * Called when bundle rendering entities (player, animal)
@@ -84,7 +86,6 @@ const EntityRenderer = new class EntityRenderer {
     render(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
         const isMyPlayer = entity === player;
         if (isMyPlayer) {
-            if (settings.rainbow) Renderer.updateHSL();
 
             const lerpPosition = new Vector(player.x, player.y);
             if (settings.displayPlayerAngle) {
@@ -93,6 +94,21 @@ const EntityRenderer = new class EntityRenderer {
 
             this.drawWeaponHitbox(ctx, player);
             this.drawPlacement(ctx, lerpPosition);
+
+            const secondary = myPlayer.weapon.current;
+            if (settings.projectileHitbox && DataHandler.isShootable(secondary)) {
+                const bullet = DataHandler.getProjectile(secondary);
+                const range = bullet.range * myPlayer.getWeaponSpeedMult();
+                const pos = myPlayer.position.current;
+                const angle = ModuleHandler.mouse.sentAngle;
+
+                const projectile = PlayerManager.getProjectile(pos, secondary, myPlayer.onPlatform, angle, range);
+                const target = ProjectileManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
+                if (target !== null) {
+                    const pos = target.position.current;
+                    Renderer.rect(ctx, pos, target.collisionScale, "#e39542", 2);
+                }
+            }
         }
 
         this.drawEntityHP(ctx, entity);

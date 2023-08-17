@@ -16,6 +16,8 @@
         justify-content: center;
         align-items: center;
 
+        transition: background 100ms, border-color 100ms, color 100ms;
+
         &:hover {
             background: $option-bg-color2;
             border-color: $option-border2;

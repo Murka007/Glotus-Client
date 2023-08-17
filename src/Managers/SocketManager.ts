@@ -196,6 +196,14 @@ const SocketManager = new class SocketManager {
                 break;
             }
 
+            case SocketServer.HIT_OBJECT: {
+                const object = ObjectManager.objects.get(temp[2]);
+                if (object instanceof Resource || object && object.isDestroyable) {
+                    ObjectManager.attackedObjects.set(getUniqueID(), [temp[1], object]);
+                }
+                break;
+            }
+
             case SocketServer.ATTACK_ANIMATION: {
                 this.PacketQueue.push(
                     () => PlayerManager.attackPlayer(temp[1], temp[2], temp[3])
@@ -264,14 +272,6 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.ITEM_COUNT: {
                 myPlayer.updateItemCount(temp[1], temp[2]);
-                break;
-            }
-
-            case SocketServer.HIT_OBJECT: {
-                const object = ObjectManager.objects.get(temp[2]);
-                if (object instanceof Resource || object && object.isDestroyable) {
-                    ObjectManager.attackedObjects.set(getUniqueID(), object);
-                }
                 break;
             }
 

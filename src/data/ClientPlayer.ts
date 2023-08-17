@@ -3,7 +3,7 @@ import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import GameUI from "../UI/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType, WeaponVariant } from "../types/Items";
+import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, TShootable, WeaponType, WeaponVariant } from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
 import { pointInRiver } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
@@ -17,6 +17,7 @@ import { EDanger } from "../types/Enums";
 import { TResource } from "../types/Common";
 import SocketManager from "../Managers/SocketManager";
 import { Accessories, Hats } from "../constants/Store";
+import ProjectileManager from "../Managers/ProjectileManager";
 
 interface IWeaponXP {
     current: number;
@@ -70,6 +71,7 @@ export class ClientPlayer extends Player {
 
     poisonCount = 0;
     private isTrapped = false;
+    underTurretAttack = false;
 
     constructor() {
         super();
@@ -189,7 +191,7 @@ export class ClientPlayer extends Player {
     getBestCurrentHat(): number {
         const { previous, current, future } = this.position;
 
-        if (settings.autoflipper) {
+        if (settings.biomehats) {
             const inRiver = pointInRiver(current) || pointInRiver(future);
             if (inRiver) {
                 // myPlayer is right on the platform
@@ -233,29 +235,33 @@ export class ClientPlayer extends Player {
             }
         }
 
-        // if (settings.autoemp) {
-        //     const turret = Items[EItem.TURRET];
-        //     const objects = ObjectManager.retrieveObjects(future, turret.shootRange);
-        //     let turretAttackCount = 0;
-        //     for (const object of objects) {
-        //         if (turretAttackCount > 3) {
-        //             break;
-        //         }
-        //         if (object instanceof PlayerObject && object.type === EItem.TURRET) {
-        //             if (ObjectManager.canTurretHitMyPlayer(object)) {
-        //                 turretAttackCount += 1;
-        //             }
-        //         }
-        //     }
+        if (settings.autoemp) {
+            const turret = Items[EItem.TURRET];
+            const objects = ObjectManager.retrieveObjects(current, turret.shootRange);
+            let turretAttackCount = 0;
+            for (const object of objects) {
+                if (turretAttackCount > 3) {
+                    break;
+                }
+                if (object instanceof PlayerObject && object.type === EItem.TURRET) {
+                    if (ObjectManager.canTurretHitMyPlayer(object, true)) {
+                        turretAttackCount += 1;
+                    }
+                }
+            }
 
-        //     if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
-        //         return EHat.EMP_HELMET;
-        //     } else if (turretAttackCount > 1) {
-        //         return EHat.SOLDIER_HELMET;
-        //     }
-        // }
+            if (turretAttackCount !== 0) {
+                this.underTurretAttack = true;
+            }
 
-        if (settings.spikeprotection) {
+            if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
+                return EHat.EMP_HELMET;
+            } else if (turretAttackCount > 1) {
+                return EHat.SOLDIER_HELMET;
+            }
+        }
+
+        if (settings.antispike) {
             const collidingSpike = this.checkCollision(ItemGroup.SPIKE, -35, true);
             if (collidingSpike) {
                 return EHat.SOLDIER_HELMET;
@@ -276,7 +282,7 @@ export class ClientPlayer extends Player {
             }
         }
 
-        if (settings.autowinter) {
+        if (settings.biomehats) {
             const inWinter = current.y <= 2400 || future.y <= 2400;
             if (inWinter) return EHat.WINTER_CAP;
         }
@@ -330,7 +336,9 @@ export class ClientPlayer extends Player {
             this.timerCount = 0;
             this.poisonCount = Math.max(this.poisonCount - 1, 0);
         }
+
         this.isTrapped = this.checkCollision(ItemGroup.TRAP, 0, true);
+        this.underTurretAttack = false;
 
         ModuleHandler.postTick();
     }

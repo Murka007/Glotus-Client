@@ -6,6 +6,7 @@ import { EItem, ItemType } from "../types/Items";
 import { IRenderObject } from "../types/RenderTargets";
 import Renderer from "./Renderer";
 import settings from "../utility/Settings";
+import myPlayer from "../data/ClientPlayer";
 
 /**
  * Called when game bundle rendering objects
@@ -34,11 +35,11 @@ const ObjectRenderer = new class ObjectRenderer {
             Renderer.circularBar(ctx, entity, perc, angle, color, scale);
         }
 
-        // if (settings.turretHitbox) {
-        //     const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(object);
-        //     const color = canShootMyPlayer ? "#73272d" : "#3e2773";
-        //     Renderer.circle(ctx, entity.x, entity.y, 700, color, 1, 1);
-        // }
+        if (settings.turretHitbox) {
+            const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(object, false);
+            const color = canShootMyPlayer ? "#73272d" : "#3e2773";
+            Renderer.circle(ctx, entity.x, entity.y, 700, color, 0.6, 1);
+        }
     }
 
     private renderWindmill(entity: IRenderObject) {

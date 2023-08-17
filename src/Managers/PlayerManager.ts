@@ -1,12 +1,15 @@
 import Config from "../constants/Config";
 import { Weapons } from "../constants/Items";
+import { Hats } from "../constants/Store";
 import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
 import { PlayerObject, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
+import Projectile from "../data/Projectile";
+import Vector from "../modules/Vector";
 import { TTarget } from "../types/Common";
-import { EResourceType } from "../types/Enums";
-import { TMelee, WeaponTypeString, WeaponVariant} from "../types/Items";
+import { EDanger, EResourceType } from "../types/Enums";
+import { ItemGroup, TMelee, TShootable, WeaponTypeString, WeaponVariant} from "../types/Items";
 import { EHat } from "../types/Store";
 import { getAngleDist } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
@@ -22,6 +25,7 @@ interface IPlayerData {
     readonly skinID?: number;
 }
 
+let maxDist = 0;
 const PlayerManager = new class PlayerManager {
 
     /**
@@ -103,8 +107,9 @@ const PlayerManager = new class PlayerManager {
         // Handle building HP and weaponXP
         if (gathering === 1) {
             const objects = ObjectManager.attackedObjects;
-            for (const [id, object] of objects) {
-                if (this.canHitTarget(player, weaponID, object)) {
+            for (const [id, data] of objects) {
+                const [hitAngle, object] = data;
+                if (this.canHitTarget(player, weaponID, object) && getAngleDist(hitAngle, player.angle) <= 1.25) {
                     objects.delete(id);
 
                     if (object instanceof PlayerObject) {
@@ -238,7 +243,30 @@ const PlayerManager = new class PlayerManager {
 
     getDangerousEnemies(owner: Player): Player[] {
         const enemies = this.getEnemies(owner);
+        for (let i=0;i<enemies.length;i++) {
+            const enemy = enemies[i];
+            enemy.dangerList.push(enemy.canInstakill());
+            if (enemy.dangerList.length >= 3) {
+                enemy.dangerList.shift();
+            }
+            enemy.danger = Math.max(...enemy.dangerList);
+        }
         return enemies.sort(Sorting.byDanger);
+    }
+
+    getProjectile(position: Vector, shootable: TShootable, onPlatform: boolean, lookingAt: number, range: number): Projectile {
+        const secondary = Weapons[shootable];
+        const arrow = DataHandler.getProjectile(shootable);
+        const start = position.direction(lookingAt, 140);
+
+        return new Projectile(
+            start.x, start.y, lookingAt,
+            arrow.range,
+            arrow.speed,
+            secondary.projectile,
+            onPlatform ? 1 : 0,
+            -1, range
+        )
     }
 
     // getPossibleShootEntity(): Player | Animal | null {

@@ -6,13 +6,14 @@ import ProjectileManager from "../Managers/ProjectileManager";
 import SocketManager from "../Managers/SocketManager";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
-import { EItem, EWeapon, ItemType, TMelee, TPrimary, TSecondary, TWeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EItem, EWeapon, ItemGroup, ItemType, TMelee, TPrimary, TSecondary, TWeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
 import { EHat, TAccessory, THat } from "../types/Store";
 import { fixTo, removeFast } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import myPlayer, { ClientPlayer } from "./ClientPlayer";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
+import Projectile from "./Projectile";
 
 /**
  * Represents all players.
@@ -74,9 +75,10 @@ class Player extends Entity {
     readonly objects = new Set<PlayerObject>();
     newlyCreated = true;
     usingBoost = false;
+    onPlatform = false;
     isFullyUpgraded = false;
 
-    private readonly dangerList: EDanger[] = [];
+    readonly dangerList: EDanger[] = [];
     danger = EDanger.NONE;
 
     constructor() {
@@ -137,6 +139,7 @@ class Player extends Entity {
         this.hatID = hatID;
         this.accessoryID = accessoryID;
         this.newlyCreated = false;
+        this.onPlatform = this.checkCollision(ItemGroup.PLATFORM);
         this.updateReloads();
     }
 
@@ -212,11 +215,11 @@ class Player extends Entity {
         }
 
         // this.dangerList.push(this.canInstakill());
-        // if (this.dangerList.length >= 2) {
+        // if (this.dangerList.length >= 3) {
         //     this.dangerList.shift();
         // }
         // this.danger = Math.max(...this.dangerList);
-        this.danger = this.canInstakill();
+        // this.danger = this.canInstakill();
     }
 
     handleObjectPlacement(object: PlayerObject) {
@@ -336,22 +339,54 @@ class Player extends Entity {
 
     private isReloaded(type: TReload) {
         const reload = this.reload[type].current;
-        const min = SocketManager.TICK;
-        const max = this.reload[type].max - SocketManager.TICK;
-        return reload <= min || reload >= max;
+        // const min = SocketManager.TICK;
+        const max = this.reload[type].max - SocketManager.TICK;// * 2;
+        return reload >= max;
         // return reload <= min || reload >= max;
     }
 
-    private canInstakill(): EDanger {
+    canInstakill(): EDanger {
+        if (myPlayer.isMyPlayerByID(this.id)) return EDanger.NONE;
 
-        const primaryDamage = this.getMaxWeaponDamage(this.weapon.primary);
-        const secondaryDamage = this.getMaxWeaponDamage(this.weapon.secondary);
+        const { primary, secondary } = this.weapon;
+        const primaryDamage = this.getMaxWeaponDamage(primary);
+        const secondaryDamage = this.getMaxWeaponDamage(secondary);
         const soldier = Hats[EHat.SOLDIER_HELMET];
+        const pos = this.position.current;
+        const angle = pos.angle(myPlayer.position.current);
 
         let totalDamage = 0;
         if (this.isReloaded("primary")) totalDamage += primaryDamage;
-        if (this.isReloaded("secondary")) totalDamage += secondaryDamage;
-        if (this.isReloaded("turret")) totalDamage += 25;
+        if (this.isReloaded("secondary")) {
+
+            let canHit = DataHandler.isMelee(secondary);
+            if (DataHandler.isShootable(secondary)) {
+                const projectile = PlayerManager.getProjectile(pos, secondary, this.onPlatform, angle, 700);
+                canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
+            }
+            
+            if (canHit) {
+                totalDamage += secondaryDamage;
+            }
+        }
+
+        if (this.isReloaded("turret")) {
+            const bullet = Projectiles[1];
+            const projectile = new Projectile(
+                pos.x, pos.y, angle,
+                bullet.range,
+                bullet.speed,
+                bullet.index,
+                bullet.layer,
+                -1,
+                bullet.range,
+            )
+
+            const canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
+            if (canHit) {
+                totalDamage += 25;
+            }
+        }
 
         if (totalDamage * soldier.dmgMult >= 100) {
             return EDanger.HIGH;

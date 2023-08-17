@@ -18,6 +18,8 @@
         font-size: 1.3em;
         overflow: hidden;
 
+        transition: background 100ms;
+
         &:hover {
             background: $ui-bg-sub-color;
         }

@@ -11,13 +11,7 @@ import Player from "../data/Player";
 import { clamp, lerp } from "../utility/Common";
 
 class Renderer {
-    static HSL = 0;
     static readonly objects: IRenderObject[] = [];
-    private static lerpDistance = 0;
-
-    static updateHSL() {
-        this.HSL = (this.HSL + 0.5) % 360;
-    }
 
     static rect(ctx: TCTX, pos: Vector, scale: number, color: string, lineWidth = 4) {
         ctx.save();
@@ -135,9 +129,8 @@ class Renderer {
     }
 
     static renderTracer(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
-        const colorValue = this.getTracerColor(entity);
-        if (colorValue === null) return;
-        const color = settings.rainbow ? `hsl(${this.HSL}, 100%, 50%)` : colorValue;
+        const color = this.getTracerColor(entity);
+        if (color === null) return;
 
         const pos1 = new Vector(player.x, player.y);
         const pos2 = new Vector(entity.x, entity.y);
@@ -145,9 +138,8 @@ class Renderer {
         if (settings.arrows) {
             const w = 8;
             const distance = Math.min(100 + w * 2, pos1.distance(pos2) - w * 2);
-            this.lerpDistance = lerp(this.lerpDistance, distance, 0.6);
             const angle = pos1.angle(pos2);
-            const pos = pos1.direction(angle, this.lerpDistance);
+            const pos = pos1.direction(angle, distance);
             this.arrow(ctx, w, pos.x, pos.y, angle, color);
         } else {
             this.line(ctx, pos1, pos2, color, 0.75);

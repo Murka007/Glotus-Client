@@ -29,6 +29,7 @@ class Projectile {
     readonly id: number;
     readonly isTurret: boolean;
     readonly scale: typeof Projectiles[number]["scale"];
+    readonly maxRange: number;
 
     constructor(
         x: number,
@@ -38,7 +39,8 @@ class Projectile {
         speed: number,
         type: number,
         onPlatform: 1 | 0,
-        id: number
+        id: number,
+        maxRange?: number,
     ) {
         this.isTurret = type === 1;
         const current = new Vector(x, y);
@@ -52,6 +54,7 @@ class Projectile {
         this.onPlatform = onPlatform;
         this.id = id;
         this.scale = Projectiles[type].scale;
+        this.maxRange = maxRange || 0;
     }
 }
 

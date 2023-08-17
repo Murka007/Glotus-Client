@@ -25,16 +25,13 @@ export interface ISettings {
     toggleMenu: string;
 
     // Combat
-    autoflipper: boolean;
-    autowinter: boolean;
+    biomehats: boolean;
     autoemp: boolean;
     antienemy: boolean;
     antianimal: boolean;
-    spikeprotection: boolean;
+    antispike: boolean;
 
-    autoreload: boolean;
     autoheal: boolean;
-    antiboostpad: boolean;
 
     automill: boolean;
 
@@ -46,7 +43,6 @@ export interface ISettings {
     animalTracers: boolean;
     animalTracersColor: string;
     arrows: boolean;
-    rainbow: boolean;
 
     itemMarkers: boolean;
     itemMarkersColor: string;
@@ -105,15 +101,12 @@ export const defaultSettings = {
     toggleShop: "ShiftLeft",
     toggleClan: "ControlLeft",
     toggleMenu: "Escape",
-    autoflipper: true,
-    autowinter: true,
+    biomehats: true,
     autoemp: true,
     antienemy: true,
     antianimal: true,
-    spikeprotection: true,
-    autoreload: true,
+    antispike: true,
     autoheal: true,
-    antiboostpad: true,
     automill: true,
     enemyTracers: true,
     enemyTracersColor: "#cc5151",
@@ -122,7 +115,6 @@ export const defaultSettings = {
     animalTracers: true,
     animalTracersColor: "#518ccc",
     arrows: true,
-    rainbow: false,
     itemMarkers: true,
     itemMarkersColor: "#84bd4b",
     teammateMarkers: true,

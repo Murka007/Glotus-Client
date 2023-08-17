@@ -29,10 +29,11 @@ const ShameReset = new class ShameReset {
         const store = ModuleHandler.getHatStore();
         const bull = EHat.BULL_HELMET;
         const bullState = store.utility.get(bull);
+
         if (bullState === undefined && this.shouldReset) {
             const isEquipped = ModuleHandler.equip(EStoreType.HAT, bull);
             if (isEquipped) store.utility.set(bull, false);
-        } else if (isDmgOverTime && bullState !== undefined) {
+        } else if ((isDmgOverTime || myPlayer.poisonCount !== 0) && bullState !== undefined) {
             store.utility.set(bull, true);
         } else if (bullState) {
             const isEquipped = ModuleHandler.equip(EStoreType.HAT, store.best);

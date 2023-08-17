@@ -29,7 +29,7 @@ const ObjectManager = new class ObjectManager {
     /**
      * A Map of attacked objects at current tick
      */
-    readonly attackedObjects = new Map<number, TObject>();
+    readonly attackedObjects = new Map<number, [number, TObject]>();
 
     private insertObject(object: TObject) {
         this.grid.insert(object);
@@ -129,6 +129,10 @@ const ObjectManager = new class ObjectManager {
         return this.grid.retrieve(pos, radius);
     }
 
+    retrieveObjectsByAngle(pos: Vector, radius: number, angle: number, angleRange: number): TObject[] {
+        return this.grid.retrieveByAngle(pos, radius, angle, angleRange);
+    }
+
     canPlaceItem(id: TPlaceable, position: Vector) {
         if (id !== EItem.PLATFORM && pointInRiver(position)) {
             return false;
@@ -149,6 +153,36 @@ const ObjectManager = new class ObjectManager {
     /**
      * Returns true if current turret object can hit myPlayer
      */
+    canTurretHitMyPlayer(object: PlayerObject, optimized: boolean): boolean {
+        const turret = Items[EItem.TURRET];
+        const bullet = Projectiles[turret.projectile];
+
+        const pos = object.position.current;
+        const angle = pos.angle(myPlayer.position.current);
+        const distance = pos.distance(myPlayer.position.current);
+
+        if (distance > turret.shootRange) return false;
+        if (!this.isEnemyObject(object)) return false;
+        if (!this.isTurretReloaded(object)) return false;
+
+        const projectile = new Projectile(
+            pos.x, pos.y, angle,
+            bullet.range,
+            bullet.speed,
+            bullet.index,
+            bullet.layer,
+            -1,
+            turret.shootRange
+        )
+
+        if (optimized) {
+            return ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
+        }
+        
+        const target = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
+        return target === myPlayer;
+    }
+    
     // canTurretHitMyPlayer(object: PlayerObject) {
     //     const turret = Items[EItem.TURRET];
     //     const bullet = Projectiles[turret.projectile];
