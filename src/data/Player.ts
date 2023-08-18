@@ -1,20 +1,18 @@
 import { Items, Projectiles, Weapons, WeaponVariants } from "../constants/Items";
-import { Accessories, Hats } from "../constants/Store";
+import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
 import SocketManager from "../Managers/SocketManager";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
-import { EItem, EWeapon, ItemGroup, ItemType, TMelee, TPrimary, TSecondary, TWeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
-import { EHat, TAccessory, THat } from "../types/Store";
-import { fixTo, removeFast } from "../utility/Common";
+import { EItem, EProjectile, EWeapon, ItemGroup, ItemType, TGlobalInventory, TMelee, TPlaceable, TPrimary, TSecondary, WeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EAccessory, EHat } from "../types/Store";
+import { removeFast } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
-import myPlayer, { ClientPlayer } from "./ClientPlayer";
+import myPlayer from "./ClientPlayer";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
-import Projectile from "./Projectile";
-
 /**
  * Represents all players.
  */
@@ -33,23 +31,25 @@ class Player extends Entity {
     skinID = 0;
     readonly scale = 35;
 
-    hatID: THat = 0;
-    accessoryID: TAccessory = 0;
+    hatID: EHat = 0;
+    accessoryID: EAccessory = 0;
 
     previousHealth = 100;
     currentHealth = 100;
     readonly maxHealth = 100;
 
+    readonly globalInventory = {} as TGlobalInventory;
     readonly weapon = {} as {
         /**
          * ID of weapon player is holding at the current tick
          */
         current: EWeapon;
+        oldCurrent: EWeapon;
 
         /**
          * ID of current primary weapon
          */
-        primary: TPrimary;
+        primary: TPrimary | null;
 
         /**
          * ID of current secondary weapon
@@ -57,7 +57,7 @@ class Player extends Entity {
         secondary: TSecondary | null;
     }
 
-    private readonly variant = {} as {
+    protected readonly variant = {} as {
         current: WeaponVariant;
         primary: WeaponVariant;
         secondary: WeaponVariant;
@@ -87,15 +87,7 @@ class Player extends Entity {
         this.init();
     }
 
-    init() {
-        this.weapon.current = 0;
-        this.weapon.primary = 0;
-        this.weapon.secondary = null;
-
-        this.variant.current = 0;
-        this.variant.primary = 0;
-        this.variant.secondary = 0;
-
+    resetReload() {
         const reload = this.reload;
         reload.primary.current = -1;
         reload.primary.max = -1;
@@ -105,6 +97,33 @@ class Player extends Entity {
 
         reload.turret.current = 2500;
         reload.turret.max = 2500;
+    }
+
+    private resetGlobalInventory() {
+        this.globalInventory[WeaponType.PRIMARY] = EWeapon.TOOL_HAMMER;
+        this.globalInventory[WeaponType.SECONDARY] = null;
+        this.globalInventory[ItemType.FOOD] = EItem.APPLE;
+        this.globalInventory[ItemType.WALL] = EItem.WOOD_WALL;
+        this.globalInventory[ItemType.SPIKE] = EItem.SPIKES;
+        this.globalInventory[ItemType.WINDMILL] = EItem.WINDMILL;
+        this.globalInventory[ItemType.FARM] = null;
+        this.globalInventory[ItemType.TRAP] = null;
+        this.globalInventory[ItemType.TURRET] = null;
+        this.globalInventory[ItemType.SPAWN] = null;
+    }
+
+    init() {
+        this.weapon.current = 0;
+        this.weapon.oldCurrent = 0;
+        this.weapon.primary = null;
+        this.weapon.secondary = null;
+
+        this.variant.current = 0;
+        this.variant.primary = 0;
+        this.variant.secondary = 0;
+
+        this.resetReload();
+        this.resetGlobalInventory();
 
         this.newlyCreated = true;
         this.usingBoost = false;
@@ -121,8 +140,8 @@ class Player extends Entity {
         weaponVariant: WeaponVariant,
         clanName: string | null,
         isLeader: 1 | 0,
-        hatID: THat,
-        accessoryID: TAccessory,
+        hatID: EHat,
+        accessoryID: EAccessory,
         isSkull: 1 | 0
     ) {
         this.id = id;
@@ -133,6 +152,7 @@ class Player extends Entity {
 
         this.angle = angle;
         this.currentItem = currentItem;
+        this.weapon.oldCurrent = this.weapon.current;
         this.weapon.current = currentWeapon;
         this.variant.current = weaponVariant;
         this.clanName = clanName;
@@ -140,7 +160,16 @@ class Player extends Entity {
         this.accessoryID = accessoryID;
         this.newlyCreated = false;
         this.onPlatform = this.checkCollision(ItemGroup.PLATFORM);
+        this.predictItems();
+        this.predictWeapons();
         this.updateReloads();
+    }
+
+    private predictItems() {
+        if (this.currentItem === -1) return;
+
+        const item = Items[this.currentItem];
+        this.globalInventory[item.itemType] = this.currentItem as EItem & null;
     }
 
     private increaseReload(reload: IReload) {
@@ -178,19 +207,7 @@ class Player extends Entity {
         const type = WeaponTypeString[weapon.itemType];
         const reload = this.reload[type];
 
-        const weaponSpeed = this.getWeaponSpeed(weapon.id, this.hatID);
-        if (reload.max === -1) {
-            reload.current = weaponSpeed;
-        }
-        reload.max = weaponSpeed;
         this.increaseReload(reload);
-
-        this.weapon[type] = weapon.id as EWeapon & null;
-        this.variant[type] = this.variant.current;
-
-        if (this.weapon.secondary === null) {
-            this.weapon.secondary = this.predictSecondary(this.weapon.primary);
-        }
 
         // Handle reloading of shootable weapons
         if ("projectile" in weapon) {
@@ -214,12 +231,6 @@ class Player extends Entity {
             }
         }
 
-        // this.dangerList.push(this.canInstakill());
-        // if (this.dangerList.length >= 3) {
-        //     this.dangerList.shift();
-        // }
-        // this.danger = Math.max(...this.dangerList);
-        // this.danger = this.canInstakill();
     }
 
     handleObjectPlacement(object: PlayerObject) {
@@ -232,6 +243,8 @@ class Player extends Entity {
             } else if (object.type === EItem.BOOST_PAD && !this.newlyCreated) {
                 this.usingBoost = true;
             }
+
+            this.updateInventory(object.type);
         }
 
         if (myPlayer.isMyPlayerByID(this.id) && item.itemType === ItemType.WINDMILL) {
@@ -248,13 +261,111 @@ class Player extends Entity {
         }
     }
 
-    predictSecondary(id: TPrimary): TSecondary | null {
+    /**
+     * Updates the player's inventory based on the placed item
+     */
+    private updateInventory(type: TPlaceable) {
+        const item = Items[type];
+        const inventoryID = this.globalInventory[item.itemType];
+        const shouldUpdate = inventoryID === null || item.age > Items[inventoryID].age;
+        if (shouldUpdate) {
+            this.globalInventory[item.itemType] = item.id as ItemType & null;
+        }
+    }
+
+    /**
+     * Based on the player's already known weapons and items, calculates whether the player is fully upgraded
+     */
+    private detectFullUpgrade() {
+        const inventory = this.globalInventory;
+        const primary = inventory[WeaponType.PRIMARY];
+        const secondary = inventory[WeaponType.SECONDARY];
+        const spike = inventory[ItemType.SPIKE];
+
+        if (primary && secondary) {
+            return "isUpgrade" in Weapons[primary] && "isUpgrade" in Weapons[secondary];
+        }
+
+        return (
+            primary && Weapons[primary].age === 8 ||
+            secondary && Weapons[secondary].age === 9 ||
+            spike && Items[spike].age === 9 ||
+            inventory[ItemType.WINDMILL] === EItem.POWER_MILL ||
+            inventory[ItemType.SPAWN] === EItem.SPAWN_PAD
+        )
+    }
+
+    private predictPrimary(id: TSecondary): TPrimary | null {
+        if (id === EWeapon.GREAT_HAMMER || DataHandler.isShootable(id)) return EWeapon.POLEARM;
+        if (id === EWeapon.WOODEN_SHIELD) return EWeapon.KATANA;
+        return null;
+    }
+
+    private predictSecondary(id: TPrimary): TSecondary | null {
         if (
             id === EWeapon.POLEARM ||
             id === EWeapon.SHORT_SWORD
         ) return EWeapon.MUSKET;
+
         if (id === EWeapon.KATANA) return EWeapon.GREAT_HAMMER;
         return null;
+    }
+
+    // private predictOtherItems() {
+    //     const inventory = this.globalInventory;
+    //     const secondary = inventory[WeaponType.SECONDARY];
+    //     const windmill = inventory[ItemType.WINDMILL];
+    //     const spike = inventory[ItemType.SPIKE];
+    //     const spawn = inventory[ItemType.SPAWN];
+    //     if (DataHandler.isShootable(secondary)) {
+    //         if (spike && Items[spike].age === 9) {
+    //             inventory[WeaponType.SECONDARY] = EWeapon.CROSSBOW;
+    //         } else if (windmill === EItem.POWER_MILL) {
+    //             inventory[WeaponType.SECONDARY] = EWeapon.HUNTING_BOW;
+    //         }
+    //     }
+    // }
+
+    private predictWeapons() {
+        const { current, oldCurrent } = this.weapon;
+        const weapon = Weapons[current];
+        const type = WeaponTypeString[weapon.itemType];
+        const reload = this.reload[type];
+
+        // May not work if attacked, switched to other type and upgraded previous type
+        const weaponSpeed = this.getWeaponSpeed(weapon.id, this.hatID);
+        const upgradedWeapon = current !== oldCurrent && weapon.itemType === Weapons[oldCurrent].itemType;
+        if (reload.max === -1 || upgradedWeapon) {
+            reload.current = weaponSpeed;
+        }
+        reload.max = weaponSpeed;
+        
+        this.globalInventory[weapon.itemType] = current as EWeapon & null;
+        this.variant[type] = this.variant.current;
+
+        const currentType = this.weapon[type];
+        if (currentType === null || weapon.age > Weapons[currentType].age) {
+            this.weapon[type] = current as EWeapon & null;
+        }
+
+        // Player can hold only one type of item, primary or secondary. Based on current weapon id, we predict other weapon type
+        // Doesn't work correctly if player has already shown both types of weapons and at the same time hasn't fully upgraded
+        if (this.weapon.primary === null && DataHandler.isSecondary(current)) {
+            this.weapon.primary = this.predictPrimary(current);
+        } else if (this.weapon.secondary === null && DataHandler.isPrimary(current)) {
+            this.weapon.secondary = this.predictSecondary(current);
+        }
+        
+        // Update weapons if it is already known that the player is fully upgraded
+        this.isFullyUpgraded = this.detectFullUpgrade();
+        if (this.isFullyUpgraded) {
+            const primary = this.globalInventory[WeaponType.PRIMARY];
+            const secondary = this.globalInventory[WeaponType.SECONDARY];
+
+            // If some weapon is not yet known, leave the predicted
+            if (primary !== null) this.weapon.primary = primary;
+            if (secondary !== null) this.weapon.secondary = secondary;
+        }
     }
 
     getWeaponVariant(id: EWeapon) {
@@ -295,7 +406,7 @@ class Player extends Entity {
         } as const;
     }
 
-    getWeaponSpeed(id: EWeapon, hat: THat): number {
+    getWeaponSpeed(id: EWeapon, hat: EHat): number {
         const reloadSpeed = hat === EHat.SAMURAI_ARMOR ? Hats[hat].atkSpd : 1;
         return Weapons[id].speed * reloadSpeed;
     }
@@ -309,7 +420,7 @@ class Player extends Entity {
 
     getMaxWeaponRange() {
         const { primary, secondary } = this.weapon;
-        const primaryRange = Weapons[primary].range;
+        const primaryRange = Weapons[primary!].range;
         if (DataHandler.isMelee(secondary)) {
             const range = Weapons[secondary].range;
             if (range > primaryRange) {
@@ -345,48 +456,16 @@ class Player extends Entity {
         // return reload <= min || reload >= max;
     }
 
-    canInstakill(): EDanger {
-        if (myPlayer.isMyPlayerByID(this.id)) return EDanger.NONE;
-
+    canPossiblyInstakill(): EDanger {
         const { primary, secondary } = this.weapon;
         const primaryDamage = this.getMaxWeaponDamage(primary);
         const secondaryDamage = this.getMaxWeaponDamage(secondary);
         const soldier = Hats[EHat.SOLDIER_HELMET];
-        const pos = this.position.current;
-        const angle = pos.angle(myPlayer.position.current);
 
         let totalDamage = 0;
         if (this.isReloaded("primary")) totalDamage += primaryDamage;
-        if (this.isReloaded("secondary")) {
-
-            let canHit = DataHandler.isMelee(secondary);
-            if (DataHandler.isShootable(secondary)) {
-                const projectile = PlayerManager.getProjectile(pos, secondary, this.onPlatform, angle, 700);
-                canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
-            }
-            
-            if (canHit) {
-                totalDamage += secondaryDamage;
-            }
-        }
-
-        if (this.isReloaded("turret")) {
-            const bullet = Projectiles[1];
-            const projectile = new Projectile(
-                pos.x, pos.y, angle,
-                bullet.range,
-                bullet.speed,
-                bullet.index,
-                bullet.layer,
-                -1,
-                bullet.range,
-            )
-
-            const canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
-            if (canHit) {
-                totalDamage += 25;
-            }
-        }
+        if (this.isReloaded("secondary")) totalDamage += secondaryDamage;
+        if (this.isReloaded("turret")) totalDamage += 25;
 
         if (totalDamage * soldier.dmgMult >= 100) {
             return EDanger.HIGH;
@@ -398,6 +477,51 @@ class Player extends Entity {
 
         return EDanger.NONE;
     }
+
+    // canInstakill(): EDanger {
+    //     if (myPlayer.isMyPlayerByID(this.id)) return EDanger.NONE;
+
+    //     const { primary, secondary } = this.weapon;
+    //     const primaryDamage = this.getMaxWeaponDamage(primary);
+    //     const secondaryDamage = this.getMaxWeaponDamage(secondary);
+    //     const soldier = Hats[EHat.SOLDIER_HELMET];
+    //     const pos = this.position.current;
+    //     const angle = pos.angle(myPlayer.position.current);
+
+    //     let totalDamage = 0;
+    //     if (this.isReloaded("primary")) totalDamage += primaryDamage;
+    //     if (this.isReloaded("secondary")) {
+
+    //         let canHit = DataHandler.isMelee(secondary);
+    //         if (DataHandler.isShootable(secondary)) {
+    //             const weapon = Weapons[secondary];
+    //             const projectile = PlayerManager.getProjectile(pos, weapon.projectile, this.onPlatform, angle, 700);
+    //             canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
+    //         }
+            
+    //         if (canHit) {
+    //             totalDamage += secondaryDamage;
+    //         }
+    //     }
+
+    //     if (this.isReloaded("turret")) {
+    //         const projectile = PlayerManager.getProjectile(pos, EProjectile.TURRET, true, angle, 700);
+    //         const canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer, 10);
+    //         if (canHit) {
+    //             totalDamage += 25;
+    //         }
+    //     }
+
+    //     if (totalDamage * soldier.dmgMult >= 100) {
+    //         return EDanger.HIGH;
+    //     }
+
+    //     if (totalDamage >= 100) {
+    //         return EDanger.MEDIUM;
+    //     }
+
+    //     return EDanger.NONE;
+    // }
 }
 
 export default Player;

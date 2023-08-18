@@ -29,7 +29,6 @@ class Sorting {
 
     static byDanger(a: Player, b: Player) {
         return b.danger - a.danger;
-        // return b.canInstakill() - a.canInstakill();
     }
 }
 

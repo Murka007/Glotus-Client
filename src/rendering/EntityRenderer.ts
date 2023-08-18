@@ -102,7 +102,7 @@ const EntityRenderer = new class EntityRenderer {
                 const pos = myPlayer.position.current;
                 const angle = ModuleHandler.mouse.sentAngle;
 
-                const projectile = PlayerManager.getProjectile(pos, secondary, myPlayer.onPlatform, angle, range);
+                const projectile = ProjectileManager.getProjectile(pos, bullet.id, myPlayer.onPlatform, angle, range);
                 const target = ProjectileManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
                 if (target !== null) {
                     const pos = target.position.current;

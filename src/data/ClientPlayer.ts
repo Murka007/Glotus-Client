@@ -3,21 +3,18 @@ import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import GameUI from "../UI/GameUI";
 import Vector from "../modules/Vector";
-import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, TShootable, WeaponType, WeaponVariant } from "../types/Items";
+import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType } from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
 import { pointInRiver } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
 import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
-import Projectile from "./Projectile";
 import ModuleHandler from "../features/ModuleHandler";
 import ShameReset from "../features/modules/ShameReset";
 import { EDanger } from "../types/Enums";
 import { TResource } from "../types/Common";
 import SocketManager from "../Managers/SocketManager";
-import { Accessories, Hats } from "../constants/Store";
-import ProjectileManager from "../Managers/ProjectileManager";
 
 interface IWeaponXP {
     current: number;
@@ -189,16 +186,16 @@ export class ClientPlayer extends Player {
      * Returns the best hat to be equipped at the tick
      */
     getBestCurrentHat(): number {
-        const { previous, current, future } = this.position;
+        const { current, future } = this.position;
 
         if (settings.biomehats) {
             const inRiver = pointInRiver(current) || pointInRiver(future);
             if (inRiver) {
                 // myPlayer is right on the platform
-                const platformActivated = this.checkCollision(ItemGroup.PLATFORM, 30);
+                const platformActivated = this.checkCollision(ItemGroup.PLATFORM, -30);
 
                 // myPlayer almost left the platform
-                const stillStandingOnPlatform = this.checkCollision(ItemGroup.PLATFORM, -15);
+                const stillStandingOnPlatform = this.checkCollision(ItemGroup.PLATFORM, 15);
 
                 if (!this.platformActivated && platformActivated) {
                     this.platformActivated = true;
@@ -216,17 +213,16 @@ export class ClientPlayer extends Player {
         }
 
         if (settings.antienemy) {
-            const enemies = PlayerManager.getDangerousEnemies(this);
+            const enemies = PlayerManager.getDangerousEnemies();
             for (const enemy of enemies) {
                 if (enemy.danger === EDanger.NONE) break;
 
                 // It is important to check for all position variants cuz enemy can move in different directions
-                const dist0 = enemy.position.previous.distance(previous);
-                const dist1 = enemy.position.current.distance(current);
-                const dist2 = enemy.position.future.distance(future);
+                // Less expensive than predicting positions based on spike collisions and knockbacks
+                
                 const extraRange = enemy.usingBoost ? 350 : 60;
                 const range = enemy.getMaxWeaponRange() + this.hitScale + extraRange;
-                if (dist0 <= range || dist1 <= range || dist2 <= range) {
+                if (this.collidingEntity(enemy, range)) {
                     if (enemy.danger === EDanger.HIGH) {
                         ModuleHandler.needToHeal = true;
                     }
@@ -262,7 +258,7 @@ export class ClientPlayer extends Player {
         }
 
         if (settings.antispike) {
-            const collidingSpike = this.checkCollision(ItemGroup.SPIKE, -35, true);
+            const collidingSpike = this.checkCollision(ItemGroup.SPIKE, 35, true);
             if (collidingSpike) {
                 return EHat.SOLDIER_HELMET;
             }
@@ -270,13 +266,10 @@ export class ClientPlayer extends Player {
 
         if (settings.antianimal) {
             for (const animal of PlayerManager.animals) {
-                if (!animal.isDanger) continue;
-
-                const dist0 = animal.position.previous.distance(previous);
-                const dist1 = animal.position.current.distance(current);
-                const dist2 = animal.position.future.distance(future);
-                const range = animal.collisionRange;
-                if (dist0 <= range || dist1 <= range || dist2 <= range) {
+                if (
+                    animal.isDanger &&
+                    this.collidingEntity(animal, animal.collisionRange)
+                ) {
                     return EHat.SOLDIER_HELMET;
                 }
             }
@@ -294,23 +287,6 @@ export class ClientPlayer extends Player {
         const item = Items[itemID];
         return start.direction(angle, this.scale + item.scale + item.placeOffset);
     }
-
-    // getProjectile(position: Vector, weapon: EWeapon): Projectile | null {
-    //     if (!DataHandler.isShootable(weapon)) return null;
-
-    //     const secondary = Weapons[weapon];
-    //     const arrow = DataHandler.getProjectile(weapon);
-    //     const angle = ModuleHandler.mouse.sentAngle;
-    //     const start = position.direction(angle, 140 / 2);
-    //     return new Projectile(
-    //         start.x, start.y, angle,
-    //         arrow.range,
-    //         arrow.speed,
-    //         secondary.projectile,
-    //         myPlayer.checkCollision(ItemGroup.PLATFORM) ? 1 : 0,
-    //         0
-    //     )
-    // }
 
     /**
      * Called after all received packets. Player and animal positions have been updated
@@ -493,6 +469,11 @@ export class ClientPlayer extends Player {
         this.shameCount = 0;
 
         if (first) return;
+
+        // It is important to reset enemy reloads, because you can spawn immediately and you won't know if their weapons are reloaded or not
+        for (const enemy of PlayerManager.enemies) {
+            enemy.resetReload();
+        }
 
         window.config.deathFadeout = settings.autospawn ? 0 : 3000;
         if (settings.autospawn) {

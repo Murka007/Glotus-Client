@@ -1,5 +1,5 @@
 import { ItemGroups, Items } from "../constants/Items";
-import PlayerManager from "../Managers/PlayerManager";
+import ObjectManager from "../Managers/ObjectManager";
 import Vector from "../modules/Vector";
 import { EResourceType } from "../types/Enums";
 import { EItem, ItemGroup, TPlaceable } from "../types/Items";
@@ -118,8 +118,7 @@ export class PlayerObject extends ObjectItem {
             this.reload = item.shootRate;
             this.maxReload = this.reload;
         }
-        const owner = PlayerManager.playerData.get(ownerID);
-        this.seenPlacement = owner !== undefined && PlayerManager.players.includes(owner);
+        this.seenPlacement = ObjectManager.inPlacementRange(this);
         this.layer = ItemGroups[item.itemGroup].layer;
         this.itemGroup = item.itemGroup;
     }

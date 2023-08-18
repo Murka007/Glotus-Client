@@ -1,17 +1,14 @@
-import Config from "../constants/Config";
-import { Items, Projectiles } from "../constants/Items";
+import { Items } from "../constants/Items";
 import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
-import { EItem, ItemType, TPlaceable } from "../types/Items";
+import { EItem, EProjectile, TPlaceable } from "../types/Items";
 import { pointInRiver } from "../utility/Common";
 import PlayerManager from "./PlayerManager";
 import myPlayer from "../data/ClientPlayer";
-import Projectile from "../data/Projectile";
 import SpatialHashGrid from "../modules/SpatialHashGrid";
 import ProjectileManager from "./ProjectileManager";
 import SocketManager from "./SocketManager";
-import Entity from "../data/Entity";
 
 const ObjectManager = new class ObjectManager {
 
@@ -129,10 +126,6 @@ const ObjectManager = new class ObjectManager {
         return this.grid.retrieve(pos, radius);
     }
 
-    retrieveObjectsByAngle(pos: Vector, radius: number, angle: number, angleRange: number): TObject[] {
-        return this.grid.retrieveByAngle(pos, radius, angle, angleRange);
-    }
-
     canPlaceItem(id: TPlaceable, position: Vector) {
         if (id !== EItem.PLATFORM && pointInRiver(position)) {
             return false;
@@ -150,72 +143,41 @@ const ObjectManager = new class ObjectManager {
         return true;
     }
 
+    inPlacementRange(object: PlayerObject): boolean {
+        const owner = PlayerManager.playerData.get(object.ownerID);
+        if (owner === undefined || !PlayerManager.players.includes(owner)) return false;
+
+        const { previous: a0, current: a1, future: a2 } = owner.position;
+        const b0 = object.position.current;
+        const item = Items[object.type];
+        const range = item.scale + object.placementScale + 50;
+        return (
+            a0.distance(b0) <= range ||
+            a1.distance(b0) <= range ||
+            a2.distance(b0) <= range
+        )
+    }
+
     /**
      * Returns true if current turret object can hit myPlayer
      */
     canTurretHitMyPlayer(object: PlayerObject, optimized: boolean): boolean {
-        const turret = Items[EItem.TURRET];
-        const bullet = Projectiles[turret.projectile];
-
         const pos = object.position.current;
-        const angle = pos.angle(myPlayer.position.current);
         const distance = pos.distance(myPlayer.position.current);
-
-        if (distance > turret.shootRange) return false;
+        const shootRange = Items[EItem.TURRET].shootRange;
+        
+        if (distance > shootRange) return false;
         if (!this.isEnemyObject(object)) return false;
         if (!this.isTurretReloaded(object)) return false;
-
-        const projectile = new Projectile(
-            pos.x, pos.y, angle,
-            bullet.range,
-            bullet.speed,
-            bullet.index,
-            bullet.layer,
-            -1,
-            turret.shootRange
-        )
-
+        
+        const angle = pos.angle(myPlayer.position.current);
+        const projectile = ProjectileManager.getProjectile(pos, EProjectile.TURRET, true, angle, shootRange);
         if (optimized) {
             return ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
         }
         
         const target = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
         return target === myPlayer;
-    }
-    
-    // canTurretHitMyPlayer(object: PlayerObject) {
-    //     const turret = Items[EItem.TURRET];
-    //     const bullet = Projectiles[turret.projectile];
-
-    //     const pos = object.position.current;
-    //     const angle = pos.angle(myPlayer.position.current);
-    //     const distance = pos.distance(myPlayer.position.current);
-
-    //     if (distance > turret.shootRange) return false;
-    //     if (!this.isEnemyObject(object)) return false;
-    //     if (!this.isTurretReloaded(object)) return false;
-
-    //     const projectile = new Projectile(
-    //         pos.x, pos.y, angle,
-    //         bullet.range,
-    //         bullet.speed,
-    //         bullet.index,
-    //         bullet.layer,
-    //         -1
-    //     );
-
-    //     // Turrets attacks exactly on the player, so this function works perfect.
-    //     const shootTarget = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
-    //     return shootTarget === myPlayer;
-    // }
-
-    entityColliding(entity: Entity, object: TObject, subRadius: number) {
-        const current = object.position.current;
-        const dist0 = entity.position.previous.distance(current);
-        const dist1 = entity.position.current.distance(current);
-        const dist2 = entity.position.future.distance(current);
-        const radius = entity.scale + object.collisionScale - subRadius;
-        return dist0 <= radius || dist1 <= radius || dist2 <= radius;
     }
 }
 

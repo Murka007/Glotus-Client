@@ -1,11 +1,10 @@
 import SocketManager from "../Managers/SocketManager";
 import GameUI from "../UI/GameUI";
 import UI from "../UI/UI";
-import { Accessories, Hats } from "../constants/Store";
 import myPlayer from "../data/ClientPlayer";
 import { ESentAngle } from "../types/Enums";
 import { ItemType, WeaponType } from "../types/Items";
-import { EStoreType, TEquipType } from "../types/Store";
+import { EStoreType } from "../types/Store";
 import { formatButton, getAngle, getAngleFromBitmask, isActiveInput } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
@@ -20,8 +19,6 @@ import UpdateAttack from "./modules/UpdateAttack";
 interface IStore {
     readonly utility: Map<number, boolean>;
     best: number;
-    current: number;
-    oldCurrent: number;
     actual: number;
     last: number;
 }
@@ -46,8 +43,8 @@ const ModuleHandler = new class ModuleHandler {
     private readonly hotkeys = new Map<string, ItemType>();
 
     private readonly store: TStore = [
-        { utility: new Map, best: 0, current: 0, oldCurrent: 0, actual: 0, last: 0 },
-        { utility: new Map, best: 0, current: 0, oldCurrent: 0, actual: 0, last: 0 },
+        { utility: new Map, best: 0, actual: 0, last: 0 },
+        { utility: new Map, best: 0, actual: 0, last: 0 },
     ];
 
     /**
@@ -183,26 +180,18 @@ const ModuleHandler = new class ModuleHandler {
     private upgradeItem(id: number) {
         SocketManager.upgradeItem(id);
         myPlayer.upgradeItem(id);
-        // if (DataHandler.isWeapon(id)) {
-        //     const type = WeaponTypeString[Weapons[id].itemType];
-        //     const reload = this.reload[type];
-        //     const store = this.store[EStoreType.HAT];
-        //     const speed = myPlayer.getWeaponSpeed(id, store.actual);
-        //     reload.current = this.attacked ? -this.timeToNextTick : speed;
-        //     reload.max = speed;
-        // }
     }
 
     /**
      * Buys a hat or accessory and returns true if it was successful
      * @param type Buy 0 - hat, 1 - accessory
      * @param id ID of the hat or accessory
-     */
-    private buy(type: EStoreType, id: number): boolean {
-        const store = DataHandler.getStore(type);
-        const price = store[id as keyof typeof store].price;
+    */
+   private buy(type: EStoreType, id: number): boolean {
+       const store = DataHandler.getStore(type);
+        // @ts-ignore
+        const price = store[id].price;
         const bought = this.bought[type];
-
         if (!bought.has(id) && myPlayer.resources.gold >= price) {
             bought.add(id);
             SocketManager.buy(type, id);

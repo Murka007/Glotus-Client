@@ -100,6 +100,15 @@ export const enum WeaponVariant {
     RUBY,
 }
 
+export const enum EProjectile {
+    BOW,
+    TURRET,
+    CROSSBOW,
+    REPEATER,
+    UNKNOWN,
+    MUSKET
+}
+
 type ExtractWeapon<T> = Extract<typeof Weapons[number], T>["id"];
 type ExtractItem<T> = Extract<typeof Items[number], T>["id"];
 
@@ -119,6 +128,19 @@ export type TInventory = {
     [ItemType.WALL]: ExtractItem<{ itemType: 3 }>,
     [ItemType.SPIKE]: ExtractItem<{ itemType: 4 }>,
     [ItemType.WINDMILL]: ExtractItem<{ itemType: 5 }>,
+    [ItemType.FARM]: ExtractItem<{ itemType: 6 }> | null,
+    [ItemType.TRAP]: ExtractItem<{ itemType: 7 }> | null,
+    [ItemType.TURRET]: ExtractItem<{ itemType: 8 }> | null,
+    [ItemType.SPAWN]: ExtractItem<{ itemType: 9 }> | null,
+}
+
+export type TGlobalInventory = {
+    [WeaponType.PRIMARY]: TPrimary | null,
+    [WeaponType.SECONDARY]: TSecondary | null,
+    [ItemType.FOOD]: ExtractItem<{ itemType: 2 }> | null,
+    [ItemType.WALL]: ExtractItem<{ itemType: 3 }> | null,
+    [ItemType.SPIKE]: ExtractItem<{ itemType: 4 }> | null,
+    [ItemType.WINDMILL]: ExtractItem<{ itemType: 5 }> | null,
     [ItemType.FARM]: ExtractItem<{ itemType: 6 }> | null,
     [ItemType.TRAP]: ExtractItem<{ itemType: 7 }> | null,
     [ItemType.TURRET]: ExtractItem<{ itemType: 8 }> | null,

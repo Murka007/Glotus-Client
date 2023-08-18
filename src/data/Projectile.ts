@@ -1,5 +1,6 @@
 import { Projectiles } from "../constants/Items";
 import Vector from "../modules/Vector";
+import { EProjectile } from "../types/Items";
 import { fixTo } from "../utility/Common";
 
 class Projectile {
@@ -20,7 +21,7 @@ class Projectile {
     readonly angle: number;
     readonly range: number;
     readonly speed: number;
-    readonly type: number;
+    readonly type: EProjectile;
 
     /**
      * 1 if projectile can move above some buildings
@@ -37,15 +38,15 @@ class Projectile {
         angle: number,
         range: number,
         speed: number,
-        type: number,
+        type: EProjectile,
         onPlatform: 1 | 0,
         id: number,
         maxRange?: number,
     ) {
-        this.isTurret = type === 1;
+        this.isTurret = type === EProjectile.TURRET;
         const current = new Vector(x, y);
         this.position = {
-            current: this.isTurret ? current : current.direction(angle, - 70),
+            current: this.isTurret ? current : current.direction(angle, -70),
         }
         this.angle = angle;
         this.range = range;

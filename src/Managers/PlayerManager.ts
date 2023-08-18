@@ -1,5 +1,5 @@
 import Config from "../constants/Config";
-import { Weapons } from "../constants/Items";
+import { Projectiles, Weapons } from "../constants/Items";
 import { Hats } from "../constants/Store";
 import Animal from "../data/Animal";
 import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
@@ -9,7 +9,7 @@ import Projectile from "../data/Projectile";
 import Vector from "../modules/Vector";
 import { TTarget } from "../types/Common";
 import { EDanger, EResourceType } from "../types/Enums";
-import { ItemGroup, TMelee, TShootable, WeaponTypeString, WeaponVariant} from "../types/Items";
+import { EProjectile, ItemGroup, TMelee, TShootable, WeaponTypeString, WeaponVariant} from "../types/Items";
 import { EHat } from "../types/Store";
 import { getAngleDist } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
@@ -25,7 +25,6 @@ interface IPlayerData {
     readonly skinID?: number;
 }
 
-let maxDist = 0;
 const PlayerManager = new class PlayerManager {
 
     /**
@@ -37,6 +36,8 @@ const PlayerManager = new class PlayerManager {
      * An array of players, that are visible to my player
      */
     readonly players: Player[] = [];
+
+    readonly enemies: Player[] = [];
 
     /**
      * A Map of all known animals in the game
@@ -129,6 +130,7 @@ const PlayerManager = new class PlayerManager {
 
     updatePlayer(buffer: any[]) {
         this.players.length = 0;
+        this.enemies.length = 0;
 
         const now = Date.now();
         this.step = now - this.start;
@@ -160,6 +162,19 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 10],
                 buffer[i + 11]
             );
+        }
+
+        for (let i=0;i<this.players.length;i++) {
+            const player = this.players[i];
+            if (myPlayer.isEnemyByID(player.id)) {
+                this.enemies.push(player);
+
+                player.dangerList.push(player.canPossiblyInstakill());
+                if (player.dangerList.length === 3) {
+                    player.dangerList.shift();
+                }
+                player.danger = Math.max(...player.dangerList);
+            }
         }
 
         // Call all other classes after updating player and animal positions
@@ -232,41 +247,16 @@ const PlayerManager = new class PlayerManager {
         return [...this.players, ...this.animals];
     }
 
-    getEnemies(owner: Player): Player[] {
-        return this.players.filter(player => this.isEnemy(owner, player));
-    }
+    // getEnemies(owner: Player): Player[] {
+    //     return this.players.filter(player => this.isEnemy(owner, player));
+    // }
 
-    getNearestEnemy(owner: Player): Player | null {
-        const enemies = this.getEnemies(owner);
-        return enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
-    }
+    // getNearestEnemy(owner: Player): Player | null {
+    //     return this.enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
+    // }
 
-    getDangerousEnemies(owner: Player): Player[] {
-        const enemies = this.getEnemies(owner);
-        for (let i=0;i<enemies.length;i++) {
-            const enemy = enemies[i];
-            enemy.dangerList.push(enemy.canInstakill());
-            if (enemy.dangerList.length >= 3) {
-                enemy.dangerList.shift();
-            }
-            enemy.danger = Math.max(...enemy.dangerList);
-        }
-        return enemies.sort(Sorting.byDanger);
-    }
-
-    getProjectile(position: Vector, shootable: TShootable, onPlatform: boolean, lookingAt: number, range: number): Projectile {
-        const secondary = Weapons[shootable];
-        const arrow = DataHandler.getProjectile(shootable);
-        const start = position.direction(lookingAt, 140);
-
-        return new Projectile(
-            start.x, start.y, lookingAt,
-            arrow.range,
-            arrow.speed,
-            secondary.projectile,
-            onPlatform ? 1 : 0,
-            -1, range
-        )
+    getDangerousEnemies(): Player[] {
+        return this.enemies.sort(Sorting.byDanger);
     }
 
     // getPossibleShootEntity(): Player | Animal | null {

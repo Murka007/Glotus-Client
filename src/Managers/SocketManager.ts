@@ -1,5 +1,5 @@
 import myPlayer from "../data/ClientPlayer";
-import { PlayerObject, Resource } from "../data/ObjectItem";
+import { Resource } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
@@ -10,7 +10,6 @@ import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
 import { EItem, EWeapon } from "../types/Items";
 import { EStoreAction, EStoreType } from "../types/Store";
-import { EResourceType } from "../types/Enums";
 
 const SocketManager = new class SocketManager {
 
@@ -50,8 +49,6 @@ const SocketManager = new class SocketManager {
     pong = 0;
 
     readonly TICK = 1000 / 9;
-    startTick = Date.now();
-    nextTick = Date.now();
 
     constructor() {
         this.message = this.message.bind(this);
@@ -184,9 +181,6 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.MOVE_UPDATE: {
-                this.startTick = Date.now();
-                this.nextTick = this.startTick + this.TICK;
-                
                 PlayerManager.updatePlayer(temp[1]);
                 for (let i=0;i<this.PacketQueue.length;i++) {
                     this.PacketQueue[i]();

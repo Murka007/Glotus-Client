@@ -1,3 +1,4 @@
+import { EProjectile } from "../types/Items";
 import { EAccessory, EHat } from "../types/Store";
 
 /**
@@ -309,7 +310,7 @@ export const Hats = {
         scale: 120,
         description: "you become a walking turret",
         turret: {
-            proj: 1,
+            projectile: EProjectile.TURRET,
             range: 700,
             rate: 2500
         },

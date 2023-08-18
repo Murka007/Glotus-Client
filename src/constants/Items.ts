@@ -1,5 +1,4 @@
-import { EResourceType } from "../types/Enums";
-import { EItem, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVariant } from "../types/Items";
+import { EItem, EProjectile, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVariant } from "../types/Items";
 
 /**
  * Constant array of weapon data, index represent weapon ID
@@ -8,6 +7,7 @@ export const Weapons = [{
     id: EWeapon.TOOL_HAMMER,
     itemType: WeaponType.PRIMARY,
     type: 0,
+    age: 0,
     name: "tool hammer",
     description: "tool for gathering all resources",
     src: "hammer_1",
@@ -39,6 +39,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.GREAT_AXE,
     itemType: WeaponType.PRIMARY,
+    upgradeOf: EWeapon.HAND_AXE,
     type: 0,
     age: 8,
     pre: 1,
@@ -75,6 +76,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.KATANA,
     itemType: WeaponType.PRIMARY,
+    upgradeOf: EWeapon.SHORT_SWORD,
     type: 0,
     age: 8,
     pre: 3,
@@ -94,6 +96,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.POLEARM,
     itemType: WeaponType.PRIMARY,
+    isUpgrade: false,
     type: 0,
     age: 2,
     name: "polearm",
@@ -113,6 +116,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.BAT,
     itemType: WeaponType.PRIMARY,
+    isUpgrade: false,
     type: 0,
     age: 2,
     name: "bat",
@@ -131,6 +135,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.DAGGERS,
     itemType: WeaponType.PRIMARY,
+    isUpgrade: false,
     type: 0,
     age: 2,
     name: "daggers",
@@ -151,6 +156,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.STICK,
     itemType: WeaponType.PRIMARY,
+    isUpgrade: false,
     type: 0,
     age: 2,
     name: "stick",
@@ -168,6 +174,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.HUNTING_BOW,
     itemType: WeaponType.SECONDARY,
+    projectile: EProjectile.BOW,
     type: 1,
     age: 6,
     name: "hunting bow",
@@ -183,13 +190,13 @@ export const Weapons = [{
     width: 120,
     xOffset: -6,
     yOffset: 0,
-    projectile: 0,
     spdMult: .75,
     speed: 600,
     range: 2200,
 }, {
     id: EWeapon.GREAT_HAMMER,
     itemType: WeaponType.SECONDARY,
+    isUpgrade: false,
     type: 1,
     age: 6,
     name: "great hammer",
@@ -208,6 +215,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.WOODEN_SHIELD,
     itemType: WeaponType.SECONDARY,
+    isUpgrade: false,
     type: 1,
     age: 6,
     name: "wooden shield",
@@ -223,6 +231,8 @@ export const Weapons = [{
 }, {
     id: EWeapon.CROSSBOW,
     itemType: WeaponType.SECONDARY,
+    projectile: EProjectile.CROSSBOW,
+    upgradeOf: EWeapon.HUNTING_BOW,
     type: 1,
     age: 8,
     pre: 9,
@@ -241,13 +251,14 @@ export const Weapons = [{
     width: 120,
     xOffset: -4,
     yOffset: 0,
-    projectile: 2,
     spdMult: .7,
     speed: 700,
     range: 2200,
 }, {
     id: EWeapon.REPEATER_CROSSBOW,
     itemType: WeaponType.SECONDARY,
+    projectile: EProjectile.REPEATER,
+    upgradeOf: EWeapon.CROSSBOW,
     type: 1,
     age: 9,
     pre: 12,
@@ -266,13 +277,13 @@ export const Weapons = [{
     width: 120,
     xOffset: -4,
     yOffset: 0,
-    projectile: 3,
     spdMult: .7,
     speed: 230,
     range: 2200,
 }, {
     id: EWeapon.MC_GRABBY,
     itemType: WeaponType.SECONDARY,
+    isUpgrade: false,
     type: 1,
     age: 6,
     name: "mc grabby",
@@ -292,6 +303,8 @@ export const Weapons = [{
 }, {
     id: EWeapon.MUSKET,
     itemType: WeaponType.SECONDARY,
+    projectile: EProjectile.MUSKET,
+    upgradeOf: EWeapon.CROSSBOW,
     type: 1,
     age: 9,
     pre: 12,
@@ -313,7 +326,6 @@ export const Weapons = [{
     width: 205,
     xOffset: 25,
     yOffset: 0,
-    projectile: 5,
     hideProjectile: true,
     spdMult: .6,
     speed: 1500,
@@ -399,6 +411,7 @@ export const Items = [{
     itemType: ItemType.FOOD,
     name: "apple",
     description: "restores 20 health when consumed",
+    age: 0,
     cost: {
         food: 10,
         wood: 0,
@@ -409,11 +422,12 @@ export const Items = [{
     scale: 22,
     holdOffset: 15
 }, {
-    age: 3,
     id: EItem.COOKIE,
     itemType: ItemType.FOOD,
+    upgradeOf: EItem.APPLE,
     name: "cookie",
     description: "restores 40 health when consumed",
+    age: 3,
     cost: {
         food: 15,
         wood: 0,
@@ -424,11 +438,12 @@ export const Items = [{
     scale: 27,
     holdOffset: 15
 }, {
-    age: 7,
     id: EItem.CHEESE,
     itemType: ItemType.FOOD,
+    upgradeOf: EItem.COOKIE,
     name: "cheese",
     description: "restores 30 health and another 50 over 5 seconds",
+    age: 7,
     cost: {
         food: 25,
         wood: 0,
@@ -444,6 +459,7 @@ export const Items = [{
     itemGroup: ItemGroup.WALL,
     name: "wood wall",
     description: "provides protection for your village",
+    age: 0,
     cost: {
         food: 0,
         wood: 10,
@@ -459,6 +475,7 @@ export const Items = [{
     id: EItem.STONE_WALL,
     itemType: ItemType.WALL,
     itemGroup: ItemGroup.WALL,
+    upgradeOf: EItem.WOOD_WALL,
     name: "stone wall",
     description: "provides improved protection for your village",
     age: 3,
@@ -477,6 +494,7 @@ export const Items = [{
     id: EItem.CASTLE_WALL,
     itemType: ItemType.WALL,
     itemGroup: ItemGroup.WALL,
+    upgradeOf: EItem.STONE_WALL,
     name: "castle wall",
     description: "provides powerful protection for your village",
     age: 7,
@@ -496,6 +514,7 @@ export const Items = [{
     itemGroup: ItemGroup.SPIKE,
     name: "spikes",
     description: "damages enemies when they touch them",
+    age: 0,
     cost: {
         food: 0,
         wood: 20,
@@ -512,6 +531,7 @@ export const Items = [{
     id: EItem.GREATER_SPIKES,
     itemType: ItemType.SPIKE,
     itemGroup: ItemGroup.SPIKE,
+    upgradeOf: EItem.SPIKES,
     name: "greater spikes",
     description: "damages enemies when they touch them",
     age: 5,
@@ -531,6 +551,7 @@ export const Items = [{
     id: EItem.POISON_SPIKES,
     itemType: ItemType.SPIKE,
     itemGroup: ItemGroup.SPIKE,
+    upgradeOf: EItem.GREATER_SPIKES,
     name: "poison spikes",
     description: "poisons enemies when they touch them",
     age: 9,
@@ -552,6 +573,7 @@ export const Items = [{
     id: EItem.SPINNING_SPIKES,
     itemType: ItemType.SPIKE,
     itemGroup: ItemGroup.SPIKE,
+    upgradeOf: EItem.GREATER_SPIKES,
     name: "spinning spikes",
     description: "damages enemies when they touch them",
     age: 9,
@@ -575,6 +597,7 @@ export const Items = [{
     itemGroup: ItemGroup.WINDMILL,
     name: "windmill",
     description: "generates gold over time",
+    age: 0,
     cost: {
         food: 0,
         wood: 50,
@@ -593,6 +616,7 @@ export const Items = [{
     id: EItem.FASTER_WINDMILL,
     itemType: ItemType.WINDMILL,
     itemGroup: ItemGroup.WINDMILL,
+    upgradeOf: EItem.WINDMILL,
     name: "faster windmill",
     description: "generates more gold over time",
     age: 5,
@@ -615,6 +639,7 @@ export const Items = [{
     id: EItem.POWER_MILL,
     itemType: ItemType.WINDMILL,
     itemGroup: ItemGroup.WINDMILL,
+    upgradeOf: EItem.FASTER_WINDMILL,
     name: "power mill",
     description: "generates more gold over time",
     age: 8,
@@ -870,6 +895,7 @@ export const WeaponVariants = [{
  * All existing projectiles for shooting weapons and turrets
  */
 export const Projectiles = [{
+    id: EProjectile.BOW,
     name: "Hunting bow",
     index: 0,
     layer: 0,
@@ -879,6 +905,7 @@ export const Projectiles = [{
     range: 1000,
     speed: 1.6,
 }, {
+    id: EProjectile.TURRET,
     name: "Turret",
     index: 1,
     layer: 1,
@@ -887,6 +914,7 @@ export const Projectiles = [{
     speed: 1.5,
     range: 700
 }, {
+    id: EProjectile.CROSSBOW,
     name: "Crossbow",
     index: 0,
     layer: 0,
@@ -896,6 +924,7 @@ export const Projectiles = [{
     range: 1200,
     speed: 2.5,
 }, {
+    id: EProjectile.REPEATER,
     name: "Repeater crossbow",
     index: 0,
     layer: 0,
@@ -905,11 +934,15 @@ export const Projectiles = [{
     range: 1200,
     speed: 2,
 }, {
+    id: EProjectile.UNKNOWN,
     index: 1,
     layer: 1,
     damage: 16,
-    scale: 20
+    scale: 20,
+    range: 0,
+    speed: 0
 }, {
+    id: EProjectile.MUSKET,
     name: "Musket",
     index: 0,
     layer: 0,
