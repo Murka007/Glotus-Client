@@ -1,5 +1,3 @@
-import { fixTo, clamp } from "../utility/Common";
-
 class Vector {
     x: number;
     y: number;
@@ -88,24 +86,6 @@ class Vector {
 
     direction(angle: number, length: number) {
         return this.copy().add(Vector.fromAngle(angle, length));
-    }
-
-    fixTo(fraction: number) {
-        this.x = fixTo(this.x, fraction);
-        this.y = fixTo(this.y, fraction);
-        return this;
-    }
-
-    floor() {
-        this.x = Math.floor(this.x);
-        this.y = Math.floor(this.y);
-        return this;
-    }
-
-    clamp(min: number, max: number) {
-        this.x = clamp(this.x, min, max);
-        this.y = clamp(this.y, min, max);
-        return this;
     }
 
     isEqual(vec: Vector) {

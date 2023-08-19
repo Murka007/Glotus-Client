@@ -38,6 +38,7 @@ const ObjectManager = new class ObjectManager {
                 PlayerManager.playerData.get(object.ownerID) ||
                 PlayerManager.createPlayer({ id: object.ownerID })
             );
+            object.seenPlacement = this.inPlacementRange(object);
             owner.handleObjectPlacement(object);
         }
     }

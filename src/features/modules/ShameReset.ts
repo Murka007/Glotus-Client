@@ -6,7 +6,8 @@ import ModuleHandler from "../ModuleHandler";
 const ShameReset = new class ShameReset {
 
     private get isEquipTime() {
-        return myPlayer.timerCount > 1000 - SocketManager.TICK;
+        const max = 1000 - SocketManager.TICK;
+        return myPlayer.timerCount >= max;
     }
 
     private get shouldReset() {
@@ -48,7 +49,7 @@ const ShameReset = new class ShameReset {
         const shouldRemoveBull = isDmgOverTime && shameCount > 0;
 
         if (isDmgOverTime) {
-            myPlayer.timerCount = 0;
+            myPlayer.timerCount = SocketManager.ping;
         }
 
         this.handleShameReset(isDmgOverTime);

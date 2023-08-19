@@ -1,6 +1,5 @@
 import { Items, Projectiles, Weapons } from "../constants/Items";
 import { store } from "../constants/Store";
-import myPlayer from "../data/ClientPlayer";
 import { EItem, EWeapon, ItemType, TAttackable, TDestroyable, THealable, TMelee, TPlaceable, TPrimary, TSecondary, TShootable, WeaponType } from "../types/Items";
 import { EStoreType } from "../types/Store";
 
@@ -10,25 +9,11 @@ import { EStoreType } from "../types/Store";
 class DataHandler {
 
     static isWeaponType(type: WeaponType | ItemType): type is WeaponType {
-        return type < 2;
+        return type <= WeaponType.SECONDARY;
     }
 
     static isItemType(type: WeaponType | ItemType): type is ItemType {
-        return type > 1;
-    }
-
-    /**
-     * Returns weapon data by type based on inventory
-     */
-    static getWeaponByType<T extends WeaponType>(type: T) {
-        return Weapons[myPlayer.getItemByType(type)!];
-    }
-
-    /**
-     * Returns item data by type based on inventory
-     */
-    static getItemByType<T extends ItemType>(type: T) {
-        return Items[myPlayer.getItemByType(type)!];
+        return type >= ItemType.FOOD;
     }
 
     static getStore<T extends EStoreType>(type: T) {

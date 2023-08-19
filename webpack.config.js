@@ -56,7 +56,6 @@ module.exports = {
                         hoist_props: true,
                         hoist_vars: true,
                         keep_infinity: true,
-                        // pure_getters: true,
                         passes: 3,
                     },
                     mangle: false,

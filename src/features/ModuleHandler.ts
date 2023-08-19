@@ -152,16 +152,6 @@ const ModuleHandler = new class ModuleHandler {
         return this.store[EStoreType.ACCESSORY];
     }
 
-    /**
-     * Returns true if myPlayer is capable of using item
-     */
-    canPlace(type: ItemType) {
-        return (
-            myPlayer.hasResourcesForType(type) &&
-            myPlayer.hasItemCountForType(type)
-        )
-    }
-
     handleMouse(event: MouseEvent) {
         this.mouse.x = event.clientX;
         this.mouse.y = event.clientY;
@@ -184,11 +174,9 @@ const ModuleHandler = new class ModuleHandler {
 
     /**
      * Buys a hat or accessory and returns true if it was successful
-     * @param type Buy 0 - hat, 1 - accessory
-     * @param id ID of the hat or accessory
-    */
-   private buy(type: EStoreType, id: number): boolean {
-       const store = DataHandler.getStore(type);
+     */
+    buy(type: EStoreType, id: number): boolean {
+        const store = DataHandler.getStore(type);
         // @ts-ignore
         const price = store[id].price;
         const bought = this.bought[type];
@@ -201,9 +189,6 @@ const ModuleHandler = new class ModuleHandler {
 
     /**
      * Buys and equips a hat or accessory
-     * @param type Equip 0 - hat, 1 - accessory
-     * @param id ID of the hat or accessory
-     * @param equipType Indicates the type of hat you want to equip.
      */
     equip(type: EStoreType, id: number, force = false): boolean {
         if (!this.buy(type, id) || !myPlayer.inGame) return false;
@@ -257,7 +242,7 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.selectItemByID(weapon, true);
     }
 
-    place(type: ItemType, angle = this.mouse.angle, last = true) {
+    place(type: ItemType, angle = this.mouse.angle) {
         this.selectItem(type);
         this.attack(angle);
         if (!this.attacking) {

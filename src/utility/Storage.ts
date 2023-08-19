@@ -2,7 +2,7 @@
 /**
  * Used to get, set and delete values from localStorage
  */
-class Storage {
+export default class Storage {
     static get<T>(key: string): T | null {
         const value = localStorage.getItem(key);
         return value === null ? null : JSON.parse(value);
@@ -19,8 +19,6 @@ class Storage {
         return has;
     }
 }
-
-export default Storage;
 
 export class Cookie {
     static get<T>(key: string): T | null {

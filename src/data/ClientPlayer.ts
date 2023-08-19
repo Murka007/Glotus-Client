@@ -1,19 +1,17 @@
-import { ItemGroups, Items, WeaponVariants, Weapons } from "../constants/Items";
-import ObjectManager from "../Managers/ObjectManager";
-import PlayerManager from "../Managers/PlayerManager";
 import GameUI from "../UI/GameUI";
+import { ItemGroups, Items, WeaponVariants, Weapons } from "../constants/Items";
+import ShameReset from "../features/modules/ShameReset";
 import Vector from "../modules/Vector";
+import { TResource } from "../types/Common";
+import { EDanger } from "../types/Enums";
 import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType } from "../types/Items";
 import { EHat, EStoreType } from "../types/Store";
 import { pointInRiver } from "../utility/Common";
-import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
 import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
 import ModuleHandler from "../features/ModuleHandler";
-import ShameReset from "../features/modules/ShameReset";
-import { EDanger } from "../types/Enums";
-import { TResource } from "../types/Common";
+import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
 
 interface IWeaponXP {
@@ -113,11 +111,11 @@ export class ClientPlayer extends Player {
     /**
      * Checks if item has enough resources to be used
      */
-    hasResourcesForType(type: ItemType): boolean {
+    private hasResourcesForType(type: ItemType): boolean {
         if (this.isSandbox) return true;
 
         const res = this.resources;
-        const { food, wood, stone, gold } = DataHandler.getItemByType(type).cost;
+        const { food, wood, stone, gold } = Items[this.getItemByType(type)!].cost;
         return (
             res.food >= food &&
             res.wood >= wood &&
@@ -141,12 +139,22 @@ export class ClientPlayer extends Player {
      * 
      * Automatically ignores food and returns true
      */
-    hasItemCountForType(type: ItemType): boolean {
+    private hasItemCountForType(type: ItemType): boolean {
         if (type === ItemType.FOOD) return true;
 
-        const item = DataHandler.getItemByType(type);
+        const item = Items[this.getItemByType(type)!];
         const { count, limit } = this.getItemCount(item.itemGroup);
         return count < limit;
+    }
+
+    /**
+     * Returns true if myPlayer is capable of using item
+     */
+    canPlace(type: ItemType) {
+        return (
+            this.hasResourcesForType(type) &&
+            this.hasItemCountForType(type)
+        )
     }
 
     /**
@@ -158,29 +166,10 @@ export class ClientPlayer extends Player {
         const secondaryID = myPlayer.getItemByType(WeaponType.SECONDARY);
         if (secondaryID === EWeapon.GREAT_HAMMER) return WeaponType.SECONDARY;
 
-        const primary = DataHandler.getWeaponByType(WeaponType.PRIMARY);
+        const primary = Weapons[this.getItemByType(WeaponType.PRIMARY)];
         if (primary.damage !== 1) return WeaponType.PRIMARY;
         return null;
     }
-
-    // getDmgOverTime() {
-    //     const hat = Hats[this.hatID];
-    //     const accessory = Accessories[this.accessoryID];
-    //     let damage = 0;
-    //     if ("healthRegen" in hat) {
-    //         damage += hat.healthRegen;
-    //     }
-
-    //     if ("healthRegen" in accessory) {
-    //         damage += accessory.healthRegen;
-    //     }
-
-    //     if (this.poisonCount !== 0) {
-    //         damage += -5;
-    //     }
-
-    //     return Math.abs(damage);
-    // }
 
     /**
      * Returns the best hat to be equipped at the tick
@@ -231,31 +220,31 @@ export class ClientPlayer extends Player {
             }
         }
 
-        if (settings.autoemp) {
-            const turret = Items[EItem.TURRET];
-            const objects = ObjectManager.retrieveObjects(current, turret.shootRange);
-            let turretAttackCount = 0;
-            for (const object of objects) {
-                if (turretAttackCount > 3) {
-                    break;
-                }
-                if (object instanceof PlayerObject && object.type === EItem.TURRET) {
-                    if (ObjectManager.canTurretHitMyPlayer(object, true)) {
-                        turretAttackCount += 1;
-                    }
-                }
-            }
+        // if (settings.autoemp) {
+        //     const turret = Items[EItem.TURRET];
+        //     const objects = ObjectManager.retrieveObjects(current, turret.shootRange);
+        //     let turretAttackCount = 0;
+        //     for (const object of objects) {
+        //         if (turretAttackCount > 3) {
+        //             break;
+        //         }
+        //         if (object instanceof PlayerObject && object.type === EItem.TURRET) {
+        //             if (ObjectManager.canTurretHitMyPlayer(object, true)) {
+        //                 turretAttackCount += 1;
+        //             }
+        //         }
+        //     }
 
-            if (turretAttackCount !== 0) {
-                this.underTurretAttack = true;
-            }
+        //     if (turretAttackCount !== 0) {
+        //         this.underTurretAttack = true;
+        //     }
 
-            if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
-                return EHat.EMP_HELMET;
-            } else if (turretAttackCount > 1) {
-                return EHat.SOLDIER_HELMET;
-            }
-        }
+        //     if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
+        //         return EHat.EMP_HELMET;
+        //     } else if (turretAttackCount > 1) {
+        //         return EHat.SOLDIER_HELMET;
+        //     }
+        // }
 
         if (settings.antispike) {
             const collidingSpike = this.checkCollision(ItemGroup.SPIKE, 35, true);
@@ -313,8 +302,8 @@ export class ClientPlayer extends Player {
             this.poisonCount = Math.max(this.poisonCount - 1, 0);
         }
 
-        this.isTrapped = this.checkCollision(ItemGroup.TRAP, 0, true);
-        this.underTurretAttack = false;
+        // this.isTrapped = this.checkCollision(ItemGroup.TRAP, 0, true);
+        // this.underTurretAttack = false;
 
         ModuleHandler.postTick();
     }

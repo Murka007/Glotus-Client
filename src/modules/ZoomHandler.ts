@@ -1,5 +1,4 @@
-import myPlayer from "../data/ClientPlayer";
-import { isActiveInput, lerp } from "../utility/Common";
+import { isActiveInput } from "../utility/Common";
 import Hooker from "../utility/Hooker";
 
 const resizeEvent = new Event("resize");
@@ -18,60 +17,25 @@ const ZoomHandler = new class ZoomHandler {
             h: Hooker.linker(1080)
         } as const
     };
-    private wheels = 0;
-    private readonly scaleFactor = 100;
-    // private animationLife = 1500;
-    // private start = Date.now();
-    // private animating = false;
-
-    constructor() {
-        // this.animate = this.animate.bind(this);
-        // setInterval(this.animate, 8);
-    }
+    private wheels = 3;
+    private readonly scaleFactor = 125;
 
     /**
      * Returns minimum possible width and height scale
      */
     private getMinScale(scale: number) {
-        let w = this.scale.Default.w;
-        let h = this.scale.Default.h;
-        while (w > scale && h > scale) {
-            w -= scale;
-            h -= scale;
-        }
+        const { w, h } = this.scale.Default;
+        const min = Math.min(w, h);
+        const count = Math.floor(min / scale);
         return {
-            w,
-            h
-        } as const;
+            w: w - scale * count,
+            h: h - scale * count,
+        }
     }
-
-    // private animate() {
-
-    //     // const delta = Date.now() - this.start;
-    //     // if (delta >= this.animationLife) {
-    //     //     this.animating = false;
-    //     //     return;
-    //     // }
-    //     // setTimeout(this.animate, 0);
-
-    //     const progress = 0.07;//Math.min(1, delta / this.animationLife);
-    //     const { current, smooth } = this.scale;
-    //     smooth.w[0] = lerp(smooth.w[0], current.w, progress);
-    //     smooth.h[0] = lerp(smooth.h[0], current.h, progress);
-    //     window.dispatchEvent(resizeEvent);
-    // }
-
-    // private startAnimation() {
-    //     this.start = Date.now();
-    //     if (!this.animating) {
-    //         this.animating = true;
-    //         this.animate();
-    //     }
-    // }
 
     handler(event: WheelEvent) {
         if (
-            myPlayer.inGame && !(event.target instanceof HTMLCanvasElement) ||
+            !(event.target instanceof HTMLCanvasElement) ||
             event.ctrlKey || event.shiftKey || event.altKey ||
             isActiveInput()
         ) return;
@@ -85,7 +49,7 @@ const ZoomHandler = new class ZoomHandler {
         ) return;
 
         const { w, h } = this.getMinScale(this.scaleFactor);
-        const zoom = event.deltaY > 0 ? -this.scaleFactor : this.scaleFactor;
+        const zoom = Math.sign(event.deltaY) * -this.scaleFactor;
         current.w = Math.max(w, current.w + zoom);
         current.h = Math.max(h, current.h + zoom);
         

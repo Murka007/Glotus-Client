@@ -224,10 +224,11 @@ const UI = new class UI {
                 GameUI.toggleItemCount();
                 break;
 
-            case "menuTransparency":
+            case "menuTransparency": {
                 const { menuContainer } = this.getElements();
                 menuContainer.classList.toggle("transparent");
                 break;
+            }
         }
     }
 

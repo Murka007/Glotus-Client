@@ -32,7 +32,7 @@ class Automill {
 
     postTick(): void {
         if (!this.canAutomill) return;
-        if (!ModuleHandler.canPlace(ItemType.WINDMILL)) {
+        if (!myPlayer.canPlace(ItemType.WINDMILL)) {
             this.toggle = false;
             return;
         }

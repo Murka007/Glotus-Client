@@ -1,11 +1,9 @@
 import { TObject } from "../data/ObjectItem";
-import { getAngle, getAngleDist } from "../utility/Common";
 import Vector from "./Vector";
-
 
 class SpatialHashGrid<T extends TObject> {
     private readonly cellSize: number;
-    private cells: T[][][];
+    private readonly cells: T[][][];
 
     constructor(cellSize: number) {
         this.cellSize = cellSize;
@@ -52,33 +50,6 @@ class SpatialHashGrid<T extends TObject> {
 
         return results;
     }
-
-    retrieveByAngle(position: Vector, radius: number, angle: number, angleRange: number): T[] {
-        const { x, y } = position;
-        const [centerX, centerY] = this.hashPosition(x, y);
-        const [startX, startY] = this.hashPosition(x - radius, y - radius);
-        const [endX, endY] = this.hashPosition(x + radius, y + radius);
-        const results: T[] = [];
-    
-        for (let cellX = startX - 1; cellX <= endX + 1; cellX++) {
-            for (let cellY = startY - 1; cellY <= endY + 1; cellY++) {
-                if (this.cells[cellX] && this.cells[cellX][cellY]) {
-                    const cellAngle = getAngle(centerX, centerY, cellX, cellY);
-                    const angleDist = getAngleDist(cellAngle, angle);
-
-                    if (angleDist <= angleRange) {
-                        const objects = this.cells[cellX][cellY];
-                        for (const object of objects) {
-                            results.push(object);
-                        }
-                    }
-                }
-            }
-        }
-        
-        return results;
-    }
-    
 
     remove(object: T): boolean {
         const { x, y } = object.position.current;

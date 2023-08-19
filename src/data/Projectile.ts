@@ -1,22 +1,14 @@
 import { Projectiles } from "../constants/Items";
 import Vector from "../modules/Vector";
 import { EProjectile } from "../types/Items";
-import { fixTo } from "../utility/Common";
 
 class Projectile {
     readonly position: {
-
-        // readonly initial: Vector;
 
         /**
          * When received a packet, position is ahead of the length 70. We subtract this length to equalize the position of player and projectile
          */
         readonly current: Vector;
-
-        // /**
-        //  * The longest possible point for the projectile
-        //  */
-        // readonly end: Vector;
     }
     readonly angle: number;
     readonly range: number;

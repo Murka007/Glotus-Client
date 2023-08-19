@@ -1,18 +1,19 @@
-import { Items, Projectiles, Weapons, WeaponVariants } from "../constants/Items";
-import { Hats } from "../constants/Store";
 import ObjectManager from "../Managers/ObjectManager";
 import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
 import SocketManager from "../Managers/SocketManager";
+import { Items, Projectiles, WeaponVariants, Weapons } from "../constants/Items";
+import { Hats } from "../constants/Store";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
-import { EItem, EProjectile, EWeapon, ItemGroup, ItemType, TGlobalInventory, TMelee, TPlaceable, TPrimary, TSecondary, WeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EItem, EWeapon, ItemGroup, ItemType, TGlobalInventory, TMelee, TPlaceable, TPrimary, TSecondary, WeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
 import { EAccessory, EHat } from "../types/Store";
 import { removeFast } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import myPlayer from "./ClientPlayer";
 import Entity from "./Entity";
 import { PlayerObject } from "./ObjectItem";
+
 /**
  * Represents all players.
  */
@@ -283,7 +284,10 @@ class Player extends Entity {
         const spike = inventory[ItemType.SPIKE];
 
         if (primary && secondary) {
-            return "isUpgrade" in Weapons[primary] && "isUpgrade" in Weapons[secondary];
+            if (
+                "isUpgrade" in Weapons[primary] &&
+                "isUpgrade" in Weapons[secondary]
+            ) return true;
         }
 
         return (
@@ -310,21 +314,6 @@ class Player extends Entity {
         if (id === EWeapon.KATANA) return EWeapon.GREAT_HAMMER;
         return null;
     }
-
-    // private predictOtherItems() {
-    //     const inventory = this.globalInventory;
-    //     const secondary = inventory[WeaponType.SECONDARY];
-    //     const windmill = inventory[ItemType.WINDMILL];
-    //     const spike = inventory[ItemType.SPIKE];
-    //     const spawn = inventory[ItemType.SPAWN];
-    //     if (DataHandler.isShootable(secondary)) {
-    //         if (spike && Items[spike].age === 9) {
-    //             inventory[WeaponType.SECONDARY] = EWeapon.CROSSBOW;
-    //         } else if (windmill === EItem.POWER_MILL) {
-    //             inventory[WeaponType.SECONDARY] = EWeapon.HUNTING_BOW;
-    //         }
-    //     }
-    // }
 
     private predictWeapons() {
         const { current, oldCurrent } = this.weapon;
@@ -477,51 +466,6 @@ class Player extends Entity {
 
         return EDanger.NONE;
     }
-
-    // canInstakill(): EDanger {
-    //     if (myPlayer.isMyPlayerByID(this.id)) return EDanger.NONE;
-
-    //     const { primary, secondary } = this.weapon;
-    //     const primaryDamage = this.getMaxWeaponDamage(primary);
-    //     const secondaryDamage = this.getMaxWeaponDamage(secondary);
-    //     const soldier = Hats[EHat.SOLDIER_HELMET];
-    //     const pos = this.position.current;
-    //     const angle = pos.angle(myPlayer.position.current);
-
-    //     let totalDamage = 0;
-    //     if (this.isReloaded("primary")) totalDamage += primaryDamage;
-    //     if (this.isReloaded("secondary")) {
-
-    //         let canHit = DataHandler.isMelee(secondary);
-    //         if (DataHandler.isShootable(secondary)) {
-    //             const weapon = Weapons[secondary];
-    //             const projectile = PlayerManager.getProjectile(pos, weapon.projectile, this.onPlatform, angle, 700);
-    //             canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
-    //         }
-            
-    //         if (canHit) {
-    //             totalDamage += secondaryDamage;
-    //         }
-    //     }
-
-    //     if (this.isReloaded("turret")) {
-    //         const projectile = PlayerManager.getProjectile(pos, EProjectile.TURRET, true, angle, 700);
-    //         const canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer, 10);
-    //         if (canHit) {
-    //             totalDamage += 25;
-    //         }
-    //     }
-
-    //     if (totalDamage * soldier.dmgMult >= 100) {
-    //         return EDanger.HIGH;
-    //     }
-
-    //     if (totalDamage >= 100) {
-    //         return EDanger.MEDIUM;
-    //     }
-
-    //     return EDanger.NONE;
-    // }
 }
 
 export default Player;

@@ -102,42 +102,6 @@ export const lineIntersectsRect = (
     )
 }
 
-// export const lineInRect = (lineStart: Vector, lineEnd: Vector, rectStart: Vector, rectEnd: Vector) => {
-//     const { x: x1, y: y1 } = lineStart;
-//     const { x: x2, y: y2 } = lineEnd;
-//     const { x: recX, y: recY } = rectStart;
-//     const { x: recX2, y: recY2 } = rectEnd;
-
-//     let minX = x1;
-//     let maxX = x2;
-//     if (x1 > x2) {
-//         minX = x2;
-//         maxX = x1;
-//     }
-//     if (maxX > recX2) maxX = recX2;
-//     if (minX < recX) minX = recX;
-//     if (minX > maxX) return false;
-
-//     let minY = y1;
-//     let maxY = y2;
-//     const dx = x2 - x1;
-//     if (Math.abs(dx) > 0.0000001) {
-//         const a = (y2 - y1) / dx;
-//         const b = y1 - a * x1;
-//         minY = a * minX + b;
-//         maxY = a * maxX + b;
-//     }
-//     if (minY > maxY) {
-//         const tmp = maxY;
-//         maxY = minY;
-//         minY = tmp;
-//     }
-//     if (maxY > recY2) maxY = recY2;
-//     if (minY < recY) minY = recY;
-//     if (minY > maxY) return false;
-//     return true;
-// }
-
 export const sleep = (ms: number): Promise<void> => {
     return new Promise<void>(resolve => setTimeout(resolve, ms));
 }

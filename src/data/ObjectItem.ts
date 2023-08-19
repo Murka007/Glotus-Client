@@ -1,5 +1,4 @@
 import { ItemGroups, Items } from "../constants/Items";
-import ObjectManager from "../Managers/ObjectManager";
 import Vector from "../modules/Vector";
 import { EResourceType } from "../types/Enums";
 import { EItem, ItemGroup, TPlaceable } from "../types/Items";
@@ -92,7 +91,7 @@ export class PlayerObject extends ObjectItem {
     /**
      * true, if my player saw how this item was placed
      */
-    readonly seenPlacement: boolean;
+    seenPlacement = false;
     readonly layer: number;
     readonly itemGroup: ItemGroup;
     constructor(
@@ -118,7 +117,6 @@ export class PlayerObject extends ObjectItem {
             this.reload = item.shootRate;
             this.maxReload = this.reload;
         }
-        this.seenPlacement = ObjectManager.inPlacementRange(this);
         this.layer = ItemGroups[item.itemGroup].layer;
         this.itemGroup = item.itemGroup;
     }

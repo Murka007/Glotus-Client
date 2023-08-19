@@ -9,7 +9,7 @@ class Autohat {
         const store = ModuleHandler.getHatStore();
         if (store.utility.size === 0) {
             const hat = myPlayer.getBestCurrentHat();
-            if (store.best !== hat) {
+            if (store.best !== hat && ModuleHandler.buy(EStoreType.HAT, hat)) {
                 store.best = hat;
                 ModuleHandler.equip(EStoreType.HAT, hat);
             }

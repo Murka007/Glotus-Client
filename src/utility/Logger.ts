@@ -1,4 +1,4 @@
-class Logger {
+export default class Logger {
     static readonly log = console.log;
     static readonly error = console.error;
     private static readonly timers: Map<string, number> = new Map;
@@ -14,5 +14,3 @@ class Logger {
         this.timers.delete(label);
     }
 }
-
-export default Logger;

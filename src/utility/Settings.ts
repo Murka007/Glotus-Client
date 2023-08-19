@@ -1,4 +1,4 @@
-import Storage, { Cookie } from "./Storage";
+import { Cookie } from "./Storage";
 
 export interface ISettings {
     // Keybinds

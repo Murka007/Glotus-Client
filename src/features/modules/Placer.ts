@@ -1,3 +1,4 @@
+import myPlayer from "../../data/ClientPlayer";
 import { ItemType } from "../../types/Items";
 import ModuleHandler from "../ModuleHandler";
 
@@ -6,8 +7,7 @@ class Placer {
     
     postTick() {
         const { currentType, didAntiInsta } = ModuleHandler;
-        if (currentType === null || !ModuleHandler.canPlace(currentType)) return;
-        
+        if (currentType === null || !myPlayer.canPlace(currentType)) return;
 
         if (currentType !== ItemType.FOOD) {
             // If it won't work, check if myPlayer can actually place item
