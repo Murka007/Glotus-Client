@@ -32,6 +32,7 @@ export interface ISettings {
     antispike: boolean;
 
     autoheal: boolean;
+    healingSpeed: number;
 
     automill: boolean;
 
@@ -107,6 +108,7 @@ export const defaultSettings = {
     antianimal: true,
     antispike: true,
     autoheal: true,
+    healingSpeed: 25,
     automill: true,
     enemyTracers: true,
     enemyTracersColor: "#cc5151",
@@ -145,6 +147,8 @@ export const defaultSettings = {
     autospawn: false,
     menuTransparency: false,
 } as const satisfies ISettings;
+
+defaultSettings.healingSpeed
 
 const settings = { ...defaultSettings, ...Cookie.get<ISettings>("Glotus") };
 for (const iterator in settings) {

@@ -34,12 +34,12 @@ abstract class Entity {
         return this.scale * 1.8;
     }
     
-    collidingObject(object: TObject, addRadius = 0) {
+    collidingObject(object: TObject, addRadius = 0, checkPrevious = true) {
         const { previous: a0, current: a1, future: a2 } = this.position;
         const b0 = object.position.current;
         const radius = this.collisionScale + object.collisionScale + addRadius;
         return (
-            a0.distance(b0) <= radius ||
+            checkPrevious && a0.distance(b0) <= radius ||
             a1.distance(b0) <= radius ||
             a2.distance(b0) <= radius
         )
@@ -69,21 +69,45 @@ abstract class Entity {
      * @param addRadius Adds this amount to the item radius
      * @param checkEnemy true, if you want to check if colliding enemy object. Works only for myPlayer
      */
-    checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false): boolean {
+    checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, checkPrevious = true): boolean {
         const objects = ObjectManager.retrieveObjects(this.position.current, this.collisionScale);
+
         for (const object of objects) {
             const matchItem = object instanceof PlayerObject && object.itemGroup === itemGroup;
             const isCactus = object instanceof Resource && itemGroup === ItemGroup.SPIKE && object.isCactus;
     
             if (matchItem || isCactus) {
                 if (checkEnemy && !ObjectManager.isEnemyObject(object)) continue;
-                if (this.collidingObject(object, addRadius)) {
+                if (this.collidingObject(object, addRadius, checkPrevious)) {
                     return true;
                 }
             }
         }
         return false;
     }
+
+    // movingInDirectionTo(entity: Entity): boolean {
+    //     const { previous: a0, current: a1 } = this.position;
+    //     const { previous: b0, current: b1 } = entity.position;
+    //     const dirA = a0.angle(a1);
+    //     const angleA = a1.angle(b1);
+
+    //     const dirB = b0.angle(b1);
+    //     const angleB = b1.angle(a1);
+    //     const isMovingA = getAngleDist(dirA, angleA) <= Math.PI / 2;
+    //     const isMovingB = getAngleDist(dirB, angleB) <= Math.PI / 2;
+    //     const stayingA = a0.isEqual(a1);
+    //     const stayingB = b0.isEqual(b1);
+
+    //     if (!stayingA && !stayingB) {
+    //         return isMovingA || isMovingB;
+    //     } else if (stayingA) {
+    //         return isMovingB;
+    //     } else if (stayingB) {
+    //         return isMovingA;
+    //     }
+    //     return false;
+    // }
 }
 
 export default Entity;

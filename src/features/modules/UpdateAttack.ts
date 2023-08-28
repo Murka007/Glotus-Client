@@ -4,8 +4,12 @@ import ModuleHandler from "../ModuleHandler";
 class UpdateAttack {
     postTick(): void {
         const { attacking, sentAngle, mouse } = ModuleHandler;
-        if (attacking && sentAngle !== ESentAngle.NONE) {
-            ModuleHandler.attack(mouse.angle);
+        if (sentAngle !== ESentAngle.NONE) {
+            if (attacking) {
+                ModuleHandler.attack(mouse.angle);
+            } else {
+                ModuleHandler.stopAttack();
+            }
         }
     }
 }

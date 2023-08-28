@@ -36,7 +36,7 @@ const ShameReset = new class ShameReset {
             if (isEquipped) store.utility.set(bull, false);
         } else if ((isDmgOverTime || myPlayer.poisonCount !== 0) && bullState !== undefined) {
             store.utility.set(bull, true);
-        } else if (bullState) {
+        } else if (bullState || bullState !== undefined && myPlayer.shameCount === 0) {
             const isEquipped = ModuleHandler.equip(EStoreType.HAT, store.best);
             if (isEquipped) store.utility.delete(bull);
         }
@@ -45,11 +45,11 @@ const ShameReset = new class ShameReset {
     healthUpdate(): boolean {
         const { currentHealth, previousHealth, shameCount } = myPlayer;
         const difference = Math.abs(currentHealth - previousHealth);
-        const isDmgOverTime = difference <= 5 && currentHealth < previousHealth;
+        const isDmgOverTime = difference === 5 && currentHealth < previousHealth;
         const shouldRemoveBull = isDmgOverTime && shameCount > 0;
 
         if (isDmgOverTime) {
-            myPlayer.timerCount = SocketManager.ping;
+            myPlayer.timerCount = 0;
         }
 
         this.handleShameReset(isDmgOverTime);

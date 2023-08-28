@@ -1,5 +1,6 @@
 import Config from "../constants/Config";
 import Vector from "../modules/Vector";
+import { IAngle } from "../types/Common";
 
 export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
     return Math.atan2(y2 - y1, x2 - x1);
@@ -179,6 +180,11 @@ export const removeClass = (target: HTMLElement | NodeListOf<HTMLElement>, name:
     }
 }
 
+export const pointInWinter = (position: Vector) => {
+    const y = position.y;
+    return y <= Config.snowBiomeTop;
+}
+
 export const pointInRiver = (position: Vector) => {
     const y = position.y;
     const below = y >= (Config.mapScale / 2 - Config.riverWidth / 2);
@@ -192,4 +198,32 @@ export const pointInDesert = (position: Vector) => {
 
 export const inRange = (value: number, min: number, max: number) => {
     return value >= min && value <= max;
+}
+
+export const findPlacementAngles = (angles: IAngle[]) => {
+    const output: number[] = [];
+
+    for (let i = 0; i < angles.length; i++) {
+        const { angle, offset } = angles[i];
+        const start = angle - offset;
+        const end = angle + offset;
+
+        let startIntersects = false;
+        let endIntersects = false;
+
+        for (let j = 0; j < angles.length; j++) {
+            if (startIntersects && endIntersects) break;
+
+            if (i !== j) {
+                const { angle, offset } = angles[j];
+                if (getAngleDist(start, angle) <= offset) startIntersects = true;
+                if (getAngleDist(end, angle) <= offset) endIntersects = true;
+            }
+        }
+  
+        if (!startIntersects) output.push(start);
+        if (!endIntersects) output.push(end);
+    }
+  
+    return output;
 }

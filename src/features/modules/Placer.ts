@@ -3,23 +3,19 @@ import { ItemType } from "../../types/Items";
 import ModuleHandler from "../ModuleHandler";
 
 class Placer {
-    private placeCount = 0;
-    
-    postTick() {
-        const { currentType, didAntiInsta } = ModuleHandler;
-        if (currentType === null || !myPlayer.canPlace(currentType)) return;
+    postTick(): void {
+        const { currentType, placedOnce } = ModuleHandler;
+        if (!myPlayer.canPlace(currentType)) return;
 
         if (currentType !== ItemType.FOOD) {
-            // If it won't work, check if myPlayer can actually place item
-            if (this.placeCount === 0) {
-                ModuleHandler.place(currentType);
-            }
-            this.placeCount = (didAntiInsta ? ((this.placeCount + 1) % 2) : 0);
-            return;
+            if (placedOnce) return;
+            ModuleHandler.placedOnce = true;
+
+            ModuleHandler.actionPlanner.createAction(currentType, (last) => ModuleHandler.place(currentType, { last }));
         }
 
-        if (didAntiInsta) return;
-        ModuleHandler.heal(true);
+        // if (didAntiInsta) return;
+        // ModuleHandler.heal();
     }
 }
 

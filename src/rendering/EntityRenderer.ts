@@ -12,8 +12,8 @@ import { EHat } from "../types/Store";
 import Animals, { EAnimal } from "../constants/Animals";
 import ModuleHandler from "../features/ModuleHandler";
 import { EDanger } from "../types/Enums";
-import ProjectileManager from "../Managers/ProjectileManager";
-import { fixTo } from "../utility/Common";
+
+const colors = [["orange", "red"], ["aqua", "blue"]] as const;
 
 /**
  * Called when bundle rendering entities (player, animal)
@@ -30,9 +30,18 @@ const EntityRenderer = new class EntityRenderer {
     }
 
     private drawPlacement(ctx: TCTX, position: Vector) {
+        // const spike = Items[myPlayer.getItemByType(ItemType.SPIKE)!];
+        // const length = myPlayer.getItemPlaceScale(spike.id);
+        // const angles = ObjectManager.getBestPlacementAngles(myPlayer.position.future, spike.id, ModuleHandler.mouse.angle);
+        // for (let i=0;i<angles.length;i++) {
+        //     const angle = angles[i];
+        //     const pos = myPlayer.position.future.direction(angle, length);
+        //     Renderer.circle(ctx, pos.x, pos.y, spike.scale, "yellow", 1, 1);
+        // }
+
         if (settings.placementHitbox && DataHandler.isPlaceable(myPlayer.currentItem)) {
             const item = Items[myPlayer.currentItem];
-            const place = myPlayer.getPlacePosition(position, myPlayer.currentItem, ModuleHandler.mouse.sentAngle);
+            const place = myPlayer.getPlacePosition(myPlayer.position.future, myPlayer.currentItem, ModuleHandler.mouse.sentAngle);
             const canPlace = ObjectManager.canPlaceItem(item.id, place);
             const color = canPlace ? "#ffa552" : "#13d16f";
             Renderer.circle(ctx, place.x, place.y, item.scale, color, 1, 1);
@@ -71,8 +80,9 @@ const EntityRenderer = new class EntityRenderer {
         if (entity.isPlayer) {
             const player = PlayerManager.playerData.get(entity.sid);
             if (player !== undefined && player.danger !== 0) {
-                const color = player.danger === EDanger.HIGH ? (player.usingBoost ? "blue" : "red") : "orange"
-                Renderer.fillCircle(ctx, entity.x, entity.y, player.scale, color, 0.35);
+                const isBoost = Number(player.usingBoost) as 0 | 1;
+                const isDanger = Number(player.danger === EDanger.HIGH) as 0 | 1;
+                Renderer.fillCircle(ctx, entity.x, entity.y, player.scale, colors[isBoost][isDanger], 0.35);
             }
         }
 
@@ -95,20 +105,20 @@ const EntityRenderer = new class EntityRenderer {
             this.drawWeaponHitbox(ctx, player);
             this.drawPlacement(ctx, lerpPosition);
 
-            const secondary = myPlayer.weapon.current;
-            if (settings.projectileHitbox && DataHandler.isShootable(secondary)) {
-                const bullet = DataHandler.getProjectile(secondary);
-                const range = bullet.range * myPlayer.getWeaponSpeedMult();
-                const pos = myPlayer.position.current;
-                const angle = ModuleHandler.mouse.sentAngle;
+            // const secondary = myPlayer.weapon.current;
+            // if (settings.projectileHitbox && DataHandler.isShootable(secondary)) {
+            //     const bullet = DataHandler.getProjectile(secondary);
+            //     const range = bullet.range * myPlayer.getWeaponSpeedMult();
+            //     const pos = myPlayer.position.current;
+            //     const angle = ModuleHandler.mouse.sentAngle;
 
-                const projectile = ProjectileManager.getProjectile(pos, bullet.id, myPlayer.onPlatform, angle, range);
-                const target = ProjectileManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
-                if (target !== null) {
-                    const pos = target.position.current;
-                    Renderer.rect(ctx, pos, target.collisionScale, "#e39542", 2);
-                }
-            }
+            //     const projectile = ProjectileManager.getProjectile(pos, bullet.id, myPlayer.onPlatform, angle, range);
+            //     const target = ProjectileManager.getCurrentShootTarget(myPlayer, myPlayer.id, projectile);
+            //     if (target !== null) {
+            //         const pos = target.position.current;
+            //         Renderer.rect(ctx, pos, target.collisionScale, "#e39542", 2);
+            //     }
+            // }
         }
 
         this.drawEntityHP(ctx, entity);

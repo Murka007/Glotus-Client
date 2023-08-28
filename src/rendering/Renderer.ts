@@ -77,13 +77,13 @@ class Renderer {
         ctx.restore();
     }
 
-    static line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1) {
+    static line(ctx: TCTX, start: Vector, end: Vector, color: string, opacity = 1, lineWidth = 4) {
         ctx.save();
         ctx.translate(-myPlayer.offset.x, -myPlayer.offset.y);
         ctx.globalAlpha = opacity;
         ctx.strokeStyle = color;
         ctx.lineCap = "round";
-        ctx.lineWidth = 4;
+        ctx.lineWidth = lineWidth;
         ctx.beginPath();
         ctx.moveTo(start.x, start.y);
         ctx.lineTo(end.x, end.y);

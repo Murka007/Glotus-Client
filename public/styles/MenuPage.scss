@@ -1,4 +1,4 @@
-@import "Variables", "Keyframes", "./section-content/hotkeyInput.scss", "./section-content/checkbox.scss", "./section-content/colorPicker.scss";
+@import "Variables", "Keyframes", "./section-content/hotkeyInput.scss", "./section-content/checkbox.scss", "./section-content/colorPicker.scss", "./section-content/slider.scss";
 
 #page-container {
     width: 100%;
@@ -69,6 +69,7 @@
             @include hotkeyInput;
             @include checkbox;
             @include colorPicker;
+            @include slider;
         }
     }
 }

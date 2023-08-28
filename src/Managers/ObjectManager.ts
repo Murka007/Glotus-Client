@@ -3,12 +3,15 @@ import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
 import { EItem, EProjectile, TPlaceable } from "../types/Items";
-import { pointInRiver } from "../utility/Common";
+import { findPlacementAngles, getAngleDist, pointInRiver } from "../utility/Common";
 import PlayerManager from "./PlayerManager";
 import myPlayer from "../data/ClientPlayer";
 import SpatialHashGrid from "../modules/SpatialHashGrid";
 import ProjectileManager from "./ProjectileManager";
 import SocketManager from "./SocketManager";
+import Sorting from "../utility/Sorting";
+import { IAngle } from "../types/Common";
+import ModuleHandler from "../features/ModuleHandler";
 
 const ObjectManager = new class ObjectManager {
 
@@ -57,6 +60,8 @@ const ObjectManager = new class ObjectManager {
                     new PlayerObject(...data, buffer[i + 6], buffer[i + 7])
             )
         }
+
+        this.postTickObject();
     }
 
     private removeObject(object: TObject) {
@@ -123,6 +128,10 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
+    private postTickObject() {
+        ModuleHandler.postTickObject();
+    }
+
     retrieveObjects(pos: Vector, radius: number): TObject[] {
         return this.grid.retrieve(pos, radius);
     }
@@ -151,7 +160,7 @@ const ObjectManager = new class ObjectManager {
         const { previous: a0, current: a1, future: a2 } = owner.position;
         const b0 = object.position.current;
         const item = Items[object.type];
-        const range = item.scale + object.placementScale + 50;
+        const range = owner.scale * 2 + item.scale + item.placeOffset;
         return (
             a0.distance(b0) <= range ||
             a1.distance(b0) <= range ||
@@ -159,26 +168,46 @@ const ObjectManager = new class ObjectManager {
         )
     }
 
-    /**
-     * Returns true if current turret object can hit myPlayer
-     */
-    canTurretHitMyPlayer(object: PlayerObject, optimized: boolean): boolean {
-        const pos = object.position.current;
-        const distance = pos.distance(myPlayer.position.current);
-        const shootRange = Items[EItem.TURRET].shootRange;
+    // /**
+    //  * Returns true if current turret object can hit myPlayer
+    //  */
+    // canTurretHitMyPlayer(object: PlayerObject, optimized: boolean): boolean {
+    //     const pos = object.position.current;
+    //     const distance = pos.distance(myPlayer.position.current);
+    //     const shootRange = Items[EItem.TURRET].shootRange;
         
-        if (distance > shootRange) return false;
-        if (!this.isEnemyObject(object)) return false;
-        if (!this.isTurretReloaded(object)) return false;
+    //     if (distance > shootRange) return false;
+    //     if (!this.isEnemyObject(object)) return false;
+    //     if (!this.isTurretReloaded(object)) return false;
         
-        const angle = pos.angle(myPlayer.position.current);
-        const projectile = ProjectileManager.getProjectile(pos, EProjectile.TURRET, true, angle, shootRange);
-        if (optimized) {
-            return ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
+    //     const angle = pos.angle(myPlayer.position.current);
+    //     const projectile = ProjectileManager.getProjectile(pos, EProjectile.TURRET, true, angle, shootRange);
+    //     if (optimized) {
+    //         return ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
+    //     }
+        
+    //     const target = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
+    //     return target === myPlayer;
+    // }
+
+    getBestPlacementAngles(position: Vector, id: TPlaceable, sortAngle: number): number[] {
+        const item = Items[id];
+        const length = myPlayer.getItemPlaceScale(id);
+        const objects = this.retrieveObjects(position, length + item.scale);
+
+        const angles: IAngle[] = [];
+        for (const object of objects) {
+            const angle = position.angle(object.position.current);
+            const distance = position.distance(object.position.current);
+            const a = object.placementScale + item.scale;
+            const b = distance;
+            const c = length;
+            const offset = Math.acos((a ** 2 - b ** 2 - c ** 2) / (-2 * b * c));
+            if (!isNaN(offset)) {
+                angles.push({ angle, offset });
+            }
         }
-        
-        const target = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
-        return target === myPlayer;
+        return findPlacementAngles(angles).sort(Sorting.byAngleDistance(sortAngle));
     }
 }
 

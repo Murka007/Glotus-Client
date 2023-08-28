@@ -1,4 +1,3 @@
-import Glotus from "..";
 import Logger from "../utility/Logger";
 
 type TRegex = RegExp | RegExp[] | string | string[];
@@ -123,20 +122,20 @@ class Regexer {
         this.template(name, regex, substr, (match) => match.index || 0);
     }
 
-    insert(name: string, regex: TRegex, substr: string) {
-        const expression = this.format(name, regex);
-        if (!/{INSERT}/.test(expression.source)) {
-            throw new Error("insert Error: Your regexp must contain {INSERT} keyword");
-        }
+    // insert(name: string, regex: TRegex, substr: string) {
+    //     const expression = this.format(name, regex);
+    //     if (!/{INSERT}/.test(expression.source)) {
+    //         throw new Error("insert Error: Your regexp must contain {INSERT} keyword");
+    //     }
 
-        let source = expression.source;
-        while (/\(.+?\)/.test(source)) {
-            source = source.replace(/\((?!\?)(.+?)\)/g, "$1");
-        }
-        const formatted = new RegExp(source.replace(/{INSERT}/g, ""));
-        const match = this.code.match(formatted)!;
-        console.log(expression, match);
-    }
+    //     let source = expression.source;
+    //     while (/\(.+?\)/.test(source)) {
+    //         source = source.replace(/\((?!\?)(.+?)\)/g, "$1");
+    //     }
+    //     const formatted = new RegExp(source.replace(/{INSERT}/g, ""));
+    //     const match = this.code.match(formatted)!;
+    //     console.log(expression, match);
+    // }
 }
 
 export default Regexer;

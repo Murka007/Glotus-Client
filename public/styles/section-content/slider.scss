@@ -1,0 +1,44 @@
+@import "../Variables.scss";
+
+@mixin slider {
+    .slider {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $default-padding;
+
+        input {
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            border: none;
+
+            width: $default-option-width * 1.6;
+            height: $default-option-height * 0.75;
+
+            background: $option-bg-color3;
+            box-shadow: 0px calc($slider-size / (-2 / 0.75)) 0px 0px $option-bg-color3-1 inset;
+            border-radius: $default-radius;
+
+            &::-webkit-slider-thumb {
+                -webkit-appearance: none;
+
+                transform: scale($slider-scale);
+                width: $slider-size * 0.75;
+                height: $slider-size * 0.75;
+                background: $ui-sub-color;
+                border-radius: $default-radius;
+            }
+        }
+
+        .slider-value {
+            color: $ui-color;
+            font-weight: 800;
+            font-size: 1.4em;
+            opacity: 0.4;
+        }
+    }
+}

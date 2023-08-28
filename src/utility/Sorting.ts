@@ -1,5 +1,6 @@
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
+import { getAngleDist } from "./Common";
 
 type TPosType = "previous" | "current" | "future";
 interface TEntityLike {
@@ -24,6 +25,12 @@ class Sorting {
             const dist1 = target.position[typeA].distance(a.position[typeB]);
             const dist2 = target.position[typeA].distance(b.position[typeB]);
             return dist1 - dist2;
+        }
+    }
+
+    static byAngleDistance(angle: number) {
+        return (a: number, b: number) => {
+            return getAngleDist(a, angle) - getAngleDist(b, angle);
         }
     }
 

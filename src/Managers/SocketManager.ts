@@ -10,6 +10,9 @@ import PlayerManager from "./PlayerManager";
 import ProjectileManager from "./ProjectileManager";
 import { EItem, EWeapon } from "../types/Items";
 import { EStoreAction, EStoreType } from "../types/Store";
+import LeaderboardManager from "./LeaderboardManager";
+import Logger from "../utility/Logger";
+import Vector from "../modules/Vector";
 
 const SocketManager = new class SocketManager {
 
@@ -50,6 +53,8 @@ const SocketManager = new class SocketManager {
 
     readonly TICK = 1000 / 9;
 
+    packetCount = 0;
+
     constructor() {
         this.message = this.message.bind(this);
         const that = this;
@@ -73,14 +78,13 @@ const SocketManager = new class SocketManager {
         );
 
         // 130 packets per second is the limit
-        // let packetCount = 0;
         window.WebSocket = new Proxy(WebSocket, {
             construct(target, args: ConstructorParameters<typeof WebSocket>) {
                 const socket = new target(...args);
                 that.socket = socket;
                 // const _send = socket.send;
                 // socket.send = function(data) {
-                //     packetCount += 1;
+                //     that.packetCount += 1;
                 //     return _send.call(this, data);
                 // }
                 socket.addEventListener("message", that.message);
@@ -111,7 +115,7 @@ const SocketManager = new class SocketManager {
         const decoded = this.Decoder.decode(new Uint8Array(data));
         const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
         if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
-        if (temp[0] === SocketServer.UPDATE_LEADERBOARD) return;
+        
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -155,6 +159,24 @@ const SocketManager = new class SocketManager {
                 break;
             }
 
+            
+            case SocketServer.UPDATE_PLAYER_HEALTH: {
+                if (myPlayer.isMyPlayerByID(temp[1])) {
+                    myPlayer.updateHealth(temp[2]);
+                }
+                break;
+            }
+            
+            case SocketServer.MOVE_UPDATE: {
+                PlayerManager.updatePlayer(temp[1]);
+                for (let i=0;i<this.PacketQueue.length;i++) {
+                    this.PacketQueue[i]();
+                }
+                this.PacketQueue.length = 0;
+                ObjectManager.attackedObjects.clear();
+                break;
+            }
+
             case SocketServer.ADD_OBJECT: {
                 ObjectManager.createObjects(temp[1]);
                 break;
@@ -170,23 +192,6 @@ const SocketManager = new class SocketManager {
                 if (player !== undefined) {
                     ObjectManager.removePlayerObjects(player);
                 }
-                break;
-            }
-
-            case SocketServer.UPDATE_PLAYER_HEALTH: {
-                if (myPlayer.isMyPlayerByID(temp[1])) {
-                    myPlayer.updateHealth(temp[2]);
-                }
-                break;
-            }
-
-            case SocketServer.MOVE_UPDATE: {
-                PlayerManager.updatePlayer(temp[1]);
-                for (let i=0;i<this.PacketQueue.length;i++) {
-                    this.PacketQueue[i]();
-                }
-                this.PacketQueue.length = 0;
-                ObjectManager.attackedObjects.clear();
                 break;
             }
 
@@ -232,18 +237,16 @@ const SocketManager = new class SocketManager {
                     return;
                 }
 
-                ProjectileManager.createProjectile(
-                    new Projectile(
-                        x,
-                        y,
-                        angle,
-                        temp[4],
-                        temp[5],
-                        temp[6],
-                        temp[7],
-                        temp[8]
-                    )
-                )
+                const projectile = new Projectile(
+                    angle,
+                    temp[4],
+                    temp[5],
+                    temp[6],
+                    temp[7],
+                    temp[8]
+                );
+                projectile.position.current = projectile.formatFromCurrent(new Vector(x, y), false);
+                ProjectileManager.createProjectile(projectile);
                 break;
             }
 
@@ -269,6 +272,9 @@ const SocketManager = new class SocketManager {
                 break;
             }
 
+            case SocketServer.UPDATE_LEADERBOARD:
+                LeaderboardManager.update(temp[1])
+
             default:
                 // Logger.log(temp);
                 break;
@@ -286,6 +292,8 @@ const SocketManager = new class SocketManager {
         const [type, ...args] = data;
         const encoded = this.Encoder.encode([type, args]);
         this.socket.send(encoded);
+        // this.packetCount += 1;
+        // console.log(data);
     }
 
     clanRequest(id: number, accept: boolean) {

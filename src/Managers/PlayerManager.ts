@@ -85,6 +85,10 @@ const PlayerManager = new class PlayerManager {
         if (player === undefined) return;
         const { hatID, reload } = player;
 
+        if (myPlayer.isMyPlayerByID(id) && !myPlayer.inGame) {
+            return;
+        }
+        
         // When player hits, we must reset his reload
         const weapon = Weapons[weaponID];
         const type = WeaponTypeString[weapon.itemType];
@@ -111,7 +115,7 @@ const PlayerManager = new class PlayerManager {
 
                     if (object instanceof PlayerObject) {
                         const damage = player.getBuildingDamage(weaponID);
-                        object.health -= damage;
+                        object.health = Math.max(0, object.health - damage);
                     } else if (player === myPlayer) {
                         let amount = (hatID === EHat.MINERS_HELMET ? 1 : 0);
                         if (object.type === EResourceType.GOLD) {
@@ -165,10 +169,10 @@ const PlayerManager = new class PlayerManager {
             if (myPlayer.isEnemyByID(player.id)) {
                 this.enemies.push(player);
 
-                player.dangerList.push(player.canPossiblyInstakill());
-                if (player.dangerList.length === 3) {
+                if (player.dangerList.length === 2) {
                     player.dangerList.shift();
                 }
+                player.dangerList.push(player.canPossiblyInstakill());
                 player.danger = Math.max(...player.dangerList);
             }
         }
@@ -247,9 +251,9 @@ const PlayerManager = new class PlayerManager {
     //     return this.players.filter(player => this.isEnemy(owner, player));
     // }
 
-    // getNearestEnemy(owner: Player): Player | null {
-    //     return this.enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
-    // }
+    getNearestEnemy(owner: Player): Player | null {
+        return this.enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
+    }
 
     getDangerousEnemies(): Player[] {
         return this.enemies.sort(Sorting.byDanger);

@@ -1,9 +1,8 @@
 import ObjectManager from "../../Managers/ObjectManager";
 import { Items } from "../../constants/Items";
 import myPlayer from "../../data/ClientPlayer";
-import { ESentAngle } from "../../types/Enums";
 import { ItemType } from "../../types/Items";
-import { getAngleFromBitmask, toRadians } from "../../utility/Common";
+import { getAngleFromBitmask } from "../../utility/Common";
 import settings from "../../utility/Settings";
 import ModuleHandler from "../ModuleHandler";
 
@@ -19,14 +18,27 @@ class Automill {
     }
 
     private get canAutomill() {
-        const { sentAngle, autoattack, attacking } = ModuleHandler;
+        const { autoattack, attacking, placedOnce } = ModuleHandler;
         return (
             settings.automill &&
             myPlayer.isSandbox &&
-            sentAngle === ESentAngle.NONE &&
+            !placedOnce &&
             !autoattack &&
             !attacking &&
             this.toggle
+        )
+    }
+
+    private placeWindmill(angle: number) {
+        const id = myPlayer.getItemByType(ItemType.WINDMILL)!;
+        const position = myPlayer.getPlacePosition(myPlayer.position.future, id, angle);
+        if (!ObjectManager.canPlaceItem(id, position)) return;
+        if (ModuleHandler.totalPlaces >= 5) return;
+        ModuleHandler.totalPlaces += 1;
+
+        ModuleHandler.actionPlanner.createAction(
+            ItemType.WINDMILL,
+            (last) => ModuleHandler.place(ItemType.WINDMILL, { angle, last })
         )
     }
 
@@ -41,12 +53,16 @@ class Automill {
         if (angle === null) return;
 
         const item = Items[myPlayer.getItemByType(ItemType.WINDMILL)];
-        const angle1 = angle - toRadians(item.scale);
-        const angle2 = angle + toRadians(item.scale);
-        const mill1 = myPlayer.getPlacePosition(myPlayer.position.current, item.id, angle1);
-        const mill2 = myPlayer.getPlacePosition(myPlayer.position.current, item.id, angle2);
-        if (ObjectManager.canPlaceItem(item.id, mill1)) ModuleHandler.place(ItemType.WINDMILL, angle1);
-        if (ObjectManager.canPlaceItem(item.id, mill2)) ModuleHandler.place(ItemType.WINDMILL, angle2);
+        const distance = myPlayer.getItemPlaceScale(item.id);
+        const angleBetween = Math.asin((2 * item.scale) / (2 * distance));
+
+        // Use 1x mill if 2x mill is too much
+        if (ModuleHandler.totalPlaces <= 2) {
+            this.placeWindmill(angle - angleBetween);
+            this.placeWindmill(angle + angleBetween);
+        } else {
+            this.placeWindmill(angle);
+        }
     }
 }
 

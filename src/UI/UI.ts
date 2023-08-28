@@ -108,6 +108,7 @@ const UI = new class UI {
             hotkeyInputs: this.querySelectorAll<HTMLButtonElement>(".hotkeyInput[id]")!,
             checkboxes: this.querySelectorAll<HTMLInputElement>("input[type='checkbox'][id]")!,
             colorPickers: this.querySelectorAll<HTMLInputElement>("input[type='color'][id]")!,
+            sliders: this.querySelectorAll<HTMLInputElement>("input[type='range'][id]")!,
             closeButton: this.querySelector<SVGSVGElement>("#close-button")!,
             openMenuButtons: this.querySelectorAll<HTMLButtonElement>(".open-menu[data-id]")!,
             menuPages: this.querySelectorAll<HTMLDivElement>(".menu-page[data-id]")!,
@@ -292,6 +293,40 @@ const UI = new class UI {
         }
     }
 
+    private attachSliders() {
+        const { sliders } = this.getElements();
+        for (const slider of sliders) {
+            const id = slider.id as KeysOfType<ISettings, number>;
+
+            if (!(id in settings)) {
+                Logger.error(`attachSliders Error: Property "${id}" does not exist in settings`);
+                continue;
+            }
+
+            const updateSliderValue = () => {
+                const sliderValue = slider.previousElementSibling;
+                if (sliderValue instanceof this.frame.window.HTMLSpanElement) {
+                    sliderValue.textContent = slider.value;
+                }
+            }
+
+            slider.value = settings[id].toString();
+            updateSliderValue();
+
+            slider.oninput = () => {
+                if (id in settings) {
+                    settings[id] = Number(slider.value);
+                    SaveSettings();
+                    updateSliderValue();
+                } else {
+                    Logger.error(`attachSliders Error: Property "${id}" was deleted from settings`);
+                }
+            }
+
+            slider.onchange = () => slider.blur();
+        }
+    }
+
     private closeMenu() {
         const { menuWrapper } = this.getElements();
         menuWrapper.classList.remove("toopen");
@@ -400,6 +435,7 @@ const UI = new class UI {
         this.checkForRepeats();
         this.attachCheckboxes();
         this.attachColorPickers();
+        this.attachSliders();
         this.attachOpenMenu();
         this.createRipple(".open-menu");
 

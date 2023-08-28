@@ -1,7 +1,10 @@
+import ObjectManager from "../Managers/ObjectManager";
 import SocketManager from "../Managers/SocketManager";
 import GameUI from "../UI/GameUI";
 import UI from "../UI/UI";
 import myPlayer from "../data/ClientPlayer";
+import ActionPlanner from "../modules/ActionPlanner";
+import { IPlaceOptions } from "../types/Common";
 import { ESentAngle } from "../types/Enums";
 import { ItemType, WeaponType } from "../types/Items";
 import { EStoreType } from "../types/Store";
@@ -9,8 +12,10 @@ import { formatButton, getAngle, getAngleFromBitmask, isActiveInput } from "../u
 import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
 import AntiInsta from "./modules/AntiInsta";
+import AutoPlacer from "./modules/AutoPlacer";
 import Autohat from "./modules/Autohat";
 import Automill from "./modules/Automill";
+import PlacementExecutor from "./modules/PlacementExecutor";
 import Placer from "./modules/Placer";
 import ShameReset from "./modules/ShameReset";
 import UpdateAngle from "./modules/UpdateAngle";
@@ -28,12 +33,24 @@ type TStore = [IStore, IStore];
 const ModuleHandler = new class ModuleHandler {
 
     private readonly modules = [
+
+        // Autohat is the core of everything. Based on hat condition, we identify if myPlayer can be instakilled
         new Autohat,
         new AntiInsta,
         ShameReset,
+
+        // AutoPlacer must work before every placement modules.
+        new AutoPlacer,
         new Placer,
         new Automill,
+
+        // Executes all planned placement actions in optimized order
+        new PlacementExecutor,
+
+        // It is important to stop or continue to attack after all actions
         new UpdateAttack,
+
+        // If nothing happened, just update angle...
         new UpdateAngle,
     ] as const;
 
@@ -46,6 +63,8 @@ const ModuleHandler = new class ModuleHandler {
         { utility: new Map, best: 0, actual: 0, last: 0 },
         { utility: new Map, best: 0, actual: 0, last: 0 },
     ];
+
+    readonly actionPlanner = new ActionPlanner;
 
     /**
      * A list of IDs of bought hats and accessories
@@ -92,6 +111,13 @@ const ModuleHandler = new class ModuleHandler {
     needToHeal!: boolean;
     didAntiInsta!: boolean;
 
+    /** true if potentially dangerous enemy is near you */
+    detectedEnemy!: boolean;
+
+    /** true if used placement method at least once at current tick */
+    placedOnce!: boolean;
+    totalPlaces!: number;
+
     public readonly mouse = {
         x: 0,
         y: 0,
@@ -131,6 +157,9 @@ const ModuleHandler = new class ModuleHandler {
         this.sentAccEquip = false;
         this.needToHeal = false;
         this.didAntiInsta = false;
+        this.detectedEnemy = false;
+        this.placedOnce = false;
+        this.totalPlaces = 0;
 
         for (const module of this.modules) {
             if ("reset" in module) {
@@ -230,11 +259,11 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.attack(angle);
     }
 
-    private stopAttack() {
+    stopAttack() {
         SocketManager.stopAttack();
     }
 
-    private whichWeapon(type: WeaponType = this.weapon) {
+    whichWeapon(type: WeaponType = this.weapon) {
         const weapon = myPlayer.getItemByType(type);
         if (weapon === null) return;
 
@@ -242,25 +271,16 @@ const ModuleHandler = new class ModuleHandler {
         SocketManager.selectItemByID(weapon, true);
     }
 
-    place(type: ItemType, angle = this.mouse.angle) {
+    place(type: ItemType, { angle = this.mouse.angle, priority, last }: IPlaceOptions) {
         this.selectItem(type);
-        this.attack(angle);
-        if (!this.attacking) {
-            this.stopAttack();
-        }
-        this.whichWeapon();
+        this.attack(angle, priority);
+        if (last) this.whichWeapon();
     }
 
-    heal(last: boolean, shouldAttack?: boolean) {
+    heal(last: boolean) {
         this.selectItem(ItemType.FOOD);
         this.attack(null, ESentAngle.LOW);
-        if (!this.attacking && last) {
-            this.stopAttack();
-        }
-        this.whichWeapon();
-        if (this.attacking && last && shouldAttack) {
-            this.attack(this.mouse.angle);
-        }
+        if (last) this.whichWeapon();
     }
 
     private placementHandler(type: ItemType, code: string) {
@@ -268,13 +288,6 @@ const ModuleHandler = new class ModuleHandler {
         if (item === null) return;
         this.hotkeys.set(code, type);
         this.currentType = type;
-
-        if (this.sentAngle !== ESentAngle.NONE || this.didAntiInsta) return;
-        if (type === ItemType.FOOD) {
-            this.heal(true);
-        } else {
-            this.place(type);
-        }
     }
 
     private handleMovement() {
@@ -299,9 +312,22 @@ const ModuleHandler = new class ModuleHandler {
         this.sentHatEquip = false;
         this.sentAccEquip = false;
         this.didAntiInsta = false;
+        this.detectedEnemy = false;
+        this.placedOnce = false;
+        this.totalPlaces = 0;
 
         for (const module of this.modules) {
             module.postTick();
+        }
+        // console.log("PacketCount: ", SocketManager.packetCount);
+        // SocketManager.packetCount = 0;
+    }
+
+    postTickObject() {
+        for (const module of this.modules) {
+            if ("postTickObject" in module) {
+                module.postTickObject();
+            }
         }
     }
 

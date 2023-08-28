@@ -3,13 +3,12 @@ import Vector from "../modules/Vector";
 import { EProjectile } from "../types/Items";
 
 class Projectile {
-    readonly position: {
-
-        /**
-         * When received a packet, position is ahead of the length 70. We subtract this length to equalize the position of player and projectile
-         */
-        readonly current: Vector;
+    readonly position = {} as {
+        previous: Vector;
+        current: Vector;
+        future: Vector;
     }
+
     readonly angle: number;
     readonly range: number;
     readonly speed: number;
@@ -25,8 +24,6 @@ class Projectile {
     readonly maxRange: number;
 
     constructor(
-        x: number,
-        y: number,
         angle: number,
         range: number,
         speed: number,
@@ -36,10 +33,6 @@ class Projectile {
         maxRange?: number,
     ) {
         this.isTurret = type === EProjectile.TURRET;
-        const current = new Vector(x, y);
-        this.position = {
-            current: this.isTurret ? current : current.direction(angle, -70),
-        }
         this.angle = angle;
         this.range = range;
         this.speed = speed;
@@ -48,6 +41,11 @@ class Projectile {
         this.id = id;
         this.scale = Projectiles[type].scale;
         this.maxRange = maxRange || 0;
+    }
+
+    formatFromCurrent(pos: Vector, increase: boolean) {
+        if (this.isTurret) return pos;
+        return pos.direction(this.angle, increase ? 70 : -70);
     }
 }
 

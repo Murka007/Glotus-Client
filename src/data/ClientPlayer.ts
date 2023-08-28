@@ -8,11 +8,11 @@ import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType
 import { EHat, EStoreType } from "../types/Store";
 import { pointInRiver } from "../utility/Common";
 import settings from "../utility/Settings";
-import { PlayerObject } from "./ObjectItem";
 import Player from "./Player";
 import ModuleHandler from "../features/ModuleHandler";
 import PlayerManager from "../Managers/PlayerManager";
 import SocketManager from "../Managers/SocketManager";
+import { Accessories, Hats } from "../constants/Store";
 
 interface IWeaponXP {
     current: number;
@@ -44,7 +44,7 @@ export class ClientPlayer extends Player {
     inGame = false;
     private platformActivated = false;
 
-    private receivedDamage: number | null = null;
+    receivedDamage: number | null = null;
     timerCount = SocketManager.TICK;
 
     /**
@@ -65,7 +65,6 @@ export class ClientPlayer extends Player {
     totalGoldAmount = 0;
 
     poisonCount = 0;
-    private isTrapped = false;
     underTurretAttack = false;
 
     constructor() {
@@ -150,8 +149,10 @@ export class ClientPlayer extends Player {
     /**
      * Returns true if myPlayer is capable of using item
      */
-    canPlace(type: ItemType) {
+    canPlace(type: ItemType | null): type is ItemType {
         return (
+            type !== null &&
+            this.getItemByType(type) !== null &&
             this.hasResourcesForType(type) &&
             this.hasItemCountForType(type)
         )
@@ -169,6 +170,25 @@ export class ClientPlayer extends Player {
         const primary = Weapons[this.getItemByType(WeaponType.PRIMARY)];
         if (primary.damage !== 1) return WeaponType.PRIMARY;
         return null;
+    }
+
+    getDmgOverTime() {
+        const hat = Hats[this.hatID];
+        const accessory = Accessories[this.accessoryID];
+        let damage = 0;
+        if ("healthRegen" in hat) {
+            damage += hat.healthRegen;
+        }
+
+        if ("healthRegen" in accessory) {
+            damage += accessory.healthRegen;
+        }
+
+        if (this.poisonCount !== 0) {
+            damage += -5;
+        }
+
+        return Math.abs(damage);
     }
 
     /**
@@ -215,8 +235,14 @@ export class ClientPlayer extends Player {
                     if (enemy.danger === EDanger.HIGH) {
                         ModuleHandler.needToHeal = true;
                     }
+                    ModuleHandler.detectedEnemy = true;
                     return EHat.SOLDIER_HELMET;
                 }
+            }
+
+            const nearesetEnemy = PlayerManager.getNearestEnemy(this);
+            if (nearesetEnemy !== null && this.collidingEntity(nearesetEnemy, 300)) {
+                return EHat.SOLDIER_HELMET;
             }
         }
 
@@ -272,9 +298,14 @@ export class ClientPlayer extends Player {
         return ModuleHandler.getHatStore().actual;
     }
 
-    getPlacePosition(start: Vector, itemID: TPlaceable, angle: number): Vector {
+
+    getItemPlaceScale(itemID: TPlaceable) {
         const item = Items[itemID];
-        return start.direction(angle, this.scale + item.scale + item.placeOffset);
+        return this.scale + item.scale + item.placeOffset;
+    }
+
+    getPlacePosition(start: Vector, itemID: TPlaceable, angle: number): Vector {
+        return start.direction(angle, this.getItemPlaceScale(itemID));
     }
 
     /**
@@ -291,9 +322,6 @@ export class ClientPlayer extends Player {
         if (this.shameTimer === 0 && this.shameActive) {
             this.shameActive = false;
             this.shameCount = 0;
-            if (settings.autoheal && this.currentHealth < 100) {
-                ModuleHandler.heal(true);
-            }
         }
 
         this.timerCount = Math.min(this.timerCount + PlayerManager.step, 1000);
@@ -301,9 +329,6 @@ export class ClientPlayer extends Player {
             this.timerCount = 0;
             this.poisonCount = Math.max(this.poisonCount - 1, 0);
         }
-
-        // this.isTrapped = this.checkCollision(ItemGroup.TRAP, 0, true);
-        // this.underTurretAttack = false;
 
         ModuleHandler.postTick();
     }
@@ -329,13 +354,13 @@ export class ClientPlayer extends Player {
         }
 
         if (health < 100) {
-            const healDelay = Math.max(0, 120 - SocketManager.pong + 10);
+            const healDelay = Math.max(0, 120 - SocketManager.pong + settings.healingSpeed);
             const needReset = ShameReset.healthUpdate();
-            if (settings.autoheal || needReset) {
-                setTimeout(() => {
-                    ModuleHandler.heal(true, true);
-                }, healDelay);
-            }
+            // if (settings.autoheal || needReset) {
+            //     setTimeout(() => {
+            //         ModuleHandler.heal(true, true);
+            //     }, healDelay);
+            // }
         }
     }
 

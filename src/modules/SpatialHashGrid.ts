@@ -1,6 +1,7 @@
 import { TObject } from "../data/ObjectItem";
 import Vector from "./Vector";
 
+/** Improved data structure for objects */
 class SpatialHashGrid<T extends TObject> {
     private readonly cellSize: number;
     private readonly cells: T[][][];

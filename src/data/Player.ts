@@ -3,11 +3,11 @@ import PlayerManager from "../Managers/PlayerManager";
 import ProjectileManager from "../Managers/ProjectileManager";
 import SocketManager from "../Managers/SocketManager";
 import { Items, Projectiles, WeaponVariants, Weapons } from "../constants/Items";
-import { Hats } from "../constants/Store";
+import { Accessories, Hats } from "../constants/Store";
 import { IReload, TReload } from "../types/Common";
 import { EDanger } from "../types/Enums";
-import { EItem, EWeapon, ItemGroup, ItemType, TGlobalInventory, TMelee, TPlaceable, TPrimary, TSecondary, WeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
-import { EAccessory, EHat } from "../types/Store";
+import { EItem, EProjectile, EWeapon, ItemGroup, ItemType, TGlobalInventory, TMelee, TPlaceable, TPrimary, TSecondary, WeaponType, WeaponTypeString, WeaponVariant } from "../types/Items";
+import { EAccessory, EHat, EStoreType } from "../types/Store";
 import { removeFast } from "../utility/Common";
 import DataHandler from "../utility/DataHandler";
 import myPlayer from "./ClientPlayer";
@@ -35,10 +35,17 @@ class Player extends Entity {
     hatID: EHat = 0;
     accessoryID: EAccessory = 0;
 
+    private totalStorePrice = 0;
+    readonly storeList = [
+        new Set<number>(),
+        new Set<number>(),
+    ] as const;
+
     previousHealth = 100;
     currentHealth = 100;
     readonly maxHealth = 100;
 
+    
     readonly globalInventory = {} as TGlobalInventory;
     readonly weapon = {} as {
         /**
@@ -46,36 +53,46 @@ class Player extends Entity {
          */
         current: EWeapon;
         oldCurrent: EWeapon;
-
+        
         /**
          * ID of current primary weapon
-         */
-        primary: TPrimary | null;
-
-        /**
-         * ID of current secondary weapon
-         */
-        secondary: TSecondary | null;
+        */
+       primary: TPrimary | null;
+       
+       /**
+        * ID of current secondary weapon
+       */
+      secondary: TSecondary | null;
     }
-
+    
     protected readonly variant = {} as {
         current: WeaponVariant;
         primary: WeaponVariant;
         secondary: WeaponVariant;
     }
-
+    
     readonly reload = { primary: {}, secondary: {}, turret: {} } as {
         readonly primary: IReload;
         readonly secondary: IReload;
         readonly turret: IReload;
     }
-
+    
     /**
      * Set of items placed by the player
-     */
+    */
     readonly objects = new Set<PlayerObject>();
+
+    /** Last or current amount of gold player had in leaderboard */
+    totalGold = 0;
+
+    /** true, if player is currently in leaderboard */
+    inLeaderboard = false;
     newlyCreated = true;
+
+    /** true, if player is using boost pads, potentially 1 tick user */
     usingBoost = false;
+
+    /** true, if player is currently standing on platform */
     onPlatform = false;
     isFullyUpgraded = false;
 
@@ -159,6 +176,14 @@ class Player extends Entity {
         this.clanName = clanName;
         this.hatID = hatID;
         this.accessoryID = accessoryID;
+        if (!this.storeList[EStoreType.HAT].has(hatID)) {
+            this.storeList[EStoreType.HAT].add(hatID);
+            this.totalStorePrice += Hats[hatID].price;
+        }
+        if (!this.storeList[EStoreType.ACCESSORY].has(accessoryID)) {
+            this.storeList[EStoreType.ACCESSORY].add(accessoryID);
+            this.totalStorePrice += Accessories[accessoryID].price;
+        }
         this.newlyCreated = false;
         this.onPlatform = this.checkCollision(ItemGroup.PLATFORM);
         this.predictItems();
@@ -315,6 +340,27 @@ class Player extends Entity {
         return null;
     }
 
+    // private predictOtherItems() {
+    //     const inventory = this.globalInventory;
+    //     const secondary = inventory[WeaponType.SECONDARY];
+    //     const spike = inventory[ItemType.SPIKE];
+    //     const windmill = inventory[ItemType.WINDMILL];
+    //     const spawn = inventory[ItemType.SPAWN];
+
+    //     const isTopSecondary = secondary !== null && Weapons[secondary].age === 9;
+    //     const isTopSpike = spike !== null && Items[spike].age === 9;
+
+    //     if (DataHandler.isShootable(secondary)) {
+    //         if (
+    //             isTopSpike ||
+    //             windmill === EItem.POWER_MILL ||
+    //             spawn !== null
+    //         ) {
+    //             inventory[WeaponType.SECONDARY] = EWeapon.CROSSBOW;
+    //         }
+    //     }
+    // }
+
     private predictWeapons() {
         const { current, oldCurrent } = this.weapon;
         const weapon = Weapons[current];
@@ -355,6 +401,18 @@ class Player extends Entity {
             if (primary !== null) this.weapon.primary = primary;
             if (secondary !== null) this.weapon.secondary = secondary;
         }
+    }
+
+    private possiblyBought(type: EStoreType, id: number) {
+        if (this.storeList[type].has(id)) return true;
+        const store = DataHandler.getStore(type);
+        // @ts-ignore
+        const price = store[id].price;
+        return (
+            this.totalGold >= (price - 198) ||
+            this.totalStorePrice >= price ||
+            !this.inLeaderboard
+        )
     }
 
     getWeaponVariant(id: EWeapon) {
@@ -422,11 +480,14 @@ class Player extends Entity {
     /**
      * Returns the maximum possible damage of the specified weapon to entities, including bull and weapon level.
      */
-    getMaxWeaponDamage(id: EWeapon | null, excludeVariant?: boolean): number {
+    getMaxWeaponDamage(id: EWeapon | null): number {
         if (DataHandler.isMelee(id)) {
-            const bull = Hats[EHat.BULL_HELMET];
-            const damage = Weapons[id].damage * bull.dmgMultO;
-            if (excludeVariant) return damage;
+            let damage = Weapons[id].damage;
+
+            if (this.possiblyBought(EStoreType.HAT, EHat.BULL_HELMET)) {
+                const bull = Hats[EHat.BULL_HELMET];
+                damage *= bull.dmgMultO;
+            }
 
             const variant = this.getWeaponVariant(id).current;
             return damage * WeaponVariants[variant].val;
@@ -439,10 +500,8 @@ class Player extends Entity {
 
     private isReloaded(type: TReload) {
         const reload = this.reload[type].current;
-        // const min = SocketManager.TICK;
-        const max = this.reload[type].max - SocketManager.TICK;// * 2;
+        const max = this.reload[type].max - SocketManager.TICK;
         return reload >= max;
-        // return reload <= min || reload >= max;
     }
 
     canPossiblyInstakill(): EDanger {
@@ -450,11 +509,28 @@ class Player extends Entity {
         const primaryDamage = this.getMaxWeaponDamage(primary);
         const secondaryDamage = this.getMaxWeaponDamage(secondary);
         const soldier = Hats[EHat.SOLDIER_HELMET];
+        const angle = this.position.current.angle(myPlayer.position.current);
 
         let totalDamage = 0;
         if (this.isReloaded("primary")) totalDamage += primaryDamage;
-        if (this.isReloaded("secondary")) totalDamage += secondaryDamage;
-        if (this.isReloaded("turret")) totalDamage += 25;
+        if (this.isReloaded("secondary")) {
+
+            let canDealDamage = DataHandler.isMelee(secondary);
+            if (DataHandler.isShootable(secondary)) {
+                const shootable = Weapons[secondary];
+                const projectile = ProjectileManager.getProjectile(this, shootable.projectile, this.onPlatform, angle, 600);
+                canDealDamage = ProjectileManager.projectileCanHitEntity(projectile, myPlayer, -5);
+            }
+
+            if (canDealDamage) {
+                totalDamage += secondaryDamage;
+            }
+        }
+        if (this.isReloaded("turret")) {
+            const projectile = ProjectileManager.getProjectile(this, EProjectile.TURRET, true, angle, 600);
+            const canHit = ProjectileManager.projectileCanHitEntity(projectile, myPlayer, -5);
+            if (canHit) totalDamage += 25;
+        }
 
         if (totalDamage * soldier.dmgMult >= 100) {
             return EDanger.HIGH;

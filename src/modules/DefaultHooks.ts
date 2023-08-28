@@ -52,7 +52,15 @@ const DefaultHooks = () => {
     Hooker.createRecursiveHook(
         Object.prototype, "maxPlayers",
         (that, value) => {
-            that.maxPlayers = value + 10;
+            that.maxPlayers = value + 11;
+            return true; 
+        }
+    )
+
+    Hooker.createRecursiveHook(
+        Object.prototype, "list",
+        (that) => {
+            that.list.forEach((item: any) => (item.pre = null))
             return true; 
         }
     )

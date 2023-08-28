@@ -1,4 +1,3 @@
-import { ValueOf } from "./Common";
 
 export const enum EHat {
     UNEQUIP = 0,
