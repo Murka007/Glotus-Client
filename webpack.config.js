@@ -42,7 +42,7 @@ module.exports = {
         clean: true
     },
     resolve: {
-        extensions: [".js", ".ts", ".scss"]
+        extensions: [".js", ".ts", ".scss"],
     },
     optimization: {
         minimizer: [
@@ -70,6 +70,10 @@ module.exports = {
                 }
             })
         ]
+    },
+    performance: {
+        maxEntrypointSize: 512000,
+        maxAssetSize: 512000
     },
     plugins,
     module: {

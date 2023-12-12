@@ -1,20 +1,26 @@
-import SocketManager from "../../Managers/SocketManager";
-import myPlayer from "../../data/ClientPlayer";
+import PlayerClient from "../../PlayerClient";
 import { EHat, EStoreType } from "../../types/Store";
-import ModuleHandler from "../ModuleHandler";
 
-const ShameReset = new class ShameReset {
+class ShameReset {
+    readonly name = "shameReset";
+    private readonly client: PlayerClient;
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
 
     private get isEquipTime() {
+        const { myPlayer, SocketManager } = this.client;
         const max = 1000 - SocketManager.TICK;
         return myPlayer.timerCount >= max;
     }
 
     private get shouldReset() {
+        const { myPlayer, ModuleHandler } = this.client;
         return (
-            myPlayer.shameCount > 0 &&
             !myPlayer.shameActive &&
+            myPlayer.shameCount > 0 &&
             myPlayer.poisonCount === 0 &&
+            !ModuleHandler.didAntiInsta &&
             this.isEquipTime
         )
     }
@@ -24,8 +30,8 @@ const ShameReset = new class ShameReset {
     }
 
     private handleShameReset(isDmgOverTime?: boolean) {
+        const { myPlayer, ModuleHandler } = this.client;
         if (ModuleHandler.sentHatEquip) return;
-        if (ModuleHandler.didAntiInsta) return;
 
         const store = ModuleHandler.getHatStore();
         const bull = EHat.BULL_HELMET;
@@ -33,16 +39,14 @@ const ShameReset = new class ShameReset {
 
         if (bullState === undefined && this.shouldReset) {
             const isEquipped = ModuleHandler.equip(EStoreType.HAT, bull);
-            if (isEquipped) store.utility.set(bull, false);
-        } else if ((isDmgOverTime || myPlayer.poisonCount !== 0) && bullState !== undefined) {
-            store.utility.set(bull, true);
-        } else if (bullState || bullState !== undefined && myPlayer.shameCount === 0) {
-            const isEquipped = ModuleHandler.equip(EStoreType.HAT, store.best);
-            if (isEquipped) store.utility.delete(bull);
+            if (isEquipped) store.utility.set(bull, true);
+        } else if (bullState && (myPlayer.shameCount === 0 || isDmgOverTime || myPlayer.poisonCount !== 0)) {
+            store.utility.delete(bull);
         }
     }
 
     healthUpdate(): boolean {
+        const { myPlayer } = this.client;
         const { currentHealth, previousHealth, shameCount } = myPlayer;
         const difference = Math.abs(currentHealth - previousHealth);
         const isDmgOverTime = difference === 5 && currentHealth < previousHealth;

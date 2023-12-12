@@ -8,6 +8,9 @@ export const enum EAnimal {
     MOOSTAFA,
     TREASURE,
     MOOFIE,
+    DANGER_MOOFIE,
+    DANGER_WOLF,
+    DANGER_BULLY
 }
 
 /**
@@ -157,6 +160,72 @@ const Animals = [{
     viewRange: 800,
     chargePlayer: true,
     drop: ["food", 1000]
+}, {
+    id: EAnimal.DANGER_MOOFIE,
+    name: "💀MOOFIE",
+    src: "wolf_2",
+    hostile: !0,
+    fixedSpawn: !0,
+    dontRun: !0,
+    hitScare: 50,
+    spawnDelay: 6e4,
+    noTrap: !0,
+    nameScale: 35,
+    dmg: 12,
+    colDmg: 100,
+    killScore: 3e3,
+    health: 9e3,
+    weightM: .45,
+    speed: .0015,
+    turnSpeed: .0025,
+    scale: 94,
+    viewRange: 1440,
+    chargePlayer: !0,
+    drop: ["food", 3e3],
+    minSpawnRange: .85,
+    maxSpawnRange: .9
+}, {
+    id: EAnimal.DANGER_WOLF,
+    name: "💀Wolf",
+    src: "wolf_1",
+    hostile: !0,
+    fixedSpawn: !0,
+    dontRun: !0,
+    hitScare: 50,
+    spawnDelay: 3e4,
+    dmg: 10,
+    killScore: 700,
+    health: 500,
+    weightM: .45,
+    speed: .00115,
+    turnSpeed: .0025,
+    scale: 88,
+    viewRange: 1440,
+    chargePlayer: !0,
+    drop: ["food", 400],
+    minSpawnRange: .85,
+    maxSpawnRange: .9
+}, {
+    id: EAnimal.DANGER_BULLY,
+    name: "💀Bully",
+    src: "bull_1",
+    hostile: !0,
+    fixedSpawn: !0,
+    dontRun: !0,
+    hitScare: 50,
+    dmg: 20,
+    killScore: 5e3,
+    health: 5e3,
+    spawnDelay: 1e5,
+    weightM: .45,
+    speed: .00115,
+    turnSpeed: .0025,
+    scale: 94,
+    viewRange: 1440,
+    chargePlayer: !0,
+    drop: ["food", 800],
+    minSpawnRange: .85,
+    maxSpawnRange: .9
 }] as const;
 
 export default Animals;

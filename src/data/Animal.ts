@@ -1,3 +1,4 @@
+import PlayerClient from "../PlayerClient";
 import Animals, { EAnimal } from "../constants/Animals";
 import Config from "../constants/Config";
 import { ItemGroup } from "../types/Items";
@@ -8,12 +9,22 @@ import Entity from "./Entity";
  */
 class Animal extends Entity {
     type = -1;
-    health = 0;
-    nameIndex = 0;
+    currentHealth = 0;
+    private _maxHealth = 0;
+    private nameIndex = 0;
     isDanger = false;
+    isHostile = false;
 
-    constructor() {
-        super();
+    constructor(client: PlayerClient) {
+        super(client);
+    }
+
+    get maxHealth() {
+        return this._maxHealth;
+    }
+
+    canBeTrapped() {
+        return !("noTrap" in Animals[this.type]);
     }
 
     update(
@@ -34,12 +45,14 @@ class Animal extends Entity {
 
         const animal = Animals[type];
         this.angle = angle;
-        this.health = health;
+        this.currentHealth = health;
+        this._maxHealth = animal.health;
         this.nameIndex = nameIndex;
         this.scale = animal.scale;
+        
         const isHostile = animal.hostile && type !== EAnimal.TREASURE;
-        const canBeTrapped = !("noTrap" in animal);
-        const isTrapped = canBeTrapped && this.checkCollision(ItemGroup.TRAP);
+        const isTrapped = this.canBeTrapped() && this.checkCollision(ItemGroup.TRAP);
+        this.isHostile = animal.hostile;
         this.isDanger = isHostile && !isTrapped;
     }
 
@@ -55,6 +68,10 @@ class Animal extends Entity {
             return Animals[this.type].hitRange + Config.playerScale;
         }
         return this.scale + 60;
+    }
+
+    get canUseTurret() {
+        return this.isHostile;
     }
 }
 

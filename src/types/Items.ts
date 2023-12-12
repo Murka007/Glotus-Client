@@ -67,6 +67,28 @@ export const enum EWeapon {
     MUSKET,
 }
 
+export const enum EUpgradeType {
+    TOOL_HAMMER,
+    AXE,
+    SWORD,
+    POLEARM,
+    BAT,
+    DAGGERS,
+    STICK,
+    BOW,
+    GREAT_HAMMER,
+    WOODEN_SHIELD,
+    MC_GRABBY,
+    // FOOD,
+    // WALL,
+    // SPIKE,
+    // WINDMILL,
+    // TRAP,
+    // FARM,
+    // TURRET,
+    // SPAWN,
+}
+
 export const enum EItem {
     APPLE,
     COOKIE,

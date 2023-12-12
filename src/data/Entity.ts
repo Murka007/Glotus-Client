@@ -1,8 +1,15 @@
-import ObjectManager from "../Managers/ObjectManager";
+import PlayerClient from "../PlayerClient";
 import Animals from "../constants/Animals";
 import Vector from "../modules/Vector";
 import { ItemGroup } from "../types/Items";
+import { getAngleDist } from "../utility/Common";
 import { PlayerObject, Resource, TObject } from "./ObjectItem";
+
+interface IPos {
+    readonly previous: Vector;
+    readonly current: Vector;
+    readonly future: Vector;
+}
 
 /**
  * Abstract entity class. Represents players and animals
@@ -10,11 +17,11 @@ import { PlayerObject, Resource, TObject } from "./ObjectItem";
 abstract class Entity {
     id = -1;
 
-    readonly position = {
+    readonly position: IPos = {
         previous: new Vector,
         current: new Vector,
         future: new Vector
-    } as const
+    }
 
     angle = 0;
     scale: (typeof Animals[number])["scale"] | 35 | 0 = 0;
@@ -33,7 +40,22 @@ abstract class Entity {
     get hitScale() {
         return this.scale * 1.8;
     }
+
+    protected readonly client: PlayerClient;
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
     
+    colliding(object: TObject, radius: number) {
+        const { previous: a0, current: a1, future: a2 } = this.position;
+        const b0 = object.position.current;
+        return (
+            a0.distance(b0) <= radius ||
+            a1.distance(b0) <= radius ||
+            a2.distance(b0) <= radius
+        )
+    }
+
     collidingObject(object: TObject, addRadius = 0, checkPrevious = true) {
         const { previous: a0, current: a1, future: a2 } = this.position;
         const b0 = object.position.current;
@@ -45,9 +67,17 @@ abstract class Entity {
         )
     }
         
-    collidingEntity(entity: Entity, range: number) {
+    collidingEntity(entity: Entity, range: number, checkBased = false) {
         const { previous: a0, current: a1, future: a2 } = this.position;
         const { previous: b0, current: b1, future: b2 } = entity.position;
+        if (checkBased) {
+            return (
+                a0.distance(b0) <= range ||
+                a1.distance(b1) <= range ||
+                a2.distance(b2) <= range
+            )
+        }
+
         return (
             a0.distance(b0) <= range ||
             a0.distance(b1) <= range ||
@@ -70,6 +100,7 @@ abstract class Entity {
      * @param checkEnemy true, if you want to check if colliding enemy object. Works only for myPlayer
      */
     checkCollision(itemGroup: ItemGroup, addRadius = 0, checkEnemy = false, checkPrevious = true): boolean {
+        const { ObjectManager } = this.client;
         const objects = ObjectManager.retrieveObjects(this.position.current, this.collisionScale);
 
         for (const object of objects) {
@@ -86,28 +117,19 @@ abstract class Entity {
         return false;
     }
 
-    // movingInDirectionTo(entity: Entity): boolean {
-    //     const { previous: a0, current: a1 } = this.position;
-    //     const { previous: b0, current: b1 } = entity.position;
-    //     const dirA = a0.angle(a1);
-    //     const angleA = a1.angle(b1);
+    runningAwayFrom(entity: Entity, angle: number | null): boolean {
 
-    //     const dirB = b0.angle(b1);
-    //     const angleB = b1.angle(a1);
-    //     const isMovingA = getAngleDist(dirA, angleA) <= Math.PI / 2;
-    //     const isMovingB = getAngleDist(dirB, angleB) <= Math.PI / 2;
-    //     const stayingA = a0.isEqual(a1);
-    //     const stayingB = b0.isEqual(b1);
+        // We just stay
+        if (angle === null) return false;
 
-    //     if (!stayingA && !stayingB) {
-    //         return isMovingA || isMovingB;
-    //     } else if (stayingA) {
-    //         return isMovingB;
-    //     } else if (stayingB) {
-    //         return isMovingA;
-    //     }
-    //     return false;
-    // }
+        const pos1 = this.position.current;
+        const pos2 = entity.position.current;
+        const angleTo = pos1.angle(pos2);
+
+        // Running towards entity
+        if (getAngleDist(angle, angleTo) <= Math.PI / 2) return false;
+        return true;
+    }
 }
 
 export default Entity;

@@ -1,18 +1,21 @@
 import GameUI from "../UI/GameUI";
 import { ItemGroups, Items, WeaponVariants, Weapons } from "../constants/Items";
-import ShameReset from "../features/modules/ShameReset";
 import Vector from "../modules/Vector";
 import { TResource } from "../types/Common";
-import { EDanger } from "../types/Enums";
+import { EAttack, EDanger } from "../types/Enums";
 import { EItem, EWeapon, ItemGroup, ItemType, TInventory, TPlaceable, WeaponType } from "../types/Items";
-import { EHat, EStoreType } from "../types/Store";
-import { pointInRiver } from "../utility/Common";
+import { EAccessory, EHat, EStoreType } from "../types/Store";
+import { clamp, pointInRiver } from "../utility/Common";
 import settings from "../utility/Settings";
 import Player from "./Player";
-import ModuleHandler from "../features/ModuleHandler";
-import PlayerManager from "../Managers/PlayerManager";
-import SocketManager from "../Managers/SocketManager";
 import { Accessories, Hats } from "../constants/Store";
+import PlayerClient from "../PlayerClient";
+import { myClient } from "..";
+import UI from "../UI/UI";
+import DataHandler from "../utility/DataHandler";
+import EnemyManager from "../Managers/EnemyManager";
+import { PlayerObject, Resource } from "./ObjectItem";
+import Autobreak from "../features/modules/Autobreak";
 
 interface IWeaponXP {
     current: number;
@@ -22,7 +25,7 @@ interface IWeaponXP {
 /**
  * Represents my player. Contains all data that are related to the game bundle and websocket
  */
-export class ClientPlayer extends Player {
+class ClientPlayer extends Player {
 
     private readonly inventory = {} as TInventory;
     readonly weaponXP = [{}, {}] as [IWeaponXP, IWeaponXP];
@@ -36,16 +39,20 @@ export class ClientPlayer extends Player {
      * My player's current resources
      */
     readonly resources = {} as { [key in TResource]: number };
+    tempGold = 0;
+
+    readonly deathPosition = new Vector;
     readonly offset = new Vector;
 
     /**
      * true if my player is in game
      */
     inGame = false;
+    diedOnce = false;
     private platformActivated = false;
 
     receivedDamage: number | null = null;
-    timerCount = SocketManager.TICK;
+    timerCount = 1000 / 9;
 
     /**
      * true, if my player has clown
@@ -63,12 +70,17 @@ export class ClientPlayer extends Player {
      * Shows how much gold the mills produce
      */
     totalGoldAmount = 0;
+    age = 1;
+    upgradeAge = 1;
 
     poisonCount = 0;
     underTurretAttack = false;
+    private readonly upgradeOrder: number[] = [];
+    private upgradeIndex = 0;
+    readonly joinRequests: [number, string][] = [];
 
-    constructor() {
-        super();
+    constructor(client: PlayerClient) {
+        super(client);
         this.reset(true);
     }
 
@@ -76,7 +88,7 @@ export class ClientPlayer extends Player {
      * Checks if ID is ID of my player
      */
     isMyPlayerByID(id: number) {
-        return id === myPlayer.id;
+        return id === this.id;
     }
 
     /**
@@ -97,7 +109,8 @@ export class ClientPlayer extends Player {
      * true if connected to the sandbox
      */
     get isSandbox() {
-        return window.vultr.scheme === "mm_exp";
+        return true;
+        // return window.vultr.scheme === "mm_exp";
     }
 
     /**
@@ -127,9 +140,10 @@ export class ClientPlayer extends Player {
      * Returns current and max count of object
      */
     getItemCount(group: ItemGroup) {
+        const item = ItemGroups[group];
         return {
             count: this.itemCount.get(group) || 0,
-            limit: this.isSandbox ? 99 : ItemGroups[group].limit
+            limit: this.isSandbox ? ("sandboxLimit" in item ? item.sandboxLimit : 99) : item.limit
         } as const;
     }
 
@@ -164,7 +178,7 @@ export class ClientPlayer extends Player {
      * `null`, if player have stick and does not have a hammer
      */
     getBestDestroyingWeapon(): WeaponType | null {
-        const secondaryID = myPlayer.getItemByType(WeaponType.SECONDARY);
+        const secondaryID = this.getItemByType(WeaponType.SECONDARY);
         if (secondaryID === EWeapon.GREAT_HAMMER) return WeaponType.SECONDARY;
 
         const primary = Weapons[this.getItemByType(WeaponType.PRIMARY)];
@@ -194,10 +208,18 @@ export class ClientPlayer extends Player {
     /**
      * Returns the best hat to be equipped at the tick
      */
-    getBestCurrentHat(): number {
+    private getBestCurrentHat() {
         const { current, future } = this.position;
 
-        if (settings.biomehats) {
+        const { ModuleHandler, EnemyManager } = this.client;
+        const { actual } = ModuleHandler.getHatStore();
+
+        const useFlipper = ModuleHandler.canBuy(EStoreType.HAT, EHat.FLIPPER_HAT);
+        const useSoldier = ModuleHandler.canBuy(EStoreType.HAT, EHat.SOLDIER_HELMET);
+        const useWinter = ModuleHandler.canBuy(EStoreType.HAT, EHat.WINTER_CAP);
+        const useActual = ModuleHandler.canBuy(EStoreType.HAT, actual);
+
+        if (settings.biomehats && useFlipper) {
             const inRiver = pointInRiver(current) || pointInRiver(future);
             if (inRiver) {
                 // myPlayer is right on the platform
@@ -221,87 +243,143 @@ export class ClientPlayer extends Player {
             }
         }
 
-        if (settings.antienemy) {
-            const enemies = PlayerManager.getDangerousEnemies();
-            for (const enemy of enemies) {
-                if (enemy.danger === EDanger.NONE) break;
-
-                // It is important to check for all position variants cuz enemy can move in different directions
-                // Less expensive than predicting positions based on spike collisions and knockbacks
-                
-                const extraRange = enemy.usingBoost ? 350 : 60;
-                const range = enemy.getMaxWeaponRange() + this.hitScale + extraRange;
-                if (this.collidingEntity(enemy, range)) {
-                    if (enemy.danger === EDanger.HIGH) {
-                        ModuleHandler.needToHeal = true;
-                    }
-                    ModuleHandler.detectedEnemy = true;
-                    return EHat.SOLDIER_HELMET;
-                }
-            }
-
-            const nearesetEnemy = PlayerManager.getNearestEnemy(this);
-            if (nearesetEnemy !== null && this.collidingEntity(nearesetEnemy, 300)) {
-                return EHat.SOLDIER_HELMET;
-            }
+        if (useSoldier) {
+            if (
+                settings.antienemy &&
+                (EnemyManager.detectedEnemy || EnemyManager.nearestEnemyInRangeOf(275))
+            ) return EHat.SOLDIER_HELMET;
+    
+            if (
+                settings.antispike &&
+                this.checkCollision(ItemGroup.SPIKE, 35, true)
+            ) return EHat.SOLDIER_HELMET;
+    
+            if (
+                settings.antianimal &&
+                EnemyManager.nearestDangerAnimal !== null
+            ) return EHat.SOLDIER_HELMET;
         }
 
-        // if (settings.autoemp) {
-        //     const turret = Items[EItem.TURRET];
-        //     const objects = ObjectManager.retrieveObjects(current, turret.shootRange);
-        //     let turretAttackCount = 0;
-        //     for (const object of objects) {
-        //         if (turretAttackCount > 3) {
-        //             break;
-        //         }
-        //         if (object instanceof PlayerObject && object.type === EItem.TURRET) {
-        //             if (ObjectManager.canTurretHitMyPlayer(object, true)) {
-        //                 turretAttackCount += 1;
-        //             }
-        //         }
-        //     }
-
-        //     if (turretAttackCount !== 0) {
-        //         this.underTurretAttack = true;
-        //     }
-
-        //     if (turretAttackCount > 3 || turretAttackCount > 0 && (!ModuleHandler.isMoving || this.isTrapped)) {
-        //         return EHat.EMP_HELMET;
-        //     } else if (turretAttackCount > 1) {
-        //         return EHat.SOLDIER_HELMET;
-        //     }
-        // }
-
-        if (settings.antispike) {
-            const collidingSpike = this.checkCollision(ItemGroup.SPIKE, 35, true);
-            if (collidingSpike) {
-                return EHat.SOLDIER_HELMET;
-            }
-        }
-
-        if (settings.antianimal) {
-            for (const animal of PlayerManager.animals) {
-                if (
-                    animal.isDanger &&
-                    this.collidingEntity(animal, animal.collisionRange)
-                ) {
-                    return EHat.SOLDIER_HELMET;
-                }
-            }
-        }
-
-        if (settings.biomehats) {
+        if (settings.biomehats && useWinter) {
             const inWinter = current.y <= 2400 || future.y <= 2400;
-            if (inWinter) return EHat.WINTER_CAP;
+            if (inWinter) {
+                return EHat.WINTER_CAP;
+            }
         }
 
-        return ModuleHandler.getHatStore().actual;
+        if (useActual) return actual;
+        return EHat.UNEQUIP;
     }
 
+    private getBestCurrentAcc() {
+        const { ModuleHandler, EnemyManager } = this.client;
+        const { actual } = ModuleHandler.getAccStore();
 
-    getItemPlaceScale(itemID: TPlaceable) {
-        const item = Items[itemID];
-        return this.scale + item.scale + item.placeOffset;
+        const useCorrupt = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.CORRUPT_X_WINGS);
+        const useTail = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.MONKEY_TAIL);
+        const useActual = ModuleHandler.canBuy(EStoreType.ACCESSORY, actual);
+
+        if (EnemyManager.detectedEnemy || EnemyManager.nearestEnemyInRangeOf(275, EnemyManager.nearestEntity)) {
+            if (useCorrupt) return EAccessory.CORRUPT_X_WINGS;
+            if (useActual && actual !== EAccessory.MONKEY_TAIL) return actual;
+            return EAccessory.UNEQUIP;
+        }
+        // if (useCorrupt && ModuleHandler.detectedEnemy) return EAccessory.CORRUPT_X_WINGS;
+        // // if (useCorrupt && EnemyManager.nearestMeleeReloaded !== null) return EAccessory.CORRUPT_X_WINGS;
+        if (useTail) return EAccessory.MONKEY_TAIL;
+        return EAccessory.UNEQUIP;
+    }
+
+    getBestCurrentID(type: EStoreType) {
+        switch (type) {
+            case EStoreType.HAT:
+                return this.getBestCurrentHat();
+            case EStoreType.ACCESSORY:
+                return this.getBestCurrentAcc();
+        }
+    }
+
+    private getBestUtilityHat() {
+        const { ModuleHandler, EnemyManager, ObjectManager, myPlayer } = this.client;
+        const { autoBreak, spikeTick } = ModuleHandler.staticModules;
+        const id = this.getItemByType(ModuleHandler.weapon)!;
+        if (id === EWeapon.WOODEN_SHIELD) return null;
+        // if (EnemyManager.detectedEnemy) return null;
+        if (DataHandler.isShootable(id)) return EHat.SAMURAI_ARMOR;
+
+        const weapon = Weapons[id];
+        const range = weapon.range + 60;
+
+        if (ModuleHandler.attackingState === EAttack.ATTACK || spikeTick.isActive) {
+            const nearest = EnemyManager.nearestEntity;
+            if (
+                nearest !== null &&
+                this.collidingEntity(nearest, range + nearest.hitScale, true)
+            ) {
+                ModuleHandler.canHitEntity = true;
+                if (weapon.damage <= 1) return EHat.SAMURAI_ARMOR;
+                return EHat.BULL_HELMET;
+            }
+        }
+
+        if (ModuleHandler.attackingState !== EAttack.DISABLED || autoBreak.isActive) {
+            if (weapon.damage <= 1) return null;
+
+            const pos = myPlayer.position.current;
+            const objects = ObjectManager.retrieveObjects(pos, range);
+            for (const object of objects) {
+                if (
+                    object instanceof PlayerObject &&
+                    object.isDestroyable &&
+                    this.colliding(object, range + object.hitScale)
+                ) return EHat.TANK_GEAR;
+            }
+        }
+
+        return null;
+    }
+
+    private getBestUtilityAcc() {
+        // const { ModuleHandler, EnemyManager } = this.client;
+
+        // const id = this.getItemByType(ModuleHandler.weapon)!;
+        // if (!DataHandler.isMelee(id)) return null;
+
+        // const weapon = Weapons[id];
+        // if (weapon.damage <= 1) return null;
+
+        // const canBloody = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.BLOOD_WINGS);
+        // if (
+        //     EnemyManager.nearestMeleeReloaded === null &&
+        //     ModuleHandler.canHitEntity
+        // ) {
+        //     if (canBloody) return EAccessory.BLOOD_WINGS;
+        //     return EAccessory.UNEQUIP;
+        // }
+
+        return null;
+    }
+
+    getBestUtilityID(type: EStoreType) {
+        switch (type) {
+            case EStoreType.HAT:
+                return this.getBestUtilityHat();
+            case EStoreType.ACCESSORY:
+                return this.getBestUtilityAcc();
+        }
+    }
+
+    getMaxWeaponRangeClient(): number {
+        const primary = this.inventory[WeaponType.PRIMARY];
+        const secondary = this.inventory[WeaponType.SECONDARY];
+        const primaryRange = Weapons[primary].range;
+        if (DataHandler.isMelee(secondary)) {
+            const range = Weapons[secondary].range;
+            if (range > primaryRange) {
+                return range;
+            }
+        }
+        return primaryRange;
     }
 
     getPlacePosition(start: Vector, itemID: TPlaceable, angle: number): Vector {
@@ -312,20 +390,22 @@ export class ClientPlayer extends Player {
      * Called after all received packets. Player and animal positions have been updated
      */
     tickUpdate() {
-        if (this.hatID === EHat.SHAME && this.shameTimer === 0) {
-            this.shameTimer = 30000;
-            this.shameCount = 8;
+        if (this.hatID === EHat.SHAME && !this.shameActive) {
             this.shameActive = true;
+            this.shameTimer = 0;
+            this.shameCount = 8;
         }
 
-        this.shameTimer = Math.max(0, this.shameTimer - PlayerManager.step);
-        if (this.shameTimer === 0 && this.shameActive) {
+        const { PlayerManager, ModuleHandler } = this.client;
+        this.shameTimer += PlayerManager.step;
+        if (this.shameTimer >= 30000 && this.shameActive) {
             this.shameActive = false;
+            this.shameTimer = 0;
             this.shameCount = 0;
         }
 
-        this.timerCount = Math.min(this.timerCount + PlayerManager.step, 1000);
-        if (this.timerCount === 1000) {
+        this.timerCount += PlayerManager.step;
+        if (this.timerCount >= 1000) {
             this.timerCount = 0;
             this.poisonCount = Math.max(this.poisonCount - 1, 0);
         }
@@ -334,8 +414,7 @@ export class ClientPlayer extends Player {
     }
 
     updateHealth(health: number) {
-        this.previousHealth = this.currentHealth;
-        this.currentHealth = health;
+        super.updateHealth(health);
 
         if (this.shameActive) return;
 
@@ -347,37 +426,111 @@ export class ClientPlayer extends Player {
             this.receivedDamage = null;
 
             if (step <= 120) {
-                this.shameCount = Math.min(this.shameCount + 1, 7);
+                this.shameCount += 1;
             } else {
-                this.shameCount = Math.max(this.shameCount - 2, 0);
+                this.shameCount -= 2;
             }
+            this.shameCount = clamp(this.shameCount, 0, 7);
         }
 
         if (health < 100) {
-            const healDelay = Math.max(0, 120 - SocketManager.pong + settings.healingSpeed);
-            const needReset = ShameReset.healthUpdate();
-            // if (settings.autoheal || needReset) {
+            const { ModuleHandler } = this.client;
+            ModuleHandler.staticModules.shameReset.healthUpdate();
+            // const delay = Math.max(0, 120 - SocketManager.pong + settings.healingSpeed);
+            // const shouldReset = ModuleHandler.shameReset.healthUpdate();
+            // if (settings.autoheal || shouldReset) {
             //     setTimeout(() => {
-            //         ModuleHandler.heal(true, true);
-            //     }, healDelay);
+            //         ModuleHandler.totalPlaces += 1;
+            //         ModuleHandler.heal(true);
+            //     }, delay);
             // }
         }
     }
 
     playerInit(id: number) {
         this.id = id;
-        this.inGame = true;
+        const { PlayerManager } = this.client;
         if (!PlayerManager.playerData.has(id)) {
-            PlayerManager.playerData.set(id, myPlayer);
+            PlayerManager.playerData.set(id, this);
         }
     }
 
     playerSpawn() {
+        this.inGame = true;
+        
+        const { ModuleHandler, SocketManager, isOwner } = this.client;
+        const { mouse, staticModules } = ModuleHandler;
         const store = ModuleHandler.getHatStore();
         ModuleHandler.equip(EStoreType.HAT, store.best);
+        ModuleHandler.updateAngle(mouse.sentAngle, true);
+        if (myClient.ModuleHandler.autoattack) {
+            ModuleHandler.autoattack = true;
+            SocketManager.autoAttack();
+        }
+
+        if (!isOwner) {
+            UI.updateBotOption(this.client, "title");
+            myClient.clientIDList.add(this.id);
+
+            const owner = myClient.ModuleHandler;
+            staticModules.tempData.setWeapon(owner.weapon);
+            staticModules.tempData.setAttacking(owner.attacking);
+            staticModules.tempData.setStore(EStoreType.HAT, owner.store[EStoreType.HAT].actual);
+            staticModules.tempData.setStore(EStoreType.ACCESSORY, owner.store[EStoreType.ACCESSORY].actual);
+        }
+    }
+
+    isUpgradeWeapon(id: EWeapon) {
+        const weapon = Weapons[id];
+        if ("upgradeOf" in weapon) {
+            return this.inventory[weapon.itemType] === weapon.upgradeOf;
+        }
+        return true;
+    }
+
+    newUpgrade(points: number, age: number) {
+        this.upgradeAge = age;
+        if (points === 0 || age === 10) return;
+
+        const ids: number[] = [];
+        for (const weapon of Weapons) {
+            if (weapon.age === age && this.isUpgradeWeapon(weapon.id)) {
+                ids.push(weapon.id);
+            }
+        }
+
+        for (const item of Items) {
+            if (item.age === age) {
+                ids.push(item.id + 16);
+            }
+        }
+
+        if (!this.client.isOwner) {
+            const id = myClient.myPlayer.upgradeOrder[this.upgradeIndex];
+            if (id !== undefined && ids.includes(id)) {
+                this.upgradeIndex += 1;
+                this.client.ModuleHandler.upgradeItem(id);
+            }
+        }
+    }
+
+    updateAge(age: number) {
+        this.age = age;
     }
 
     upgradeItem(id: number) {
+        this.upgradeOrder.push(id);
+
+        const { isOwner, clients } = this.client;
+        if (isOwner) {
+            for (const client of clients) {
+                const { age, upgradeAge } = client.myPlayer;
+                if (age > this.upgradeAge) {
+                    client.myPlayer.newUpgrade(1, upgradeAge);
+                }
+            }
+        }
+
         if (id < 16) {
             const weapon = Weapons[id];
             this.inventory[weapon.itemType] = id as EWeapon & null;
@@ -395,7 +548,6 @@ export class ClientPlayer extends Player {
         this.teammates.clear();
         for (let i=0;i<teammates.length;i+=2) {
             const id = teammates[i + 0] as number;
-            // const nickname = teammates[i + 1] as string;
             if (!this.isMyPlayerByID(id)) {
                 this.teammates.add(id);
             }
@@ -404,17 +556,24 @@ export class ClientPlayer extends Player {
 
     updateItemCount(group: ItemGroup, count: number) {
         this.itemCount.set(group, count);
-        GameUI.updateItemCount(group);
+        if (this.client.isOwner) GameUI.updateItemCount(group);
     }
 
     updateResources(type: TResource, amount: number) {
         const previousAmount = this.resources[type];
         this.resources[type] = amount;
-
-        if (type === "gold" || type === "kills") return;
+        if (type === "gold") {
+            this.tempGold = amount;
+            return;
+        }
         if (amount < previousAmount) return;
-        
         const difference = amount - previousAmount;
+        if (type === "kills") {
+            myClient.totalKills += difference;
+            GameUI.updateTotalKill();
+            return;
+        }
+
         this.updateWeaponXP(difference);
     }
 
@@ -469,6 +628,24 @@ export class ClientPlayer extends Player {
         }
     }
 
+    spawn() {
+        const name = localStorage.getItem("moo_name") || "";
+        const skin = Number(localStorage.getItem("skin_color")) || 0;
+        this.client.SocketManager.spawn(name, 1, skin === 10 ? "constructor" : skin);
+    }
+
+    handleDeath(): boolean {
+        if (settings.autospawn) {
+            this.spawn();
+            return true;
+        }
+        return false;
+    }
+
+    handleJoinRequest(id: number, name: string) {
+        this.joinRequests.push([id, name]);
+    }
+
     /**
      * Resets player data. Called when myPlayer died
      */
@@ -476,25 +653,27 @@ export class ClientPlayer extends Player {
         this.resetResources();
         this.resetInventory();
         this.resetWeaponXP();
+
+        const { ModuleHandler, PlayerManager } = this.client;
         ModuleHandler.reset();
 
         this.inGame = false;
         this.shameTimer = 0;
         this.shameCount = 0;
+        this.upgradeOrder.length = 0;
+        this.upgradeIndex = 0;
 
         if (first) return;
 
-        // It is important to reset enemy reloads, because you can spawn immediately and you won't know if their weapons are reloaded or not
-        for (const enemy of PlayerManager.enemies) {
-            enemy.resetReload();
+        // It is important to reset player reloads, because you can spawn immediately and you won't know if their weapons are reloaded or not
+        for (const player of PlayerManager.players) {
+            player.resetReload();
         }
+        this.deathPosition.setVec(this.position.current);
+        this.diedOnce = true;
 
-        window.config.deathFadeout = settings.autospawn ? 0 : 3000;
-        if (settings.autospawn) {
-            setTimeout(() => GameUI.spawn(), 10);
-        }
+        if (!this.client.isOwner) this.spawn();
     }
 }
 
-const myPlayer = new ClientPlayer();
-export default myPlayer;
+export default ClientPlayer;

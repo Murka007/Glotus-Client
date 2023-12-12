@@ -1,21 +1,36 @@
-import myPlayer from "../../data/ClientPlayer";
+import PlayerClient from "../../PlayerClient";
 import { ItemType } from "../../types/Items";
-import ModuleHandler from "../ModuleHandler";
 
 class Placer {
+    readonly name = "placer";
+    private readonly client: PlayerClient;
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
+
     postTick(): void {
-        const { currentType, placedOnce } = ModuleHandler;
+        const { ModuleHandler, myPlayer, isOwner } = this.client;
+        const { currentType, placedOnce, healedOnce, mouse } = ModuleHandler;
         if (!myPlayer.canPlace(currentType)) return;
 
-        if (currentType !== ItemType.FOOD) {
-            if (placedOnce) return;
-            ModuleHandler.placedOnce = true;
+        // const angle = isOwner ? mouse.angle : ModuleHandler.cursorAngle;
+        // ModuleHandler.actionPlanner.createAction(ItemType.SPIKE, (last) => ModuleHandler.place(currentType, { angle, last }));
+        // ModuleHandler.actionPlanner.createAction(ItemType.SPIKE, (last) => ModuleHandler.place(currentType, { angle, last }));
+        // ModuleHandler.actionPlanner.createAction(ItemType.SPIKE, (last) => ModuleHandler.place(currentType, { angle, last }));
+        // ModuleHandler.actionPlanner.createAction(ItemType.FOOD, (last) => ModuleHandler.heal(last));
 
+        if (currentType === ItemType.FOOD) {
+            if (healedOnce) return;
+            ModuleHandler.healedOnce = true;
             ModuleHandler.actionPlanner.createAction(currentType, (last) => ModuleHandler.place(currentType, { last }));
+            return;
         }
+        
+        if (placedOnce) return;
+        ModuleHandler.placedOnce = true;
 
-        // if (didAntiInsta) return;
-        // ModuleHandler.heal();
+        const angle = isOwner ? mouse.angle : ModuleHandler.cursorAngle;
+        ModuleHandler.actionPlanner.createAction(currentType, (last) => ModuleHandler.place(currentType, { angle, last }));
     }
 }
 

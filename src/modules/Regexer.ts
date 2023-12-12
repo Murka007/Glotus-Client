@@ -74,6 +74,8 @@ class Regexer {
             regex = inputRegex.map(exp => this.isRegExp(exp) ? exp.source : exp).join("\\s*");
         } else if (this.isRegExp(inputRegex)) {
             regex = inputRegex.source;
+        } else {
+            regex = inputRegex + "";
         }
 
         regex = this.parseVariables(regex);
@@ -92,6 +94,7 @@ class Regexer {
     replace(name: string, regex: TRegex, substr: string, flags?: string) {
         const expression = this.format(name, regex, flags);
         this.code = this.code.replace(expression, substr);
+        return expression;
     }
 
     private insertAtIndex(index: number, str: string) {

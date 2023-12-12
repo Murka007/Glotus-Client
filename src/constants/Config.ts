@@ -58,6 +58,7 @@ const Config = {
     mapScale: 14400,
     mapPingScale: 40,
     mapPingTime: 2200,
+    skinColors: ["#bf8f54", "#cbb091", "#896c4b", "#fadadc", "#ececec", "#c37373", "#4c4c4c", "#ecaff7", "#738cc3", "#8bc373", "#91B2DB"]
 } as const;
 
 export default Config;

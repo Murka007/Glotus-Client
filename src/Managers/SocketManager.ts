@@ -1,39 +1,16 @@
-import myPlayer from "../data/ClientPlayer";
 import { Resource } from "../data/ObjectItem";
 import Projectile from "../data/Projectile";
 import GameUI from "../UI/GameUI";
 import { IncomingPacket, OutcomingPacket, SocketClient, SocketServer } from "../types/Socket";
 import { getUniqueID } from "../utility/Common";
-import Hooker from "../utility/Hooker";
-import ObjectManager from "./ObjectManager";
-import PlayerManager from "./PlayerManager";
-import ProjectileManager from "./ProjectileManager";
 import { EItem, EWeapon } from "../types/Items";
 import { EStoreAction, EStoreType } from "../types/Store";
-import LeaderboardManager from "./LeaderboardManager";
-import Logger from "../utility/Logger";
 import Vector from "../modules/Vector";
+import PlayerClient from "../PlayerClient";
+import { clearInterval } from "timers";
 
-const SocketManager = new class SocketManager {
-
-    /**
-     * Current websocket connection
-     */
-    private socket: WebSocket | null = null;
-
-    /**
-     * Hooked msgpack's Encoder
-     */
-    private Encoder: null | {
-        readonly encode: ((data: any) => Uint8Array);
-    } = null;
-
-    /**
-     * Hooked msgpacks' Decoder
-     */
-    private Decoder: null | {
-        readonly decode: ((data: Uint8Array) => any);
-    } = null;
+class SocketManager {
+    private readonly client: PlayerClient;
 
     /**
      * An array of actions, that should be executed after receiving all packets
@@ -54,68 +31,68 @@ const SocketManager = new class SocketManager {
     readonly TICK = 1000 / 9;
 
     packetCount = 0;
+    tickTimeout: ReturnType<typeof setTimeout> | undefined;
 
-    constructor() {
+    constructor(client: PlayerClient) {
         this.message = this.message.bind(this);
-        const that = this;
+        this.client = client;
 
-        // Intercept msgpack encoder
-        Hooker.createRecursiveHook(
-            Object.prototype, "initialBufferSize",
-            (_this) => {
-                this.Encoder = _this;
-                return true;
+        const attachMessage = (socket: WebSocket) => {
+            socket.addEventListener("message", this.message);
+            socket.onclose = () => {
+                socket.removeEventListener("message", this.message);
             }
-        );
 
-        // Intercept msgpack decoder
-        Hooker.createRecursiveHook(
-            Object.prototype, "maxExtLength",
-            (_this) => {
-                this.Decoder = _this;
-                return true;
-            }
-        );
+            // let count = 0;
+            // const send = socket.send;
+            // socket.send = function(data) {
+            //     count += 1;
+            //     return send.call(this, data);
+            // }
 
-        // 130 packets per second is the limit
-        window.WebSocket = new Proxy(WebSocket, {
-            construct(target, args: ConstructorParameters<typeof WebSocket>) {
-                const socket = new target(...args);
-                that.socket = socket;
-                // const _send = socket.send;
-                // socket.send = function(data) {
-                //     that.packetCount += 1;
-                //     return _send.call(this, data);
-                // }
-                socket.addEventListener("message", that.message);
-                return socket;
-            }
-        })
+            // setInterval(() => {
+            //     // if (count === 0) return;
+            //     console.log("COUNT: ", count);
+            //     count = 0;
+            // }, 1000);
+        }
 
-        // setInterval(() => {
-        //     console.log("PacketCount: ", packetCount);
-        //     packetCount = 0;
-        // }, 1000);
+        const connection = client.connection;
+        if (connection.socket === undefined) {
+            Object.defineProperty(connection, "socket", {
+                set(value: WebSocket) {
+                    delete connection.socket;
+                    connection.socket = value;
+                    attachMessage(value);
+                },
+                configurable: true
+            })
+            return;
+        }
+        attachMessage(connection.socket);
     }
 
     private handlePing() {
         this.pong = (Date.now() - this.startPing);
         this.ping = this.pong / 2;
-        GameUI.updatePing(this.pong);
+        
+        if (this.client.isOwner) {
+            GameUI.updatePing(this.pong);
+        }
 
         setTimeout(() => {
             this.pingRequest();
-        }, 2500);
+        }, 3000);
     }
 
     private message(event: MessageEvent<ArrayBuffer>) {
-        if (this.Decoder === null) return;
+        const decoder = this.client.connection.Decoder;
+        if (decoder === null) return;
         
         const data = event.data;
-        const decoded = this.Decoder.decode(new Uint8Array(data));
+        const decoded = decoder.decode(new Uint8Array(data));
         const temp = [decoded[0], ...decoded[1]] as IncomingPacket;
-        if (temp[0] === SocketServer.UPDATE_MINIMAP) return;
-        
+        const { myPlayer, PlayerManager, ObjectManager, ProjectileManager, LeaderboardManager } = this.client;
         switch (temp[0]) {
 
             case SocketServer.PING_RESPONSE: {
@@ -125,7 +102,14 @@ const SocketManager = new class SocketManager {
 
             case SocketServer.CONNECTION_ESTABLISHED: {
                 this.pingRequest();
-                GameUI.init();
+                this.client.stableConnection = true;
+                if (this.client.isOwner) {
+                    GameUI.loadGame();
+                } else {
+                    this.client.myPlayer.spawn();
+                    this.client.connection.socket!.dispatchEvent(new Event("connected"));
+                }
+
                 break;
             }
 
@@ -158,15 +142,15 @@ const SocketManager = new class SocketManager {
                 })
                 break;
             }
-
             
             case SocketServer.UPDATE_PLAYER_HEALTH: {
-                if (myPlayer.isMyPlayerByID(temp[1])) {
-                    myPlayer.updateHealth(temp[2]);
+                const player = PlayerManager.playerData.get(temp[1]);
+                if (player !== undefined) {
+                    player.updateHealth(temp[2]);
                 }
                 break;
             }
-            
+
             case SocketServer.MOVE_UPDATE: {
                 PlayerManager.updatePlayer(temp[1]);
                 for (let i=0;i<this.PacketQueue.length;i++) {
@@ -174,6 +158,15 @@ const SocketManager = new class SocketManager {
                 }
                 this.PacketQueue.length = 0;
                 ObjectManager.attackedObjects.clear();
+                break;
+            }
+            
+            case SocketServer.LOAD_AI: {
+                PlayerManager.updateAnimal(temp[1] || []);
+                clearTimeout(this.tickTimeout);
+                this.tickTimeout = setTimeout(() => {
+                    PlayerManager.postTick();
+                }, 5);
                 break;
             }
 
@@ -250,6 +243,11 @@ const SocketManager = new class SocketManager {
                 break;
             }
 
+            // case SocketServer.REMOVE_PROJECTILE: {
+            //     console.log(temp);
+            //     break;
+            // }
+
             case SocketServer.UPDATE_CLAN_MEMBERS: {
                 myPlayer.updateClanMembers(temp[1]);
                 break;
@@ -262,8 +260,20 @@ const SocketManager = new class SocketManager {
                 break;
             }
 
-            case SocketServer.LOAD_AI: {
-                PlayerManager.updateAnimal(temp[1] || []);
+            case SocketServer.PLAYER_CLAN_JOIN_REQUEST: {
+                myPlayer.handleJoinRequest(temp[1], temp[2]);
+                break;
+            }
+
+            case SocketServer.UPDATE_AGE: {
+                if (temp.length === 4) {
+                    myPlayer.updateAge(temp[3]);
+                }
+                break;
+            }
+
+            case SocketServer.NEW_UPGRADE: {
+                myPlayer.newUpgrade(temp[1], temp[2]);
                 break;
             }
 
@@ -273,27 +283,28 @@ const SocketManager = new class SocketManager {
             }
 
             case SocketServer.UPDATE_LEADERBOARD:
-                LeaderboardManager.update(temp[1])
-
-            default:
-                // Logger.log(temp);
+                LeaderboardManager.update(temp[1]);
                 break;
 
+            // case SocketServer.UPDATE_STORE: {
+            //     const action = temp[1] === 0 ? 1 : 0;
+            //     GameUI.updateStore(temp[3], action, temp[2]);
+            //     break;
+            // }
         }
     }
 
     private send(data: OutcomingPacket) {
+        const connection = this.client.connection;
         if (
-            this.socket === null ||
-            this.socket.readyState !== this.socket.OPEN ||
-            this.Encoder === null
+            connection.socket === undefined ||
+            connection.socket.readyState !== connection.socket.OPEN ||
+            connection.Encoder === null
         ) return;
 
         const [type, ...args] = data;
-        const encoded = this.Encoder.encode([type, args]);
-        this.socket.send(encoded);
-        // this.packetCount += 1;
-        // console.log(data);
+        const encoded = connection.Encoder.encode([type, args]);
+        connection.socket.send(encoded);
     }
 
     clanRequest(id: number, accept: boolean) {
@@ -313,6 +324,7 @@ const SocketManager = new class SocketManager {
     }
 
     leaveClan() {
+        this.client.myPlayer.joinRequests.length = 0;
         this.send([SocketClient.LEAVE_CLAN]);
     }
 
@@ -360,7 +372,7 @@ const SocketManager = new class SocketManager {
         this.send([SocketClient.SELECT_ITEM, id, type]);
     }
 
-    spawn(name: string, moofoll: 1 | 0, skin: number) {
+    spawn(name: string, moofoll: 1 | 0, skin: any) {
         this.send([SocketClient.SPAWN, { name, moofoll, skin }]);
     }
 

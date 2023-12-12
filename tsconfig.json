@@ -1,18 +1,16 @@
 {
     "compilerOptions": {
-        "types": ["node"],
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
         "target": "ESNext",
         "useDefineForClassFields": true,
         "module": "ES2020",
-        "moduleResolution": "node",
+        "moduleResolution": "Node",
         "strict": true,
         "allowSyntheticDefaultImports": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
-        // "isolatedModules": true,
         "esModuleInterop": true,
         "noImplicitReturns": true,
-        // "noErrorTruncation": true,
     },
-    "include": ["src", "index.d.ts", "./src/types.d.ts"]
+    // "include": ["index.d.ts", "./src/types.d.ts"],
 }

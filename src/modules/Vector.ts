@@ -57,6 +57,11 @@ class Vector {
         return this.x * vec.x + this.y * vec.y;
     }
 
+    proj(vec: Vector) {
+        const k = this.dot(vec) / vec.dot(vec);
+        return vec.copy().mult(k);
+    }
+
     setXY(x: number, y: number) {
         this.x = x;
         this.y = y;

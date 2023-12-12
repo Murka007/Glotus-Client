@@ -1,13 +1,18 @@
 import Player from "../data/Player";
-import PlayerManager from "./PlayerManager";
+import PlayerClient from "../PlayerClient";
 
-const LeaderboardManager = new class LeaderboardManager {
+class LeaderboardManager {
+    private readonly client: PlayerClient;
     private readonly list = new Set<Player>();
+
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
 
     private updatePlayer(id: number, nickname: string, gold: number) {
         const owner = (
-            PlayerManager.playerData.get(id) ||
-            PlayerManager.createPlayer({ id, nickname })
+            this.client.PlayerManager.playerData.get(id) ||
+            this.client.PlayerManager.createPlayer({ id, nickname })
         );
 
         this.list.add(owner);

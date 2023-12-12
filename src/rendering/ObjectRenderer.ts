@@ -1,12 +1,12 @@
 import { Items } from "../constants/Items";
 import { PlayerObject, TObject } from "../data/ObjectItem";
-import ObjectManager from "../Managers/ObjectManager";
 import { TCTX } from "../types/Common";
 import { EItem, ItemType } from "../types/Items";
 import { IRenderObject } from "../types/RenderTargets";
 import Renderer from "./Renderer";
 import settings from "../utility/Settings";
-import myPlayer from "../data/ClientPlayer";
+import Vector from "../modules/Vector";
+import { myClient } from "..";
 
 /**
  * Called when game bundle rendering objects
@@ -15,7 +15,7 @@ const ObjectRenderer = new class ObjectRenderer {
 
     private healthBar(ctx: TCTX, entity: IRenderObject, object: PlayerObject): number {
         if (!(settings.itemHealthBar &&
-            object.seenPlacement &&
+            // object.seenPlacement &&
             object.isDestroyable
         )) return 0;
 
@@ -34,12 +34,6 @@ const ObjectRenderer = new class ObjectRenderer {
             const color = settings.objectTurretReloadBarColor;
             Renderer.circularBar(ctx, entity, perc, angle, color, scale);
         }
-
-        // if (settings.turretHitbox) {
-        //     const canShootMyPlayer = ObjectManager.canTurretHitMyPlayer(object, false);
-        //     const color = canShootMyPlayer ? "#73272d" : "#3e2773";
-        //     Renderer.circle(ctx, entity.x, entity.y, 700, color, 0.6, 1);
-        // }
     }
 
     private renderWindmill(entity: IRenderObject) {
@@ -54,19 +48,18 @@ const ObjectRenderer = new class ObjectRenderer {
         const y = entity.y + entity.yWiggle;
         if (settings.collisionHitbox) {
             Renderer.circle(ctx, x, y, object.collisionScale, "#c7fff2", 1, 1);
+            Renderer.rect(ctx, new Vector(x, y), object.collisionScale, "#ecffbd", 1);
         }
-        if (settings.weaponHitbox) {
-            Renderer.circle(ctx, x, y, object.hitScale, "#3f4ec4", 1, 1);
-        }
-        if (settings.placementHitbox) {
-            Renderer.circle(ctx, x, y, object.placementScale, "#13d16f", 1, 1);
-        }
+        if (settings.weaponHitbox) Renderer.circle(ctx, x, y, object.hitScale, "#3f4ec4", 1, 1);
+        // if (settings.placementHitbox) Renderer.circle(ctx, x, y, object.placementScale, "#13d16f", 1, 1);
+        if (settings.placementHitbox) Renderer.circle(ctx, x, y, object.placementScale, "#73b9ba", 1, 1);
     }
 
     render(ctx: TCTX) {
         if (Renderer.objects.length === 0) return;
+
         for (const entity of Renderer.objects) {
-            const object = ObjectManager.objects.get(entity.sid);
+            const object = myClient.ObjectManager.objects.get(entity.sid);
             if (object === undefined) continue;
             Renderer.renderMarker(ctx, entity);
 
@@ -78,6 +71,13 @@ const ObjectRenderer = new class ObjectRenderer {
             this.renderCollisions(ctx, entity, object);
         }
         Renderer.objects.length = 0;
+    }
+
+    preRender(ctx: TCTX) {
+        if (myClient.myPlayer.diedOnce) {
+            const { x, y } = myClient.myPlayer.deathPosition;
+            Renderer.cross(ctx, x, y, 50, 15, "#cc5151");
+        }
     }
 }
 

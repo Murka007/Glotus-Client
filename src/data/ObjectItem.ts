@@ -1,8 +1,11 @@
+import PlayerClient from "../PlayerClient";
 import { ItemGroups, Items } from "../constants/Items";
 import Vector from "../modules/Vector";
 import { EResourceType } from "../types/Enums";
 import { EItem, ItemGroup, TPlaceable } from "../types/Items";
 import { pointInDesert } from "../utility/Common";
+import Animal from "./Animal";
+import Player from "./Player";
 
 /**
  * Represents resources and player objects
@@ -70,7 +73,6 @@ export class Resource extends ObjectItem {
 }
 
 export class PlayerObject extends ObjectItem {
-
     readonly type: TPlaceable;
 
     /**

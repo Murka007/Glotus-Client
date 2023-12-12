@@ -19,6 +19,7 @@ export interface ISettings {
     right: string;
     autoattack: string;
     lockrotation: string;
+    lockBotPosition: string;
     toggleChat: string;
     toggleShop: string;
     toggleClan: string;
@@ -35,6 +36,8 @@ export interface ISettings {
     healingSpeed: number;
 
     automill: boolean;
+    autoplacer: boolean;
+    autobreak: boolean;
 
     // Visuals
     enemyTracers: boolean;
@@ -78,6 +81,7 @@ export interface ISettings {
     turretHitbox: boolean;
 
     autospawn: boolean;
+    autoaccept: boolean;
     menuTransparency: boolean;
 }
 
@@ -98,6 +102,7 @@ export const defaultSettings = {
     right: "KeyD",
     autoattack: "KeyE",
     lockrotation: "KeyX",
+    lockBotPosition: "KeyZ",
     toggleChat: "Enter",
     toggleShop: "ShiftLeft",
     toggleClan: "ControlLeft",
@@ -110,11 +115,13 @@ export const defaultSettings = {
     autoheal: true,
     healingSpeed: 25,
     automill: true,
-    enemyTracers: true,
+    autoplacer: true,
+    autobreak: true,
+    enemyTracers: false,
     enemyTracersColor: "#cc5151",
-    teammateTracers: true,
+    teammateTracers: false,
     teammateTracersColor: "#8ecc51",
-    animalTracers: true,
+    animalTracers: false,
     animalTracersColor: "#518ccc",
     arrows: true,
     itemMarkers: true,
@@ -129,9 +136,9 @@ export const defaultSettings = {
     weaponReloadBar: true,
     weaponReloadBarColor: "#5155cc",
     renderHP: true,
-    objectTurretReloadBar: true,
+    objectTurretReloadBar: false,
     objectTurretReloadBarColor: "#66d9af",
-    itemHealthBar: true,
+    itemHealthBar: false,
     itemHealthBarColor: "#6b449e",
     itemCounter: true,
     renderGrid: false,
@@ -145,6 +152,7 @@ export const defaultSettings = {
     placementHitbox: false,
     turretHitbox: false,
     autospawn: false,
+    autoaccept: false,
     menuTransparency: false,
 } as const satisfies ISettings;
 

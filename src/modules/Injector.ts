@@ -1,4 +1,3 @@
-import Logger from "../utility/Logger";
 import Regexer from "./Regexer";
 
 const Injector = new class Injector {
@@ -10,21 +9,18 @@ const Injector = new class Injector {
         const observer = new MutationObserver(mutations => {
             for (const mutation of mutations) {
                 for (const node of mutation.addedNodes) {
-                    if (
-                        node instanceof HTMLScriptElement &&
-                        /bundle/.test(node.src)
-                    ) {
-                        Logger.log("FOUND SCRIPT", node);
+                    if (!(node instanceof HTMLScriptElement)) continue;
+                    if (/recaptcha/.test(node.src)) continue;
+
+                    const regex = /cookie|cloudflare|ads|jquery|howler|frvr-channel-web/;
+                    if (regex.test(node.src)) {
+                        node.remove();
+                    }
+                    
+                    if (/assets.+\.js$/.test(node.src)) {
                         observer.disconnect();
                         this.loadScript(node.src);
-                        
-                        // Firefox support
-                        node.addEventListener(
-                            "beforescriptexecute",
-                            event => event.preventDefault(),
-                            { once: true }
-                        );
-        
+                        console.log("FOUND NODE", node);
                         node.remove();
                     }
                 }
@@ -46,7 +42,21 @@ const Injector = new class Injector {
 
         const element = document.createElement("script");
         element.src = URL.createObjectURL(blob);
-        document.body.appendChild(element);
+        this.waitForBody(() => {
+            document.head.appendChild(element);
+        });
+    }
+
+    private waitForBody(callback: () => void) {
+        if (document.readyState !== "loading") {
+            callback();
+            return;
+        }
+        document.addEventListener("readystatechange", () => {
+            if (document.readyState !== "loading") {
+                callback();
+            }
+        }, { once: true });
     }
 
     /**
@@ -57,43 +67,31 @@ const Injector = new class Injector {
 
         Hook.prepend(
             "LockRotationClient",
-            /return \w+\?\(/,
-            `return Glotus.ModuleHandler.mouse.angle;`
+            /return \w+\?\(\!/,
+            `return Glotus.myClient.ModuleHandler.mouse.angle;`
         );
 
         Hook.replace(
             "DisableResetMoveDir",
-            /,\w+\.send\("rmd"\)/,
+            /\w+=\{\},\w+\.send\("\w+"\)/,
             ""
         );
 
         Hook.append(
             "offset",
-            /(\w+)=\w+\-\w+\/2.+?(\w+)=\w+\-\w+\/2;/,
-            `Glotus.myPlayer.offset.setXY($1,$2);`
+            /\W170\W.+?(\w+)=\w+\-\w+\/2.+?(\w+)=\w+\-\w+\/2;/,
+            `Glotus.myClient.myPlayer.offset.setXY($1,$2);`
         );
 
         Hook.prepend(
             "renderEntity",
             /\w+\.health>NUM{0}.+?(\w+)\.fillStyle=(\w+)==(\w+)/,
-            `;Glotus.hooks.EntityRenderer.render($1,$2,$3);`
+            `;Glotus.hooks.EntityRenderer.render($1,$2,$3);false&&`
         );
-
-        Hook.append(
-            "ReturnNameY",
-            /=(\w+)==(\w+)\|\|.+?(\w+)\.fill\(\)\)/,
-            `;window.config.nameY=Glotus.Renderer.getNameY(false);`
-        );
-
-        // Hook.append(
-        //     "renderItemPush",
-        //     /\((\w+)\.dir\),\w+\.drawImage.+?2\)/,
-        //     `,Glotus.Renderer.objects.push($1)`
-        // );
 
         Hook.append(
             "renderItemPush",
-            /(\w+)\.blocker,\w+.+?2\)\)/,
+            /,(\w+)\.blocker,\w+.+?2\)\)/,
             `,Glotus.Renderer.objects.push($1)`
         );
 
@@ -111,44 +109,81 @@ const Injector = new class Injector {
 
         Hook.replace(
             "handleEquip",
-            /\w+\.send\("13c",0,(\w+),(\w+)\)/,
-            `Glotus.ModuleHandler.equip($2,$1,true)`
+            /\w+\.send\("\w+",0,(\w+),(\w+)\)/,
+            `Glotus.myClient.ModuleHandler.equip($2,$1,true)`
         );
 
         Hook.replace(
             "handleBuy",
-            /\w+\.send\("13c",1,(\w+),(\w+)\)/,
-            `Glotus.ModuleHandler.buy($2,$1)`
+            /\w+\.send\("\w+",1,(\w+),(\w+)\)/,
+            `Glotus.myClient.ModuleHandler.buy($2,$1,true)`
         );
 
-        Hook.replace(
-            "pingCaller",
-            /,\w+\.send\("pp"\)/,
-            ``
+        Hook.prepend(
+            "RemovePingCall",
+            /\w+&&clearTimeout/,
+            "return;"
         );
 
-        Hook.replace(
-            "pingElem",
-            /,\w+\.innerText="Ping.+?ms"/,
-            ``
-        );
+        Hook.append(
+            "RemovePingState",
+            /let \w+=-1;function \w+\(\)\{/,
+            "return;"
+        )
 
+        Hook.prepend(
+            "preRender",
+            /(\w+)\.lineWidth=NUM{4},/,
+            `Glotus.hooks.ObjectRenderer.preRender($1);`
+        );
+        
         Hook.replace(
             "RenderGrid",
-            /("#91b2db".+?)(for.+?NUM{18}.+?NUM{18}.+?\)\);)/,
-            `$1if(Glotus.settings.renderGrid){$2}`
-        );
+            /("#91b2db".+?)(for.+?)(\w+\.stroke)/,
+            "$1if(Glotus.settings.renderGrid){$2}$3"
+        )
 
         Hook.replace(
             "upgradeItem",
-            /\w+\.send\("6",(\w+)\)/,
-            `Glotus.ModuleHandler.upgradeItem($1);`
+            /(upgradeItem.+?onclick.+?)\w+\.send\("\w+",(\w+)\)\}/,
+            "$1Glotus.myClient.ModuleHandler.upgradeItem($2)}"
+        );
+
+        const data = Hook.match("DeathMarker", /99999.+?(\w+)=\{x:(\w+)/);
+        Hook.append(
+            "playerDied",
+            /NUM{99999};function \w+\(\)\{/,
+            `if(Glotus.myClient.myPlayer.handleDeath()){${data[1]}={x:${data[2]}.x,y:${data[2]}.y};return};`
+        );
+
+        Hook.append(
+            "updateNotificationRemove",
+            /\w+=\[\],\w+=\[\];function \w+\(\w+,\w+\)\{/,
+            `return;`
         );
 
         Hook.replace(
-            "impoveEnterGame",
-            /(NUM{2500}\).+?=).+?:(\w+)\(\).+?\)\)/,
-            "$1$2"
+            "retrieveConfig",
+            /((\w+)=\{maxScreenWidth.+?\}),/,
+            "$1;window.config=$2;"
+        );
+
+        Hook.replace(
+            "retrieveUtility",
+            /((\w+)=\{randInt.+?\}),/,
+            "$1;window.bundleUtility=$2;"
+        );
+
+        Hook.replace(
+            "removeSkins",
+            /(\(\)\{)(let \w+="";for\(let)/,
+            "$1return;$2"
+        );
+
+        Hook.prepend(
+            "unlockedItems",
+            /\w+\.list\[\w+\]\.pre==/,
+            "true||"
         );
 
         return Hook.code;

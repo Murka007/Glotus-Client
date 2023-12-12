@@ -1,6 +1,7 @@
 import { Projectiles } from "../constants/Items";
 import Vector from "../modules/Vector";
 import { EProjectile } from "../types/Items";
+import Player from "./Player";
 
 class Projectile {
     readonly position = {} as {
@@ -22,6 +23,7 @@ class Projectile {
     readonly isTurret: boolean;
     readonly scale: typeof Projectiles[number]["scale"];
     readonly maxRange: number;
+    owner: Player | null = null;
 
     constructor(
         angle: number,

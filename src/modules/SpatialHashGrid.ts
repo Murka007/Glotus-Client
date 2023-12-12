@@ -1,8 +1,9 @@
 import { TObject } from "../data/ObjectItem";
+import { TTarget } from "../types/Common";
 import Vector from "./Vector";
 
 /** Improved data structure for objects */
-class SpatialHashGrid<T extends TObject> {
+class SpatialHashGrid<T extends TTarget> {
     private readonly cellSize: number;
     private readonly cells: T[][][];
 
@@ -15,6 +16,10 @@ class SpatialHashGrid<T extends TObject> {
         const cellX = Math.floor(x / this.cellSize);
         const cellY = Math.floor(y / this.cellSize);
         return [cellX, cellY] as const;
+    }
+
+    clear() {
+        this.cells.length = 0;
     }
 
     insert(object: T) {

@@ -2,24 +2,20 @@ import { Items } from "../constants/Items";
 import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
-import { EItem, EProjectile, TPlaceable } from "../types/Items";
-import { findPlacementAngles, getAngleDist, pointInRiver } from "../utility/Common";
-import PlayerManager from "./PlayerManager";
-import myPlayer from "../data/ClientPlayer";
+import { EItem, TPlaceable } from "../types/Items";
+import { findPlacementAngles, pointInRiver } from "../utility/Common";
 import SpatialHashGrid from "../modules/SpatialHashGrid";
-import ProjectileManager from "./ProjectileManager";
-import SocketManager from "./SocketManager";
 import Sorting from "../utility/Sorting";
 import { IAngle } from "../types/Common";
-import ModuleHandler from "../features/ModuleHandler";
+import PlayerClient from "../PlayerClient";
 
-const ObjectManager = new class ObjectManager {
+class ObjectManager {
 
     /**
      * A Map that stores all game objects
      */
     readonly objects = new Map<number, TObject>();
-    private readonly grid = new SpatialHashGrid(100);
+    private readonly grid = new SpatialHashGrid<TObject>(100);
 
     /**
      * A Map which stores all turret objects that are currently reloading
@@ -31,12 +27,18 @@ const ObjectManager = new class ObjectManager {
      */
     readonly attackedObjects = new Map<number, [number, TObject]>();
 
+    private readonly client: PlayerClient;
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
+
     private insertObject(object: TObject) {
         this.grid.insert(object);
         this.objects.set(object.id, object);
 
         if (object instanceof PlayerObject) {
 
+            const { PlayerManager } = this.client;
             const owner = (
                 PlayerManager.playerData.get(object.ownerID) ||
                 PlayerManager.createPlayer({ id: object.ownerID })
@@ -60,8 +62,6 @@ const ObjectManager = new class ObjectManager {
                     new PlayerObject(...data, buffer[i + 6], buffer[i + 7])
             )
         }
-
-        this.postTickObject();
     }
 
     private removeObject(object: TObject) {
@@ -69,7 +69,7 @@ const ObjectManager = new class ObjectManager {
         this.objects.delete(object.id);
 
         if (object instanceof PlayerObject) {
-            const player = PlayerManager.playerData.get(object.ownerID);
+            const player = this.client.PlayerManager.playerData.get(object.ownerID);
             if (player !== undefined) {
                 player.handleObjectDeletion(object);
             }
@@ -97,11 +97,9 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
-    /**
-     * true, if object was placed by an enemy
-     */
+    /** Returns true, if object was placed by an enemy */
     isEnemyObject(object: TObject): boolean {
-        if (object instanceof PlayerObject && !myPlayer.isEnemyByID(object.ownerID)) {
+        if (object instanceof PlayerObject && !this.client.myPlayer.isEnemyByID(object.ownerID)) {
             return false;
         }
         return true;
@@ -111,7 +109,7 @@ const ObjectManager = new class ObjectManager {
         const turret = this.reloadingTurrets.get(object.id);
         if (turret === undefined) return true;
 
-        const tick = SocketManager.TICK;
+        const tick = this.client.SocketManager.TICK;
         return turret.reload > turret.maxReload - tick;
     }
 
@@ -120,7 +118,7 @@ const ObjectManager = new class ObjectManager {
      */
     postTick() {
         for (const [id, turret] of this.reloadingTurrets) {
-            turret.reload += PlayerManager.step;
+            turret.reload += this.client.PlayerManager.step;
             if (turret.reload >= turret.maxReload) {
                 turret.reload = turret.maxReload;
                 this.reloadingTurrets.delete(id);
@@ -128,15 +126,11 @@ const ObjectManager = new class ObjectManager {
         }
     }
 
-    private postTickObject() {
-        ModuleHandler.postTickObject();
-    }
-
     retrieveObjects(pos: Vector, radius: number): TObject[] {
         return this.grid.retrieve(pos, radius);
     }
 
-    canPlaceItem(id: TPlaceable, position: Vector) {
+    canPlaceItem(id: TPlaceable, position: Vector, addRadius = 0) {
         if (id !== EItem.PLATFORM && pointInRiver(position)) {
             return false;
         }
@@ -144,7 +138,7 @@ const ObjectManager = new class ObjectManager {
         const item = Items[id];
         const objects = this.retrieveObjects(position, item.scale);
         for (const object of objects) {
-            const scale = item.scale + object.placementScale;
+            const scale = item.scale + object.placementScale + addRadius;
             if (position.distance(object.position.current) < scale) {
                 return false;
             }
@@ -154,8 +148,8 @@ const ObjectManager = new class ObjectManager {
     }
 
     inPlacementRange(object: PlayerObject): boolean {
-        const owner = PlayerManager.playerData.get(object.ownerID);
-        if (owner === undefined || !PlayerManager.players.includes(owner)) return false;
+        const owner = this.client.PlayerManager.playerData.get(object.ownerID);
+        if (owner === undefined || !this.client.PlayerManager.players.includes(owner)) return false;
 
         const { previous: a0, current: a1, future: a2 } = owner.position;
         const b0 = object.position.current;
@@ -168,38 +162,19 @@ const ObjectManager = new class ObjectManager {
         )
     }
 
-    // /**
-    //  * Returns true if current turret object can hit myPlayer
-    //  */
-    // canTurretHitMyPlayer(object: PlayerObject, optimized: boolean): boolean {
-    //     const pos = object.position.current;
-    //     const distance = pos.distance(myPlayer.position.current);
-    //     const shootRange = Items[EItem.TURRET].shootRange;
-        
-    //     if (distance > shootRange) return false;
-    //     if (!this.isEnemyObject(object)) return false;
-    //     if (!this.isTurretReloaded(object)) return false;
-        
-    //     const angle = pos.angle(myPlayer.position.current);
-    //     const projectile = ProjectileManager.getProjectile(pos, EProjectile.TURRET, true, angle, shootRange);
-    //     if (optimized) {
-    //         return ProjectileManager.projectileCanHitEntity(projectile, myPlayer);
-    //     }
-        
-    //     const target = ProjectileManager.getCurrentShootTarget(object, object.ownerID, projectile);
-    //     return target === myPlayer;
-    // }
-
+    offsetScale = 1;
     getBestPlacementAngles(position: Vector, id: TPlaceable, sortAngle: number): number[] {
         const item = Items[id];
-        const length = myPlayer.getItemPlaceScale(id);
+        const length = this.client.myPlayer.getItemPlaceScale(id);
         const objects = this.retrieveObjects(position, length + item.scale);
 
         const angles: IAngle[] = [];
         for (const object of objects) {
+            // if (object instanceof PlayerObject && object.health <= 88.5 * 2) continue;
+
             const angle = position.angle(object.position.current);
             const distance = position.distance(object.position.current);
-            const a = object.placementScale + item.scale;
+            const a = object.placementScale + item.scale + this.offsetScale;
             const b = distance;
             const c = length;
             const offset = Math.acos((a ** 2 - b ** 2 - c ** 2) / (-2 * b * c));

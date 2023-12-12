@@ -1,5 +1,7 @@
+import { myClient } from "..";
 import Config from "../constants/Config";
 import Vector from "../modules/Vector";
+import ZoomHandler from "../modules/ZoomHandler";
 import { IAngle } from "../types/Common";
 
 export const getAngle = (x1: number, y1: number, x2: number, y2: number) => {
@@ -226,4 +228,21 @@ export const findPlacementAngles = (angles: IAngle[]) => {
     }
   
     return output;
+}
+
+export const getAngleOffset = (a: Vector, b: Vector, scale: number): IAngle => {
+    const distance = a.distance(b);
+    const angle = a.angle(b);
+    const offset = Math.asin((2 * scale) / (2 * distance));
+    return { angle, offset };
+}
+
+export const cursorPosition = () => {
+    const { ModuleHandler, myPlayer } = myClient;
+    const { w, h } = ZoomHandler.scale.current;
+    const scale = Math.max(innerWidth / w, innerHeight / h);
+    const cursorX = (ModuleHandler.mouse.lockX - innerWidth / 2) / scale;
+    const cursorY = (ModuleHandler.mouse.lockY - innerHeight / 2) / scale;
+    const pos = myPlayer.position.current;
+    return new Vector(pos.x + cursorX, pos.y + cursorY);
 }

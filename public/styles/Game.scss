@@ -12,10 +12,15 @@
     border: none;
 }
 
-#promoImgHolder, #gameName, #rightCardHolder, #mobileDownloadButtonContainer {
-    display: none!important;
-}
-
+#promoImgHolder,
+#gameName,
+#rightCardHolder,
+#mobileDownloadButtonContainer,
+#touch-controls-left,
+#touch-controls-right,
+#touch-controls-fullscreen,
+#partyButton,
+#joinPartyButton,
 #guideCard > *:not(#serverBrowser, #altServer, #skinColorHolder, .settingRadio) {
     display: none!important;
 }
@@ -24,6 +29,12 @@
     display: flex;
     flex-direction: column;
     row-gap: 10px;
+    background: #bdbdbd44;
+    box-shadow: none;
+}
+
+#linksContainer2 {
+    background: #505050;
 }
 
 #setupCard > * {
@@ -50,3 +61,35 @@
 #onetrust-consent-sdk {
     display: none!important;
 }
+
+#topInfoHolder {
+    display: flex;
+    flex-direction: column;
+    justify-content: right;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+#topInfoHolder > div:not([class]):not([id]) {
+    display: none;
+}
+
+#killCounter, #totalKillCounter {
+    position: static;
+    margin: 0;
+    background-image: url(../img/icons/skull.png);
+}
+
+// .hatPreview {
+//     padding: 0;
+//     margin: 0;
+//     vertical-align: none;
+
+//     width: 45px;
+//     height: 45px;
+// }
+
+// .storeItem {
+//     display: flex;
+//     align-items: center;
+// }

@@ -1,4 +1,4 @@
-import { EItem, EProjectile, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVariant } from "../types/Items";
+import { EItem, EProjectile, EUpgradeType, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVariant } from "../types/Items";
 
 /**
  * Constant array of weapon data, index represent weapon ID
@@ -6,6 +6,7 @@ import { EItem, EProjectile, EWeapon, ItemGroup, ItemType, WeaponType, WeaponVar
 export const Weapons = [{
     id: EWeapon.TOOL_HAMMER,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.TOOL_HAMMER,
     type: 0,
     age: 0,
     name: "tool hammer",
@@ -22,6 +23,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.HAND_AXE,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.AXE,
     type: 0,
     age: 2,
     name: "hand axe",
@@ -40,6 +42,7 @@ export const Weapons = [{
     id: EWeapon.GREAT_AXE,
     itemType: WeaponType.PRIMARY,
     upgradeOf: EWeapon.HAND_AXE,
+    upgradeType: EUpgradeType.AXE,
     type: 0,
     age: 8,
     pre: 1,
@@ -58,6 +61,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.SHORT_SWORD,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.SWORD,
     type: 0,
     age: 2,
     name: "short sword",
@@ -77,6 +81,7 @@ export const Weapons = [{
     id: EWeapon.KATANA,
     itemType: WeaponType.PRIMARY,
     upgradeOf: EWeapon.SHORT_SWORD,
+    upgradeType: EUpgradeType.SWORD,
     type: 0,
     age: 8,
     pre: 3,
@@ -96,6 +101,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.POLEARM,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.POLEARM,
     isUpgrade: false,
     type: 0,
     age: 2,
@@ -116,6 +122,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.BAT,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.BAT,
     isUpgrade: false,
     type: 0,
     age: 2,
@@ -135,6 +142,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.DAGGERS,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.DAGGERS,
     isUpgrade: false,
     type: 0,
     age: 2,
@@ -156,6 +164,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.STICK,
     itemType: WeaponType.PRIMARY,
+    upgradeType: EUpgradeType.STICK,
     isUpgrade: false,
     type: 0,
     age: 2,
@@ -174,6 +183,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.HUNTING_BOW,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.BOW,
     projectile: EProjectile.BOW,
     type: 1,
     age: 6,
@@ -196,6 +206,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.GREAT_HAMMER,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.GREAT_HAMMER,
     isUpgrade: false,
     type: 1,
     age: 6,
@@ -215,6 +226,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.WOODEN_SHIELD,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.WOODEN_SHIELD,
     isUpgrade: false,
     type: 1,
     age: 6,
@@ -231,6 +243,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.CROSSBOW,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.BOW,
     projectile: EProjectile.CROSSBOW,
     upgradeOf: EWeapon.HUNTING_BOW,
     type: 1,
@@ -257,6 +270,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.REPEATER_CROSSBOW,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.BOW,
     projectile: EProjectile.REPEATER,
     upgradeOf: EWeapon.CROSSBOW,
     type: 1,
@@ -283,6 +297,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.MC_GRABBY,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.MC_GRABBY,
     isUpgrade: false,
     type: 1,
     age: 6,
@@ -303,6 +318,7 @@ export const Weapons = [{
 }, {
     id: EWeapon.MUSKET,
     itemType: WeaponType.SECONDARY,
+    upgradeType: EUpgradeType.BOW,
     projectile: EProjectile.MUSKET,
     upgradeOf: EWeapon.CROSSBOW,
     type: 1,
@@ -349,6 +365,7 @@ export const ItemGroups = {
     [ItemGroup.WINDMILL]: {
         name: "Windmill",
         limit: 7,
+        sandboxLimit: 299,
         layer: 1,
     },
     [ItemGroup.MINE]: {
@@ -364,6 +381,7 @@ export const ItemGroups = {
     [ItemGroup.BOOST]: {
         name: "Boost",
         limit: 12,
+        sandboxLimit: 299,
         layer: -1,
     },
     [ItemGroup.TURRET]: {
@@ -399,6 +417,7 @@ export const ItemGroups = {
     [ItemGroup.TELEPORTER]: {
         name: "Teleporter",
         limit: 2,
+        sandboxLimit: 299,
         layer: -1,
     },
 } as const;
@@ -856,6 +875,16 @@ export const Items = [{
     holdOffset: 20,
     placeOffset: -5
 }] as const;
+
+// const data = {} as any;
+// for (const item of Items) {
+//     const offset = "scale" in item ? item.scale : 0;
+//     if (data[offset] === undefined) {
+//         data[offset] = [];
+//     }
+//     data[offset].push(item.name);
+// }
+// console.log(data);
 
 /**
  * All existing weapon variants

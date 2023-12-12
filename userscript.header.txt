@@ -7,7 +7,7 @@
 // @match *://moomoo.io/*
 // @match *://*.moomoo.io/*
 // @run-at document-start
-// @grant none
+// @grant GM_webRequest
 // @license MIT
 // @namespace https://greasyfork.org/users/919633
 // ==/UserScript==
@@ -15,13 +15,10 @@
 
 /*
     Author: Murka
-    Github: https://github.com/Murka007/Dsync-client
-    Discord: https://discord.gg/sG9cyfGPj5
-    Greasyfork: https://greasyfork.org/en/scripts/449995-dsync-client-sploop-io
-
-    I need your support, please follow these steps:
-    1. Join my DISCORD server
-    2. Write a feedback about this script on GREASYFORK "script works, thank you so much"
-    3. Star my repository on GITHUB
+    Github: https://github.com/Murka007/Glotus-client
 */
+
+GM_webRequest([
+    { selector: { include: ["*cookie*", "*cloudflare*", "*ads*", "*jquery*", "*howler*", "*frvr-channel-web*", "*securepubads*"] }, action: "cancel" },
+]);
 

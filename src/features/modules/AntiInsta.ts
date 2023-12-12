@@ -1,47 +1,60 @@
-import SocketManager from "../../Managers/SocketManager";
 import { Items } from "../../constants/Items";
-import myPlayer from "../../data/ClientPlayer";
+import PlayerClient from "../../PlayerClient";
 import { ItemType } from "../../types/Items";
+import { clamp } from "../../utility/Common";
 import settings from "../../utility/Settings";
-import ModuleHandler from "../ModuleHandler";
 
 class AntiInsta {
+    readonly name = "antiInsta";
+    private readonly client: PlayerClient;
+    private toggleAnti = false;
+
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
+
     private get isSaveHeal(): boolean {
+        const { myPlayer, SocketManager } = this.client;
+
         const startHit = myPlayer.receivedDamage || 0;
-        const timeSinceHit = Date.now() - startHit + SocketManager.ping;
-        const maxTime = myPlayer.shameCount > 0 ? 120 : 60;
-        return timeSinceHit >= maxTime;
+        const timeSinceHit = Date.now() - startHit + SocketManager.pong;
+        return timeSinceHit >= 120;
     }
 
     private get canHeal() {
+        const { myPlayer } = this.client;
         return (
             settings.autoheal &&
-            myPlayer.currentHealth < 100 &&
+            myPlayer.tempHealth < 100 &&
             !myPlayer.shameActive &&
             this.isSaveHeal
         )
     }
 
     postTick(): void {
+        const { myPlayer, ModuleHandler } = this.client;
 
+        const foodID = myPlayer.getItemByType(ItemType.FOOD);
+        const restore = Items[foodID].restore;
+        const maxTimes = Math.ceil(myPlayer.maxHealth / restore);
+        const needTimes = Math.ceil((myPlayer.maxHealth - myPlayer.tempHealth) / restore);
         let healingTimes: number | null = null;
 
         // AntiInsta implementation
-        if (ModuleHandler.needToHeal) {
+        if (ModuleHandler.needToHeal || this.toggleAnti) {
             ModuleHandler.needToHeal = false;
-
             if (myPlayer.shameActive) return;
+
             ModuleHandler.didAntiInsta = true;
-            healingTimes = 2;
+            healingTimes = maxTimes;
         } else if (this.canHeal) {
-            const foodID = myPlayer.getItemByType(ItemType.FOOD);
-            const restore = Items[foodID].restore;
-            const maxTimes = Math.ceil((myPlayer.maxHealth - myPlayer.currentHealth) / restore);
-            healingTimes = Math.min(3, maxTimes);
+            healingTimes = needTimes;
+            myPlayer.tempHealth += clamp(restore * healingTimes, 0, 100);
         }
 
         if (healingTimes !== null) {
-            ModuleHandler.totalPlaces += healingTimes;
+            // ModuleHandler.totalPlaces += healingTimes;
+            ModuleHandler.healedOnce = true;
             ModuleHandler.actionPlanner.createActions(
                 ItemType.FOOD,
                 (last) => ModuleHandler.heal(last),

@@ -1,0 +1,23 @@
+@import "../Variables.scss";
+
+@mixin button {
+    .option-button {
+        width: $default-option-width * 1.3;
+        height: $default-option-height * 1.3;
+
+        background: $option-bg-color;
+        border: 5px solid $option-border;
+        border-radius: $default-radius;
+
+        font-weight: 800;
+        font-size: 1.1em;
+        color: $ui-sub-color;
+
+        transition: background 100ms, border-color 100ms;
+        
+        &:hover {
+            background: $option-bg-color2;
+            border-color: $option-border2;
+        }
+    }
+}

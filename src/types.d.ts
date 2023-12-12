@@ -11,5 +11,10 @@ declare global {
             nameY: number;
             deathFadeout: number;
         }
+
+        readonly grecaptcha: {
+            ready(callback: () => void): void;
+            execute(token: string, options: { action: "homepage" }): Promise<string>;
+        }
     }
 }

@@ -1,4 +1,4 @@
-@import "Variables", "Keyframes", "./section-content/hotkeyInput.scss", "./section-content/checkbox.scss", "./section-content/colorPicker.scss", "./section-content/slider.scss";
+@import "Variables", "Keyframes", "./section-content/button.scss", "./section-content/hotkeyInput.scss", "./section-content/checkbox.scss", "./section-content/colorPicker.scss", "./section-content/slider.scss";
 
 #page-container {
     width: 100%;
@@ -52,10 +52,15 @@
                 justify-content: space-between;
                 align-items: center;
 
+                &.centered {
+                    justify-content: center;
+                }
+
                 .option-title {
                     font-weight: 800;
                     font-size: 1.4em;
                     color: $ui-color;
+                    transition: color 100ms;
                 }
 
                 .option-content {
@@ -64,8 +69,31 @@
                     align-items: center;
                     column-gap: $default-padding;
                 }
+
+                .disconnect-button {
+                    width: 30px;
+                    height: 30px;
+                    cursor: pointer;
+
+                    fill: $red-option-bg-color-opacity;
+                    transition: fill 100ms;
+                }
+
+                &:hover {
+                    .option-title {
+                        color: $ui-sub-color;
+                    }
+
+                    .disconnect-button {
+                        fill: $red-option-bg-color;
+                        &:hover {
+                            fill: $red-option-bg-color2;
+                        }
+                    }
+                }
             }
 
+            @include button;
             @include hotkeyInput;
             @include checkbox;
             @include colorPicker;

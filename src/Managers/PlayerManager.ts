@@ -1,17 +1,16 @@
 import Config from "../constants/Config";
 import { Weapons } from "../constants/Items";
 import Animal from "../data/Animal";
-import myPlayer, { ClientPlayer } from "../data/ClientPlayer";
+import ClientPlayer from "../data/ClientPlayer";
 import { PlayerObject } from "../data/ObjectItem";
 import Player from "../data/Player";
+import PlayerClient from "../PlayerClient";
 import { TTarget } from "../types/Common";
 import { EResourceType } from "../types/Enums";
-import { TMelee, WeaponTypeString} from "../types/Items";
+import { EWeapon, TMelee, WeaponTypeString} from "../types/Items";
 import { EHat } from "../types/Store";
 import { getAngleDist } from "../utility/Common";
-import Sorting from "../utility/Sorting";
-import ObjectManager from "./ObjectManager";
-import ProjectileManager from "./ProjectileManager";
+import Logger from "../utility/Logger";
 
 interface IPlayerData {
     readonly socketID?: string;
@@ -21,7 +20,7 @@ interface IPlayerData {
     readonly skinID?: number;
 }
 
-const PlayerManager = new class PlayerManager {
+class PlayerManager {
 
     /**
      * A Map of all known players in the game
@@ -32,8 +31,6 @@ const PlayerManager = new class PlayerManager {
      * An array of players, that are visible to my player
      */
     readonly players: Player[] = [];
-
-    readonly enemies: Player[] = [];
 
     /**
      * A Map of all known animals in the game
@@ -52,8 +49,17 @@ const PlayerManager = new class PlayerManager {
      */
     step = 0;
 
+    private readonly client: PlayerClient;
+    constructor(client: PlayerClient) {
+        this.client = client;
+    }
+
+    get timeSinceTick() {
+        return Date.now() - this.start;
+    }
+
     createPlayer({ socketID, id, nickname, health, skinID }: IPlayerData) {
-        const player = this.playerData.get(id) || new Player;
+        const player = this.playerData.get(id) || new Player(this.client);
         if (!this.playerData.has(id)) {
             this.playerData.set(id, player);
         }
@@ -65,6 +71,7 @@ const PlayerManager = new class PlayerManager {
         player.skinID = typeof skinID === "undefined" ? -1 : skinID;
         player.init();
 
+        const { myPlayer } = this.client;
         if (myPlayer.isMyPlayerByID(id)) {
             myPlayer.playerSpawn();
         }
@@ -74,9 +81,9 @@ const PlayerManager = new class PlayerManager {
 
     canHitTarget(player: Player, weaponID: TMelee, target: TTarget) {
         const pos = target.position.current;
-        const distance = player.position.current.distance(pos) - target.hitScale;
+        const distance = player.position.current.distance(pos);
         const angle = player.position.current.angle(pos);
-        const range = Weapons[weaponID].range;
+        const range = Weapons[weaponID].range + target.hitScale;
         return distance <= range && getAngleDist(angle, player.angle) <= Config.gatherAngle;
     }
 
@@ -85,6 +92,7 @@ const PlayerManager = new class PlayerManager {
         if (player === undefined) return;
         const { hatID, reload } = player;
 
+        const { myPlayer, ObjectManager } = this.client;
         if (myPlayer.isMyPlayerByID(id) && !myPlayer.inGame) {
             return;
         }
@@ -93,7 +101,7 @@ const PlayerManager = new class PlayerManager {
         const weapon = Weapons[weaponID];
         const type = WeaponTypeString[weapon.itemType];
         reload[type].current = 0;
-        reload[type].max = player.getWeaponSpeed(weaponID, hatID);
+        reload[type].max = player.getWeaponSpeed(weaponID);
 
         if (
             myPlayer.isEnemyByID(id) &&
@@ -130,22 +138,15 @@ const PlayerManager = new class PlayerManager {
 
     updatePlayer(buffer: any[]) {
         this.players.length = 0;
-        this.enemies.length = 0;
 
         const now = Date.now();
         this.step = now - this.start;
         this.start = now;
 
-        let myPlayerCopy: ClientPlayer | null = null;
-
         for (let i=0;i<buffer.length;i+=13) {
             const id = buffer[i];
             const player = this.playerData.get(id);
             if (!player) continue;
-
-            if (myPlayerCopy === null && myPlayer.isMyPlayerByID(id)) {
-                myPlayerCopy = player as ClientPlayer;
-            }
 
             this.players.push(player);
             player.update(
@@ -163,26 +164,6 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 11]
             );
         }
-
-        for (let i=0;i<this.players.length;i++) {
-            const player = this.players[i];
-            if (myPlayer.isEnemyByID(player.id)) {
-                this.enemies.push(player);
-
-                if (player.dangerList.length === 2) {
-                    player.dangerList.shift();
-                }
-                player.dangerList.push(player.canPossiblyInstakill());
-                player.danger = Math.max(...player.dangerList);
-            }
-        }
-
-        // Call all other classes after updating player and animal positions
-        ProjectileManager.postTick();
-        ObjectManager.postTick();
-
-        // Once we updated every player, animal, turret reloadings we proceed to the combat logic
-        if (myPlayerCopy !== null) myPlayerCopy.tickUpdate();
     }
 
     updateAnimal(buffer: any[]) {
@@ -191,7 +172,7 @@ const PlayerManager = new class PlayerManager {
         for (let i=0;i<buffer.length;i+=7) {
             const id = buffer[i];
             if (!this.animalData.has(id)) {
-                this.animalData.set(id, new Animal);
+                this.animalData.set(id, new Animal(this.client));
             }
             const animal = this.animalData.get(id)!;
             this.animals.push(animal);
@@ -204,6 +185,20 @@ const PlayerManager = new class PlayerManager {
                 buffer[i + 5],
                 buffer[i + 6],
             )
+        }
+    }
+
+    postTick() {
+        const { EnemyManager, ProjectileManager, ObjectManager, myPlayer } = this.client;
+        EnemyManager.handleEnemies(this.players, this.animals);
+
+        // Call all other classes after updating player and animal positions
+        ProjectileManager.postTick();
+        ObjectManager.postTick();
+
+        // Once we updated every player, animal, turret reloadings we proceed to the combat logic
+        if (myPlayer.inGame) {
+            myPlayer.tickUpdate();
         }
     }
 
@@ -223,21 +218,37 @@ const PlayerManager = new class PlayerManager {
         const player = this.playerData.get(ownerID)!;
 
         if (player instanceof ClientPlayer) {
-            return !player.teammates.has(target.id);
+            return player.isEnemyByID(target.id);
         }
 
         if (target instanceof ClientPlayer) {
-            return !target.teammates.has(player.id);
+            return target.isEnemyByID(player.id);
         }
         
         return this.isEnemy(player, target);
     }
 
-    /**
-     * true, if the projectile won't pass through entity
-     */
+    isEnemyTarget(owner: Player, target: Player | Animal): boolean {
+        if (target instanceof Animal) return true;
+        return this.isEnemyByID(owner.id, target);
+    }
+
+    /** Returns true if the projectile won't pass through entity */
     canShoot(ownerID: number, target: Player | Animal) {
         return target instanceof Animal || this.isEnemyByID(ownerID, target);
+    }
+
+    /** Returns true if player is looking at target using shield */
+    lookingShield(owner: Player, target: Player): boolean {
+        const weapon = owner.weapon.current;
+        if (weapon !== EWeapon.WOODEN_SHIELD) return false;
+        
+        const { myPlayer, ModuleHandler } = this.client;
+        const pos1 = owner.position.current;
+        const pos2 = target.position.current;
+        const angle = pos1.angle(pos2);
+        const ownerAngle = myPlayer.isMyPlayerByID(owner.id) ? ModuleHandler.mouse.sentAngle : owner.angle; 
+        return getAngleDist(angle, ownerAngle) <= Config.shieldAngle;
     }
 
     /**
@@ -246,37 +257,6 @@ const PlayerManager = new class PlayerManager {
     getEntities(): (Player | Animal)[] {
         return [...this.players, ...this.animals];
     }
-
-    // getEnemies(owner: Player): Player[] {
-    //     return this.players.filter(player => this.isEnemy(owner, player));
-    // }
-
-    getNearestEnemy(owner: Player): Player | null {
-        return this.enemies.sort(Sorting.byDistance(owner, "future", "future"))[0] || null;
-    }
-
-    getDangerousEnemies(): Player[] {
-        return this.enemies.sort(Sorting.byDanger);
-    }
-
-    // getPossibleShootEntity(): Player | Animal | null {
-    //     const projectile = myPlayer.getProjectile(myPlayer.position.future, myPlayer.weapon.secondary!);
-    //     if (projectile === null) return null;
-
-    //     return this.getEntities().filter(entity => {
-    //         const { initial, current } = projectile.position;
-    //         current.setVec(initial);
-
-    //         const angleTowardsEntity = myPlayer.position.future.angle(entity.position.future);
-    //         const vec = current.direction(angleTowardsEntity, 70);
-    //         current.setVec(vec);
-
-    //         const notTarget = entity !== myPlayer;
-    //         const canShoot = this.canShoot(myPlayer.id, entity);
-    //         const canHit = ProjectileManager.projectileCanHitEntity(projectile, entity);
-    //         return notTarget && canShoot && canHit;
-    //     }).sort(Sorting.byDistance(myPlayer, "current", "current"))[0] || null;
-    // }
 }
 
 export default PlayerManager;

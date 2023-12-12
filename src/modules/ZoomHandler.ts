@@ -18,7 +18,7 @@ const ZoomHandler = new class ZoomHandler {
         } as const
     };
     private wheels = 3;
-    private readonly scaleFactor = 125;
+    private readonly scaleFactor = 250;
 
     /**
      * Returns minimum possible width and height scale
