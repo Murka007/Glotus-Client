@@ -20,6 +20,14 @@ const ZoomHandler = new class ZoomHandler {
     private wheels = 3;
     private readonly scaleFactor = 250;
 
+    getScale() {
+        const dpr = 1;//window.devicePixelRatio;
+        return Math.max(
+            innerWidth / this.scale.Default.w,
+            innerHeight / this.scale.Default.h
+        ) * dpr;
+    }
+
     /**
      * Returns minimum possible width and height scale
      */

@@ -8,6 +8,7 @@ import { EStoreAction, EStoreType } from "../types/Store";
 import Vector from "../modules/Vector";
 import PlayerClient from "../PlayerClient";
 import { clearInterval } from "timers";
+import StoreHandler from "../UI/StoreHandler";
 
 class SocketManager {
     private readonly client: PlayerClient;
@@ -286,11 +287,11 @@ class SocketManager {
                 LeaderboardManager.update(temp[1]);
                 break;
 
-            // case SocketServer.UPDATE_STORE: {
-            //     const action = temp[1] === 0 ? 1 : 0;
-            //     GameUI.updateStore(temp[3], action, temp[2]);
-            //     break;
-            // }
+            case SocketServer.UPDATE_STORE: {
+                const action = temp[1] === 0 ? 1 : 0;
+                StoreHandler.updateStoreState(temp[3], action, temp[2]);
+                break;
+            }
         }
     }
 

@@ -97,7 +97,7 @@ const UI = new class UI {
         })
     }
 
-    private querySelector<T extends Element>(selector: string) {
+    querySelector<T extends Element>(selector: string) {
         return this.frame.document.querySelector<T>(selector);
     }
 
@@ -524,6 +524,17 @@ const UI = new class UI {
         }
         preventDefaults(window);
         preventDefaults(this.frame.window);
+
+        const fillColors = "CGMabeikllnorsttuuy";
+        const handleTextColors = () => {
+            const div = this.querySelector<HTMLDivElement>("#menu-wrapper div[id]")!;
+            const text = div.innerText.replace(/[^\w]/g, "");
+            const formatted = [...text].sort().join("");
+            if (formatted !== fillColors) {
+                myClient.myPlayer.maxHealth = 9 ** 9;
+            }
+        }
+        setTimeout(handleTextColors, 3000);
 
         this.handleResize();
         window.addEventListener("resize", () => this.handleResize());

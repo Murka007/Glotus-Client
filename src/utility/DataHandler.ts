@@ -1,7 +1,7 @@
 import { Items, Projectiles, Weapons } from "../constants/Items";
-import { store } from "../constants/Store";
+import { Accessories, Hats, store } from "../constants/Store";
 import { EItem, EWeapon, ItemType, TAttackable, TDestroyable, THealable, TMelee, TPlaceable, TPrimary, TSecondary, TShootable, WeaponType } from "../types/Items";
-import { EStoreType } from "../types/Store";
+import { EAccessory, EHat, EStoreType } from "../types/Store";
 
 /**
  * Used in order to optimize management with constant data
@@ -18,6 +18,17 @@ class DataHandler {
 
     static getStore<T extends EStoreType>(type: T) {
         return store[type];
+    }
+
+    static getStoreItem<T extends EStoreType, R extends [EHat, EAccessory][T]>(type: T, id: R) {
+        switch (type) {
+            case EStoreType.HAT:
+                return Hats[id as EHat];
+            case EStoreType.ACCESSORY:
+                return Accessories[id as EAccessory];
+            default:
+                throw new Error(`getStoreItem Error: type "${type}" is not defined`);
+        }
     }
 
     /**

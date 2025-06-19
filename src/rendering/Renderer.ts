@@ -8,7 +8,7 @@ import Player from "../data/Player";
 import { clamp } from "../utility/Common";
 import Animal from "../data/Animal";
 import { myClient } from "..";
-import ClientPlayer from "../data/ClientPlayer";
+import { Notification } from "./NotificationRenderer";
 
 class Renderer {
     static readonly objects: IRenderObject[] = [];
@@ -128,7 +128,8 @@ class Renderer {
         ctx.restore();
     }
 
-    static getTracerColor(entity: IRenderEntity): string | null {
+    static getTracerColor(entity: IRenderEntity | Notification): string | null {
+        if (entity instanceof Notification) return settings.notificationTracersColor;
         if (settings.animalTracers && entity.isAI) return settings.animalTracersColor;
 
         if (
@@ -146,7 +147,7 @@ class Renderer {
         return null;
     }
 
-    static renderTracer(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
+    static renderTracer(ctx: TCTX, entity: IRenderEntity | Notification, player: IRenderEntity) {
         const color = this.getTracerColor(entity);
         if (color === null) return;
 
@@ -310,9 +311,10 @@ class Renderer {
         if (target) {
             window.config.nameY = this.getNameY(target);
             const { currentHealth, maxHealth } = target;
+            const health = animal ? maxHealth : 100;
             const color = PlayerManager.isEnemyTarget(myPlayer, target) ? "#cc5151" : "#8ecc51";
             this.barContainer(ctx, x, y + height, totalWidth * 2, barHeight);
-            this.barContent(ctx, x, y + height, totalWidth * 2, barHeight, currentHealth / maxHealth, color);
+            this.barContent(ctx, x, y + height, totalWidth * 2, barHeight, currentHealth / health, color);
             height += barHeight;
         }
 

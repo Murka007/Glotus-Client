@@ -51,12 +51,11 @@ class Regexer {
         return `(?:${ template.join("|") })`;
     }
 
-    /**
-     * Replaces variables with regular expressions
-     */
+    /** Replaces variables with regular expressions */
     private parseVariables(regex: string) {
         regex = regex.replace(/{VAR}/g, "(?:let|var|const)");
-        regex = regex.replace(/{QUOTE}/g, "[\'\"\`]");
+        // regex = regex.replace(/{QUOTE}/g, "[\'\"\`]");
+        regex = regex.replace(/{QUOTE{(\w+)}}/g, `(?:'$1'|"$1"|\`$1\`)`);
         regex = regex.replace(/NUM{(\d+)}/g, (...args) => {
             return this.generateNumberSystem(Number(args[1]));
         });
@@ -64,9 +63,7 @@ class Regexer {
         return regex;
     }
 
-    /**
-     * Formats regular expression
-     */
+    /** Formats regular expression */
     private format(name: string, inputRegex: TRegex, flags?: string): RegExp {
 
         let regex = "";
@@ -80,8 +77,7 @@ class Regexer {
 
         regex = this.parseVariables(regex);
         const expression = new RegExp(regex, flags);
-        const match = this.code.match(expression);
-        if (match === null) Logger.error("Failed to find: " + name);
+        if (!expression.test(this.code)) Logger.error("Failed to find: " + name);
         this.hookCount++;
         return expression;
     }
@@ -124,7 +120,6 @@ class Regexer {
     prepend(name: string, regex: TRegex, substr: string) {
         this.template(name, regex, substr, (match) => match.index || 0);
     }
-
     // insert(name: string, regex: TRegex, substr: string) {
     //     const expression = this.format(name, regex);
     //     if (!/{INSERT}/.test(expression.source)) {

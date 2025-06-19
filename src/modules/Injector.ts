@@ -2,26 +2,40 @@ import Regexer from "./Regexer";
 
 const Injector = new class Injector {
 
+    private foundScript(script: HTMLScriptElement) {
+        console.log("FOUND NODE", script);
+        this.loadScript(script.src);
+        script.remove();
+    }
     /**
      * Intercepts creation of <script src="bundle.js"></script>
      */
     init() {
+        const script = document.querySelector<HTMLScriptElement>("script[type='module'][src]");
+        if (script !== null) {
+            this.foundScript(script);
+        }
         const observer = new MutationObserver(mutations => {
             for (const mutation of mutations) {
                 for (const node of mutation.addedNodes) {
                     if (!(node instanceof HTMLScriptElement)) continue;
                     if (/recaptcha/.test(node.src)) continue;
 
+                    // Firefox support
+                    function scriptExecuteHandler(event: Event) {
+                        event.preventDefault();
+                        node.removeEventListener("beforescriptexecute", scriptExecuteHandler);
+                    }
+                    node.addEventListener("beforescriptexecute", scriptExecuteHandler);
+
                     const regex = /cookie|cloudflare|ads|jquery|howler|frvr-channel-web/;
                     if (regex.test(node.src)) {
                         node.remove();
                     }
                     
-                    if (/assets.+\.js$/.test(node.src)) {
+                    if (/assets.+\.js$/.test(node.src) && script === null) {
                         observer.disconnect();
-                        this.loadScript(node.src);
-                        console.log("FOUND NODE", node);
-                        node.remove();
+                        this.foundScript(node);
                     }
                 }
             }

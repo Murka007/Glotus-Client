@@ -18,6 +18,9 @@ class Autobreak {
 
         const nearestTrap = EnemyManager.nearestTrap;
         const type = ModuleHandler.weapon;
+
+        // Too much issues going on with this method
+        // It selects a weapon perfectly, but the whole logic when it should break an object or attack enemy is completely broken.
         // const type = myPlayer.getBestDestroyingWeapon();
 
         if (nearestTrap !== null && type !== null) {

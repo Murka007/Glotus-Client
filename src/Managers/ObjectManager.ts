@@ -3,11 +3,13 @@ import { PlayerObject, Resource, TObject } from "../data/ObjectItem";
 import Player from "../data/Player";
 import Vector from "../modules/Vector";
 import { EItem, TPlaceable } from "../types/Items";
-import { findPlacementAngles, pointInRiver } from "../utility/Common";
+import { findPlacementAngles, getAngleOffset, inView, pointInRiver } from "../utility/Common";
 import SpatialHashGrid from "../modules/SpatialHashGrid";
 import Sorting from "../utility/Sorting";
 import { IAngle } from "../types/Common";
 import PlayerClient from "../PlayerClient";
+import settings from "../utility/Settings";
+import NotificationRenderer from "../rendering/NotificationRenderer";
 
 class ObjectManager {
 
@@ -80,6 +82,13 @@ class ObjectManager {
         const object = this.objects.get(id);
         if (object !== undefined) {
             this.removeObject(object);
+
+            if (this.client.isOwner) {
+                const pos = object.position.current.copy().sub(this.client.myPlayer.offset);
+                if (settings.notificationTracers && !inView(pos.x, pos.y, object.scale)) {
+                    NotificationRenderer.add(object);
+                }
+            }
         }
     }
 
@@ -161,9 +170,12 @@ class ObjectManager {
             a2.distance(b0) <= range
         )
     }
+    
+    private getAngleOffset(angle: number, distance: number, scale: number) {
+        
+    }
 
-    offsetScale = 1;
-    getBestPlacementAngles(position: Vector, id: TPlaceable, sortAngle: number): number[] {
+    getBestPlacementAngles(position: Vector, id: TPlaceable, sortAngle: number = 0): Set<number> {
         const item = Items[id];
         const length = this.client.myPlayer.getItemPlaceScale(id);
         const objects = this.retrieveObjects(position, length + item.scale);
@@ -174,15 +186,18 @@ class ObjectManager {
 
             const angle = position.angle(object.position.current);
             const distance = position.distance(object.position.current);
-            const a = object.placementScale + item.scale + this.offsetScale;
+            const a = object.placementScale + item.scale;
             const b = distance;
             const c = length;
             const offset = Math.acos((a ** 2 - b ** 2 - c ** 2) / (-2 * b * c));
             if (!isNaN(offset)) {
                 angles.push({ angle, offset });
-            }
+            }/*  else {
+                const angleData = getAngleOffset(position, object.position.current, object.collisionScale);
+                angles.push(angleData);
+            } */
         }
-        return findPlacementAngles(angles).sort(Sorting.byAngleDistance(sortAngle));
+        return findPlacementAngles(angles);//.sort(Sorting.byAngleDistance(sortAngle));
     }
 }
 

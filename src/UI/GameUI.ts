@@ -1,56 +1,45 @@
 import { myClient } from "..";
 import Config from "../constants/Config";
 import { Items } from "../constants/Items";
+import { Accessories, Hats } from "../constants/Store";
 import ZoomHandler from "../modules/ZoomHandler";
 import { ItemGroup } from "../types/Items";
-import { EStoreAction, EStoreType } from "../types/Store";
+import { EAccessory, EHat, EStoreAction, EStoreType } from "../types/Store";
+import DataHandler from "../utility/DataHandler";
 import settings from "../utility/Settings";
 import Storage from "../utility/Storage";
+import StoreHandler from "./StoreHandler";
 import UI from "./UI";
 
-// const enum StoreState {
-//     UNEQUIPPED,
-//     EQUIPPED,
-// }
-
-// interface ITempStore {
-//     previous: number;
-//     current: number;
-//     readonly list: Map<number, StoreState>;
-// }
-
-// type TStore = [ITempStore, ITempStore];
-
 const GameUI = new class GameUI {
-    // private readonly store: TStore = [
-    //     { previous: 0, current: 0, list: new Map },
-    //     { previous: 0, current: 0, list: new Map }
-    // ];
 
-    // private generateStoreElement(type: EStoreType, id: number) {
-    //     // const html = `
-    //     //     <div className="storeItem">
-    //     //     </div>
-    //     // `;
-    //     const div = document.createElement("div");
-    //     div.className = "storeItem";
+    // private createStore(type: EStoreType) {
 
-    //     const img = document.createElement("img");
-    //     img.src = `../img/`;
-    // }
+    //     const storeMenu = document.createElement("div");
+    //     storeMenu.id = "storeMenu";
 
-    // updateStore(type: EStoreType, action: EStoreAction, id: number) {
-    //     const store = this.store[type];
-    //     if (action === EStoreAction.EQUIP) {
-    //         store.previous = store.current;
-    //         store.current = id;
+    //     const button = document.createElement("button");
+    //     button.id = "toggleStoreType";
 
-    //         const { previous, current, list } = store;
-    //         list.set(previous, StoreState.UNEQUIPPED);
-    //         list.set(current, StoreState.EQUIPPED);
-    //     } else {
-    //         store.list.set(id, StoreState.UNEQUIPPED);
+    //     type ExtractIndex<T, K> = Extract<K[keyof K], { index: T }>
+    //     type Result<K, R extends unknown[] = []> = ExtractIndex<R["length"], K> extends never
+    //         ? R
+    //         : Result<K, [...R, ExtractIndex<R["length"], K>]>
+
+    //     const data = DataHandler.getStore(type);
+    //     const store = Object.values(data) as Result<typeof Hats> | Result<typeof Accessories>;
+
+    //     const storeHolder = document.createElement("div");
+    //     storeHolder.id = "storeHolder";
+
+    //     for (const item of store) {
+    //         if ("dontSell" in item) continue;
+    //         const element = this.generateStoreElement(type, item.id, item.name, item.price, "topSprite" in item);
+    //         storeHolder.appendChild(element);
     //     }
+
+    //     storeMenu.appendChild(button);
+    //     storeMenu.appendChild(storeHolder);
     // }
 
     /**
@@ -62,12 +51,16 @@ const GameUI = new class GameUI {
         return {
             gameCanvas: querySelector<HTMLCanvasElement>("#gameCanvas")!,
             chatHolder: querySelector<HTMLInputElement>("#chatHolder")!,
-            storeHolder: querySelector<HTMLInputElement>("#storeHolder")!,
+            storeHolder: querySelector<HTMLDivElement>("#storeHolder")!,
             chatBox: querySelector<HTMLInputElement>("#chatBox")!,
-            storeMenu: querySelector<HTMLInputElement>("#storeMenu")!,
-            clanMenu: querySelector<HTMLInputElement>("#allianceMenu")!,
-            storeButton: querySelector<HTMLInputElement>("#storeButton")!,
-            clanButton: querySelector<HTMLInputElement>("#allianceButton")!,
+            storeMenu: querySelector<HTMLDivElement>("#storeMenu")!,
+            allianceMenu: querySelector<HTMLDivElement>("#allianceMenu")!,
+            storeContainer: querySelector<HTMLDivElement>("#storeContainer")!,
+            itemHolder: querySelector<HTMLDivElement>("#itemHolder")!,
+            gameUI: querySelector<HTMLDivElement>("#gameUI")!,
+            clanMenu: querySelector<HTMLDivElement>("#allianceMenu")!,
+            storeButton: querySelector<HTMLDivElement>("#storeButton")!,
+            clanButton: querySelector<HTMLDivElement>("#allianceButton")!,
             setupCard: querySelector<HTMLDivElement>("#setupCard")!,
             serverBrowser: querySelector<HTMLSelectElement>("#serverBrowser")!,
             skinColorHolder: querySelector<HTMLDivElement>("#skinColorHolder")!,
@@ -162,8 +155,9 @@ const GameUI = new class GameUI {
     }
 
     private modifyInputs() {
-        const { chatHolder, chatBox, nameInput } = this.getElements();
+        const { chatHolder, chatBox, nameInput, storeMenu } = this.getElements();
         chatBox.onblur = () => {
+            // chatHolder.classList.add("closedItem");
             chatHolder.style.display = "none";
             const value = chatBox.value;
             if (value.length > 0) {
@@ -175,6 +169,10 @@ const GameUI = new class GameUI {
         nameInput.onchange = () => {
             Storage.set("moo_name", nameInput.value, false);
         }
+
+        // storeMenu.remove();
+        // chatHolder.removeAttribute("style");
+        // chatHolder.classList.add("closedItem");
     }
 
     /**
@@ -218,21 +216,26 @@ const GameUI = new class GameUI {
      * Checks if element is opened. Used for store, clan and chat
      */
     private isOpened(element: HTMLElement) {
-        return element.style.display === "block";
+        return element.style.display !== "none";
     }
 
     /**
      * Closes all popups except..
      */
-    private closePopups(element?: HTMLElement) {
-        const popups = document.querySelectorAll<HTMLDivElement>("#chatHolder, #storeMenu, #allianceMenu");
+    closePopups(element?: HTMLElement) {
+        const { allianceMenu, clanButton } = this.getElements();
+        if (this.isOpened(allianceMenu) && element !== allianceMenu) {
+            clanButton.click();
+        }
+
+        const popups = document.querySelectorAll<HTMLDivElement>("#chatHolder, #storeContainer, #allianceMenu");
         for (const popup of popups) {
             if (popup === element) continue;
             popup.style.display = "none";
         }
 
         if (element instanceof HTMLElement) {
-            element.style.display = this.isOpened(element) ? "none" : "block";
+            element.style.display = this.isOpened(element) ? "none" : "";
         }
     }
 
@@ -335,6 +338,16 @@ const GameUI = new class GameUI {
         const counter = document.querySelector<HTMLDivElement>("#totalKillCounter");
         if (counter === null) return;
         counter.textContent = myClient.totalKills.toString();
+    }
+
+    reset() {
+        StoreHandler.closeStore();
+    }
+
+    openClanMenu() {
+        const { clanButton } = this.getElements();
+        this.reset();
+        clanButton.click();
     }
 }
 

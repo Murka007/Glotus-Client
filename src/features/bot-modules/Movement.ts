@@ -24,6 +24,7 @@ class Movement {
         ModuleHandler.cursorAngle = pos1.angle(pos2);
         ModuleHandler.reverseCursorAngle = pos2.angle(pos1);
 
+        // It is completely dumb to move only towards owner. It MUST use pathfinder, but I am too lazy to implement this nonsense
         if (distance > 175) {
             this.stopped = false;
             SocketManager.move(ModuleHandler.cursorAngle);

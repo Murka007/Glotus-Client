@@ -11,6 +11,8 @@ import { EDanger } from "../types/Enums";
 import { myClient } from "..";
 import Sorting from "../utility/Sorting";
 import { ItemType } from "../types/Items";
+import NotificationRenderer from "./NotificationRenderer";
+import ObjectManager from "../Managers/ObjectManager";
 
 const colors = [["orange", "red"], ["aqua", "blue"]] as const;
 
@@ -18,6 +20,9 @@ const colors = [["orange", "red"], ["aqua", "blue"]] as const;
  * Called when bundle rendering entities (player, animal)
  */
 const EntityRenderer = new class EntityRenderer {
+    private start = Date.now();
+    step = 0;
+
     private drawWeaponHitbox(ctx: TCTX, player: IRenderEntity) {
         if (!settings.weaponHitbox) return;
 
@@ -29,30 +34,23 @@ const EntityRenderer = new class EntityRenderer {
         }
     }
 
-    private drawPlacement(ctx: TCTX, position: Vector) {
-        const { myPlayer, ModuleHandler } = myClient;
-        // const spike = Items[myPlayer.getItemByType(ItemType.SPIKE)!];
-        // const length = myPlayer.getItemPlaceScale(spike.id);
-        const [type, angles] = ModuleHandler.staticModules.autoPlacer.placeAngles;
-        if (type === null) return;
+    private drawPlacement(ctx: TCTX) {
+        if (!settings.possiblePlacement) return;
+        const { myPlayer, ModuleHandler, ObjectManager } = myClient;
+        // const [type, angles] = ModuleHandler.staticModules.autoPlacer.placeAngles;
+        // if (type === null) return;
 
-        const id = myPlayer.getItemByType(type)!;
-        const length = myPlayer.getItemPlaceScale(id);
+        // const id = myPlayer.getItemByType(type)!;
+        const id = myPlayer.getItemByType(ItemType.TRAP);
+        if (id === null) return;
+        const angles = ObjectManager.getBestPlacementAngles(myPlayer.position.current, id);
+        // console.log(angles.size);
+        const dist = myPlayer.getItemPlaceScale(id);
         const item = Items[id];
-        for (let i=0;i<angles.length;i++) {
-            const angle = angles[i];
-            const pos = myPlayer.position.current.direction(angle, length);
+        for (const angle of angles) {
+            const pos = myPlayer.position.current.direction(angle, dist);
             Renderer.circle(ctx, pos.x, pos.y, item.scale, "purple", 1, 1);
         }
-
-        // const { myPlayer, ModuleHandler, ObjectManager } = myClient;
-        // if (settings.placementHitbox && DataHandler.isPlaceable(myPlayer.currentItem)) {
-        //     const item = Items[myPlayer.currentItem];
-        //     const place = myPlayer.getPlacePosition(myPlayer.position.future, myPlayer.currentItem, ModuleHandler.mouse.sentAngle);
-        //     const canPlace = ObjectManager.canPlaceItem(item.id, place);
-        //     const color = canPlace ? "#ffa552" : "#13d16f";
-        //     Renderer.circle(ctx, place.x, place.y, item.scale, color, 1, 1);
-        // }
     }
 
     private drawEntityHP(ctx: TCTX, entity: IRenderEntity) {
@@ -102,6 +100,11 @@ const EntityRenderer = new class EntityRenderer {
     }
 
     render(ctx: TCTX, entity: IRenderEntity, player: IRenderEntity) {
+        const now = Date.now();
+        this.step = now - this.start;
+        this.start = now;
+        
+        const { myPlayer, EnemyManager } = myClient;
         const isMyPlayer = entity === player;
         if (isMyPlayer) {
 
@@ -111,61 +114,17 @@ const EntityRenderer = new class EntityRenderer {
             }
 
             this.drawWeaponHitbox(ctx, player);
-            this.drawPlacement(ctx, pos);
+            this.drawPlacement(ctx);
 
-            const { myPlayer, EnemyManager } = myClient;
             const secondary = myPlayer.weapon.current;
             const enemy = EnemyManager.nearestEnemy;
             if (settings.projectileHitbox && DataHandler.isShootable(secondary) && enemy) {
                 Renderer.circle(ctx, entity.x, entity.y, 700, "#3e2773", 1, 1);
             }
 
-            // const nearestTrap = EnemyManager.nearestTrap;
-            // const nearestTurretEntity = EnemyManager.nearestTurretEntity;
-
-            // if (nearestTrap !== null) {
-            //     const pos = nearestTrap.position.current;
-            //     Renderer.fillCircle(ctx, pos.x, pos.y, nearestTrap.collisionScale, "pink", 0.5);
-            // }
-
-            // if (nearestTurretEntity !== null) {
-            //     const pos = nearestTurretEntity.position.current;
-            //     Renderer.fillCircle(ctx, pos.x, pos.y, nearestTurretEntity.collisionScale, "pink", 0.5);
-            // }
-
             if (myPlayer.isTrapped) {
                 Renderer.fillCircle(ctx, pos.x, pos.y, 35, "yellow", 0.5);
             }
-            // if (settings.projectileHitbox && enemy && DataHandler.isShootable(secondary)) {
-            //     const { myPlayer, ObjectManager, ProjectileManager } = myClient;
-            //     const pos1 = myPlayer.position.current;
-            //     const angle = pos1.angle(enemy.position.current);
-            //     const bullet = DataHandler.getProjectile(secondary);
-            //     const projectile = ProjectileManager.getProjectile(myPlayer, bullet.id, myPlayer.onPlatform, angle, 700);
-            //     const angles = ProjectileManager.getFreeAttackAngles(projectile, enemy);
-            //     for (const angle of angles) {
-            //         const pos2 = pos1.direction(angle[0], angle[1]);
-            //         Renderer.line(ctx, pos1, pos2, "yellow", 1, 1);
-            //     }
-            //     // const range = 700;
-
-            //     // const objects = ObjectManager.retrieveObjects(pos1, range);
-            //     // objects.sort(Sorting.byDistance(myPlayer, "current", "current"));
-            //     // const object = objects[0] || null;
-            //     // if (object !== null) {
-            //     //     const pos2 = object.position.current;
-            //     //     const distance = pos1.distance(pos2);
-            //     //     const angle = pos1.angle(pos2);
-
-            //     //     const scale = object.collisionScale;
-            //     //     const offset = Math.asin((2 * scale) / (2 * distance));
-
-            //     //     const left = pos1.direction(angle - offset, distance);
-            //     //     const right = pos1.direction(angle + offset, distance);
-            //     //     Renderer.line(ctx, pos1, left, "yellow", 1, 1);
-            //     //     Renderer.line(ctx, pos1, right, "green", 1, 1);
-            //     // }
-            // }
         }
 
         this.drawEntityHP(ctx, entity);
@@ -173,10 +132,24 @@ const EntityRenderer = new class EntityRenderer {
             Renderer.circle(ctx, entity.x, entity.y, entity.scale, "#c7fff2", 1, 1);
         }
 
-        if (isMyPlayer) return;
-        this.drawHitScale(ctx, entity);
-        this.drawDanger(ctx, entity);
-        Renderer.renderTracer(ctx, entity, player);
+        if (!isMyPlayer) {
+            const willCollide = EnemyManager.nearestCollideSpike;
+            if (
+                willCollide &&
+                !entity.isAI &&
+                myPlayer.isEnemyByID(entity.sid) &&
+                entity.sid === willCollide.id
+            ) {
+                Renderer.circle(ctx, entity.x, entity.y, entity.scale, "#691313", 1, 13);
+            }
+            this.drawHitScale(ctx, entity);
+            this.drawDanger(ctx, entity);
+            Renderer.renderTracer(ctx, entity, player);
+        }
+
+        if (isMyPlayer) {
+            NotificationRenderer.render(ctx, player);
+        }
     }
 }
 

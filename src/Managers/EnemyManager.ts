@@ -158,10 +158,10 @@ class EnemyManager {
                 target.onPlatform = true;
             } else if (object.itemGroup === ItemGroup.SPIKE && isEnemyObject) {
                 if (!isOwner && this.isNear(target, this.nearestCollideSpike)) {
-                    const pos1 = target.position.current;
+                    const pos1 = target.position.future; // current, future or both
                     const pos2 = object.position.current;
                     const distance = pos1.distance(pos2);
-                    const range = object.collisionScale + target.collisionScale + 5;
+                    const range = object.collisionScale + target.collisionScale;
                     const willCollide = distance <= range;
                     if (willCollide) {
                         this.nearestCollideSpike = target;

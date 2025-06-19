@@ -20,6 +20,7 @@
 #touch-controls-right,
 #touch-controls-fullscreen,
 #partyButton,
+#adCard,
 #joinPartyButton,
 #guideCard > *:not(#serverBrowser, #altServer, #skinColorHolder, .settingRadio) {
     display: none!important;
@@ -93,3 +94,92 @@
 //     display: flex;
 //     align-items: center;
 // }
+
+.closedItem {
+    display: none!important;
+}
+
+#storeContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+    width: 100%;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#toggleStoreType {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.15);
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 20px;
+    pointer-events: all;
+}
+
+#itemHolder {
+    background-color: rgba(0, 0, 0, 0.15);
+    max-height: 200px;
+    height: 100%;
+    padding: 10px;
+    overflow-y: scroll;
+    border-radius: 4px;
+    pointer-events: all;
+}
+
+#itemHolder::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+}
+
+.storeItemContainer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+    height: 50px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.storeHat {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 45px;
+    height: 45px;
+    margin-top: -5px;
+    pointer-events: none;
+}
+
+.storeItemName {
+    color: #fff;
+    font-size: 20px;
+}
+
+.equipButton {
+    margin-left: auto;
+    color: #80eefc;
+    cursor: pointer;
+    font-size: 35px;
+}
+
+#bottomContainer {
+    bottom: 10px;
+}
+
+#scriptName {
+    position: absolute;
+    top: 0;
+    left: 0;
+}

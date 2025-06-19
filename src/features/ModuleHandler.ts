@@ -27,6 +27,7 @@ import Reloading from "./modules/Reloading";
 import Autobreak from "./modules/Autobreak";
 import SpikeTick from "./modules/SpikeTick";
 import PreAttack from "./modules/PreAttack";
+import StoreHandler from "../UI/StoreHandler";
 
 interface IStore {
     readonly utility: Map<number, boolean>;
@@ -343,13 +344,18 @@ class ModuleHandler {
     }
 
     /** Buys and equips a hat or accessory */
-    equip(type: EStoreType, id: number, force = false): boolean {
+    equip(type: EStoreType, id: number, force = false, toggle = false): boolean {
+        const store = this.store[type];
+        if (toggle && store.last === id && id !== 0) {
+            id = 0;
+        }
         const { myPlayer, SocketManager, isOwner, clients, EnemyManager } = this.client;
+
         if (!myPlayer.inGame || !this.buy(type, id, force)) return false;
 
-        const store = this.store[type];
-        if (!force && store.last === id) return false;
-        store.last = id;
+        // I can play with this logic forever, but still leaving it to you..
+        // if (/* !force &&  */store.last === id) return false;
+        // store.last = id;
 
         SocketManager.equip(type, id);
         if (type === EStoreType.HAT) {
@@ -567,9 +573,8 @@ class ModuleHandler {
         if (event.code === settings.lockrotation) this.toggleRotation();
         if (event.code === settings.lockBotPosition) this.toggleBotPosition();
 
-        const { storeButton, clanButton } = GameUI.getElements();
-        if (event.code === settings.toggleShop) storeButton.click();
-        if (event.code === settings.toggleClan) clanButton.click();
+        if (event.code === settings.toggleShop) StoreHandler.toggleStore();
+        if (event.code === settings.toggleClan) GameUI.openClanMenu();
     }
 
     handleKeyup(event: KeyboardEvent) {

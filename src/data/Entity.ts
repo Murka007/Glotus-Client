@@ -67,12 +67,12 @@ abstract class Entity {
         )
     }
         
-    collidingEntity(entity: Entity, range: number, checkBased = false) {
+    collidingEntity(entity: Entity, range: number, checkBased = false, prev = true) {
         const { previous: a0, current: a1, future: a2 } = this.position;
         const { previous: b0, current: b1, future: b2 } = entity.position;
         if (checkBased) {
             return (
-                a0.distance(b0) <= range ||
+                prev && a0.distance(b0) <= range ||
                 a1.distance(b1) <= range ||
                 a2.distance(b2) <= range
             )

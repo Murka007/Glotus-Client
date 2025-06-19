@@ -24,6 +24,7 @@ class Instakill {
         const { ModuleHandler, EnemyManager, myPlayer } = this.client;
         if (this.state === -1) return;
 
+        // I realized that instakill is a complete nonsense, should focus on spiketick, autosync, tanksense implementations..
         // Reset when finished instakilling
         if (this.state === 3) {
             this.state = -1;

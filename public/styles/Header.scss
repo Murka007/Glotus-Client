@@ -14,6 +14,25 @@ header {
         font-size: 2.3em;
     }
 
+    #credits {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        height: 45px;
+
+        p {
+            margin-top: auto;
+        }
+    }
+
+    #logo {
+        display: block;
+
+        width: auto;
+        height: 100%;
+        scale: 1.2;
+    }
+
     #close-button {
         display: block;
         fill: $close-button-color;

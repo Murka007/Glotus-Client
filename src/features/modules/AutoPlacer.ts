@@ -8,7 +8,7 @@ class AutoPlacer {
     readonly name = "autoPlacer";
     private readonly client: PlayerClient;
 
-    placeAngles: [Exclude<ItemType, ItemType.FOOD> | null, number[]] = [null, []];
+    placeAngles: [Exclude<ItemType, ItemType.FOOD> | null, Set<number>] = [null, new Set];
 
     constructor(client: PlayerClient) {
         this.client = client;
@@ -16,7 +16,7 @@ class AutoPlacer {
 
     postTick(): void {
         this.placeAngles[0] = null;
-        this.placeAngles[1] = [];
+        this.placeAngles[1].clear();
 
         if (!settings.autoplacer) return;
 
@@ -34,7 +34,7 @@ class AutoPlacer {
         const spike = myPlayer.getItemByType(ItemType.SPIKE);
         const spikeAngles = ObjectManager.getBestPlacementAngles(pos, spike, nearestAngle);
 
-        let angles: number[] = [];
+        let angles = new Set<number>();
 
         const length = myPlayer.getItemPlaceScale(spike);
         for (const angle of spikeAngles) {
@@ -57,7 +57,7 @@ class AutoPlacer {
             }
         }
 
-        if (angles.length === 0) {
+        if (angles.size === 0) {
             const type = currentType && currentType !== ItemType.FOOD ? currentType : ItemType.TRAP;
             if (!myPlayer.canPlace(type)) return;
 
@@ -66,20 +66,19 @@ class AutoPlacer {
             itemType = type;
         }
 
+        // const itemType = currentType && currentType !== ItemType.FOOD ? currentType : ItemType.TRAP;
+        // const id = myPlayer.getItemByType(itemType)!;
+        // const angles = ObjectManager.getBestPlacementAngles(pos, id, nearestAngle);
         if (itemType === null) return;
         this.placeAngles[0] = itemType;
         this.placeAngles[1] = angles;
 
-        // const count = ModuleHandler.healedOnce && ModuleHandler.totalPlaces === 2 ? 4 : 3;
         for (const angle of angles) {
-            // if (ModuleHandler.totalPlaces >= count) break;
-
             ModuleHandler.actionPlanner.createAction(
                 itemType,
                 (last) => ModuleHandler.place(itemType!, { angle, priority: ESentAngle.LOW, last })
             );
             ModuleHandler.placedOnce = true;
-            // ModuleHandler.totalPlaces += 1;
         }
     }
 }

@@ -39,6 +39,10 @@ export const removeFast = (array: unknown[], index: number) => {
     }
 }
 
+export const map = (value: number, start1: number, stop1: number, start2: number, stop2: number) => {
+    return (value - start1) / (stop1 - start1) * (stop2 - start2) + start2;
+}
+
 export const lerp = (start: number, end: number, factor: number) => {
     return (1 - factor) * start + factor * end;
 }
@@ -198,12 +202,22 @@ export const pointInDesert = (position: Vector) => {
     return position.y >= (Config.mapScale - Config.snowBiomeTop);
 }
 
+export const inView = (x: number, y: number, radius: number) => {
+    const maxScreenWidth = Math.min(1920, ZoomHandler.scale.current.w);
+    const maxScreenHeight = Math.min(1080, ZoomHandler.scale.current.h);
+    const visibleHorizontally = x + radius > 0 && x - radius < maxScreenWidth;
+    const visibleVertically = y + radius > 0 && y - radius < maxScreenHeight;
+    // return true;
+    return visibleHorizontally && visibleVertically;
+}
+
 export const inRange = (value: number, min: number, max: number) => {
     return value >= min && value <= max;
 }
 
 export const findPlacementAngles = (angles: IAngle[]) => {
-    const output: number[] = [];
+    // const output: number[] = [];
+    const output = new Set<number>();
 
     for (let i = 0; i < angles.length; i++) {
         const { angle, offset } = angles[i];
@@ -223,8 +237,8 @@ export const findPlacementAngles = (angles: IAngle[]) => {
             }
         }
   
-        if (!startIntersects) output.push(start);
-        if (!endIntersects) output.push(end);
+        if (!startIntersects) output.add(start);
+        if (!endIntersects) output.add(end);
     }
   
     return output;

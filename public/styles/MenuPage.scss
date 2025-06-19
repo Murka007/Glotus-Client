@@ -93,6 +93,18 @@
                 }
             }
 
+            .text {
+                display: flex;
+                justify-content: left;
+                gap: 10px;
+
+                .text-value {
+                    color: #857f7f;
+                    font-weight: 800;
+                    font-size: 1.5em;
+                }
+            }
+
             @include button;
             @include hotkeyInput;
             @include checkbox;

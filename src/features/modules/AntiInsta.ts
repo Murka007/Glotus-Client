@@ -46,14 +46,13 @@ class AntiInsta {
             if (myPlayer.shameActive) return;
 
             ModuleHandler.didAntiInsta = true;
-            healingTimes = maxTimes;
+            healingTimes = Math.min(maxTimes, 3);
         } else if (this.canHeal) {
             healingTimes = needTimes;
             myPlayer.tempHealth += clamp(restore * healingTimes, 0, 100);
         }
 
         if (healingTimes !== null) {
-            // ModuleHandler.totalPlaces += healingTimes;
             ModuleHandler.healedOnce = true;
             ModuleHandler.actionPlanner.createActions(
                 ItemType.FOOD,

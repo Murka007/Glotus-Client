@@ -48,6 +48,7 @@ class ClientPlayer extends Player {
      * true if my player is in game
      */
     inGame = false;
+    wasDead = true;
     diedOnce = false;
     private platformActivated = false;
 
@@ -276,11 +277,14 @@ class ClientPlayer extends Player {
         const { actual } = ModuleHandler.getAccStore();
 
         const useCorrupt = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.CORRUPT_X_WINGS);
+        const useShadow = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.SHADOW_WINGS);
         const useTail = ModuleHandler.canBuy(EStoreType.ACCESSORY, EAccessory.MONKEY_TAIL);
         const useActual = ModuleHandler.canBuy(EStoreType.ACCESSORY, actual);
 
         if (EnemyManager.detectedEnemy || EnemyManager.nearestEnemyInRangeOf(275, EnemyManager.nearestEntity)) {
-            if (useCorrupt) return EAccessory.CORRUPT_X_WINGS;
+            const isEnemy = EnemyManager.nearestEnemyInRangeOf(275, EnemyManager.nearestEnemy);
+            if (isEnemy && useCorrupt) return EAccessory.CORRUPT_X_WINGS;
+            if (useShadow) return EAccessory.SHADOW_WINGS;
             if (useActual && actual !== EAccessory.MONKEY_TAIL) return actual;
             return EAccessory.UNEQUIP;
         }
@@ -304,11 +308,14 @@ class ClientPlayer extends Player {
         const { autoBreak, spikeTick } = ModuleHandler.staticModules;
         const id = this.getItemByType(ModuleHandler.weapon)!;
         if (id === EWeapon.WOODEN_SHIELD) return null;
-        // if (EnemyManager.detectedEnemy) return null;
         if (DataHandler.isShootable(id)) return EHat.SAMURAI_ARMOR;
 
         const weapon = Weapons[id];
         const range = weapon.range + 60;
+
+        if (spikeTick.isActive && spikeTick.tickAction === 1) {
+            return EHat.TURRET_GEAR;
+        }
 
         if (ModuleHandler.attackingState === EAttack.ATTACK || spikeTick.isActive) {
             const nearest = EnemyManager.nearestEntity;
@@ -390,6 +397,10 @@ class ClientPlayer extends Player {
      * Called after all received packets. Player and animal positions have been updated
      */
     tickUpdate() {
+        if (this.inGame && this.wasDead) {
+            this.wasDead = false;
+            this.onFirstTickAfterSpawn();
+        }
         if (this.hatID === EHat.SHAME && !this.shameActive) {
             this.shameActive = true;
             this.shameTimer = 0;
@@ -455,13 +466,13 @@ class ClientPlayer extends Player {
         }
     }
 
-    playerSpawn() {
-        this.inGame = true;
-        
+    private onFirstTickAfterSpawn() {
         const { ModuleHandler, SocketManager, isOwner } = this.client;
         const { mouse, staticModules } = ModuleHandler;
-        const store = ModuleHandler.getHatStore();
-        ModuleHandler.equip(EStoreType.HAT, store.best);
+        // const hatStore = ModuleHandler.getHatStore();
+        // const accStore = ModuleHandler.getAccStore();
+        // ModuleHandler.equip(EStoreType.HAT, hatStore.best);
+        // ModuleHandler.equip(EStoreType.ACCESSORY, accStore.best);
         ModuleHandler.updateAngle(mouse.sentAngle, true);
         if (myClient.ModuleHandler.autoattack) {
             ModuleHandler.autoattack = true;
@@ -478,6 +489,10 @@ class ClientPlayer extends Player {
             staticModules.tempData.setStore(EStoreType.HAT, owner.store[EStoreType.HAT].actual);
             staticModules.tempData.setStore(EStoreType.ACCESSORY, owner.store[EStoreType.ACCESSORY].actual);
         }
+    }
+
+    playerSpawn() {
+        this.inGame = true;
     }
 
     isUpgradeWeapon(id: EWeapon) {
@@ -658,6 +673,7 @@ class ClientPlayer extends Player {
         ModuleHandler.reset();
 
         this.inGame = false;
+        this.wasDead = true;
         this.shameTimer = 0;
         this.shameCount = 0;
         this.upgradeOrder.length = 0;
@@ -672,7 +688,11 @@ class ClientPlayer extends Player {
         this.deathPosition.setVec(this.position.current);
         this.diedOnce = true;
 
-        if (!this.client.isOwner) this.spawn();
+        if (this.client.isOwner) {
+            GameUI.reset();
+        } else {
+            this.spawn();
+        }
     }
 }
 

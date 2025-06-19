@@ -1,3 +1,4 @@
+import { EAccessory, EHat } from "../types/Store";
 import { Cookie } from "./Storage";
 
 export interface ISettings {
@@ -46,6 +47,8 @@ export interface ISettings {
     teammateTracersColor: string;
     animalTracers: boolean;
     animalTracersColor: string;
+    notificationTracers: boolean;
+    notificationTracersColor: string;
     arrows: boolean;
 
     itemMarkers: boolean;
@@ -79,10 +82,12 @@ export interface ISettings {
     collisionHitbox: boolean
     placementHitbox: boolean;
     turretHitbox: boolean;
+    possiblePlacement: boolean;
 
     autospawn: boolean;
     autoaccept: boolean;
     menuTransparency: boolean;
+    storeItems: [EHat[], EAccessory[]];
 }
 
 export const defaultSettings = {
@@ -123,6 +128,8 @@ export const defaultSettings = {
     teammateTracersColor: "#8ecc51",
     animalTracers: false,
     animalTracersColor: "#518ccc",
+    notificationTracers: true,
+    notificationTracersColor: "#f5d951",
     arrows: true,
     itemMarkers: true,
     itemMarkersColor: "#84bd4b",
@@ -151,12 +158,35 @@ export const defaultSettings = {
     collisionHitbox: false,
     placementHitbox: false,
     turretHitbox: false,
+    possiblePlacement: true,
     autospawn: false,
     autoaccept: false,
     menuTransparency: false,
-} as const satisfies ISettings;
+    storeItems: [[
+        EHat.WINTER_CAP,
+        EHat.FLIPPER_HAT,
+        EHat.SOLDIER_HELMET,
+        EHat.BULL_HELMET,
+        EHat.EMP_HELMET,
+        EHat.BOOSTER_HAT,
+        EHat.BARBARIAN_ARMOR,
+        EHat.SPIKE_GEAR,
+        EHat.TURRET_GEAR,
+        EHat.SAMURAI_ARMOR,
+        EHat.TANK_GEAR,
+        EHat.ASSASSIN_GEAR
+    ], [
+        EAccessory.MONKEY_TAIL,
+        EAccessory.APPLE_BASKET,
+        EAccessory.SAWBLADE,
+        EAccessory.ANGEL_WINGS,
+        EAccessory.SHADOW_WINGS,
+        EAccessory.BLOOD_WINGS,
+        EAccessory.CORRUPT_X_WINGS,
+    ]],
+} satisfies ISettings;
 
-defaultSettings.healingSpeed
+defaultSettings.storeItems
 
 const settings = { ...defaultSettings, ...Cookie.get<ISettings>("Glotus") };
 for (const iterator in settings) {

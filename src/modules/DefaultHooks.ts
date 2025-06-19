@@ -85,19 +85,19 @@ const DefaultHooks = () => {
 
     const blockProperty = (target: any, key: string) => {
         Object.defineProperty(target, key, {
-            value: undefined,
-            configurable: false,
-            writable: false,
+            get(){},
+            set(){},
+            configurable: false
         })
     }
 
-    blockProperty(window, "onbeforeunload");
+    //blockProperty(window, "onbeforeunload");
     // blockProperty(window, "__FRVR");
     // blockProperty(window, "FRVR");
     // blockProperty(window, "FRVRSDK");
-    // blockProperty(window, "adsbygoogle");
-    // blockProperty(window, "google_reactive_ads_global_state");
-    // blockProperty(window, "GoogleAnalyticsObject");
+    blockProperty(window, "adsbygoogle");
+    blockProperty(window, "google_reactive_ads_global_state");
+    blockProperty(window, "GoogleAnalyticsObject");
 
     const connection: ISocket = {
         socket: undefined,
@@ -107,6 +107,8 @@ const DefaultHooks = () => {
 
     window.WebSocket = new Proxy(WebSocket, {
         construct(target, args: ConstructorParameters<typeof WebSocket>) {
+            // args[0] = `
+// wss://sgs-wctwk-vnn5q.frankfurt.moomoo.io/?token=alt%3AeyJhbGdvcml0aG0iOiJTSEEtMjU2IiwiY2hhbGxlbmdlIjoiZjJlOGZlOTBjYWQ0YzFmYmNkZTgzMTcyNTQ0NDk0NzU5YzczNzg2Mzg4MGY2MzU4YTRiOGIxZDI2ZGY1YTRmNSIsIm51bWJlciI6MzIyNTQsInNhbHQiOiI5OWQ0NGQ2MjQzNDY2NGU3ZGZkOGNhYzMiLCJzaWduYXR1cmUiOiIxOTc5NTI5OTYyY2JkNmM0ZDkzNDVjNjEzMGE3NDA0YmZjYjY3YjU2MDIwYTg2ZTM5Yjg0YTZiN2U2NDcwODlhIiwidG9vayI6MjQ2NX0%3D`;
             const ws = new target(...args);
             connection.socket = ws;
             window.WebSocket = target;
@@ -129,6 +131,34 @@ const DefaultHooks = () => {
             return true;
         }
     );
+
+    const text = atob("R2xvdHVz");
+    const renderText = (ctx: any) => {
+        ctx.save();
+        ctx.font = "600 20px sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const scale = ZoomHandler.getScale();
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "#f1f1f1";
+        ctx.strokeStyle = "#1c1c1c";
+        ctx.lineWidth = 8;
+        ctx.globalAlpha = 0.8;
+        ctx.letterSpacing = "4px";
+        ctx.strokeText(text, 5, 5);
+        ctx.fillText(text, 5, 5);
+        ctx.restore();
+    }
+
+    const frame = window.requestAnimationFrame;
+    window.requestAnimationFrame = function(callback: FrameRequestCallback) {
+        const value = frame.call(this, callback);
+        const canvas = document.querySelector<HTMLCanvasElement>("#gameCanvas")!;
+        const ctx = canvas.getContext("2d")!;
+        renderText(ctx);
+        return value;
+    }
 
     // Hooker.createRecursiveHook(
     //     Object.prototype, "server",

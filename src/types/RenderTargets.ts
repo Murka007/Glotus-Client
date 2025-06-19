@@ -8,6 +8,7 @@ export interface IRenderEntity {
     isPlayer?: boolean;
     isAI?: boolean;
     index?: number;
+    team?: number;
 }
 
 export interface IRenderObject {

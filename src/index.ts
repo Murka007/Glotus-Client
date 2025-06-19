@@ -9,10 +9,12 @@ import ObjectRenderer from "./rendering/ObjectRenderer";
 import EntityRenderer from "./rendering/EntityRenderer";
 import DefaultHooks from "./modules/DefaultHooks";
 import PlayerClient from "./PlayerClient";
+import StoreHandler from "./UI/StoreHandler";
 
 export const connection = DefaultHooks();
 export const myClient = new PlayerClient(connection, true);
 
+console.log("RUNNING CLIENT...");
 const Glotus = {
     myClient,
     GameUI,
@@ -34,6 +36,7 @@ Injector.init();
 window.addEventListener("DOMContentLoaded", () => {
     UI.createMenu();
     GameUI.init();
+    StoreHandler.init();
 });
 
 window.addEventListener("load", () => {

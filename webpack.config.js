@@ -18,7 +18,7 @@ class BannerPlugin {
                 for (const filename of chunk.files) {
                     const asset = compilation.assets[filename];
                     const code = asset._value;
-                    asset._value = this.banner.replace(/SCRIPT_VERSION/, version) + code;
+                    asset._value = this.banner.replace(/SCRIPT_VERSION/g, version).replace(/\{CODE\}/, code.replace(/\(\);$/, ""));
                 }
             }
             callback();

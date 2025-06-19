@@ -43,7 +43,7 @@ class Player extends Entity {
     previousHealth = 100;
     currentHealth = 100;
     tempHealth = 100;
-    readonly maxHealth = 100;
+    maxHealth = 100;
 
     
     readonly globalInventory = {} as TGlobalInventory;
