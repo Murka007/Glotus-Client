@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name ! Glotus Client [Moomoo.io] vSCRIPT_VERSION
+// @name ! Glotus Client [Moomoo.io]
 // @author Murka
 // @description An excellent Moomoo.io hack for a comfortable gaming experience
 // @icon https://imagizer.imageshack.com/img924/3497/SedB2D.png
