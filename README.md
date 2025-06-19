@@ -1,7 +1,7 @@
 # Glotus client
 > An excellent Moomoo.io hack for a comfortable gaming experience
 
-**DOWNLOAD ON GREASYFORK**: [Glotus client](https://greasyfork.org/en/users/919633-murka007)
+**DOWNLOAD ON GREASYFORK**: [Glotus client](https://greasyfork.org/en/scripts/540039-glotus-client-moomoo-io-v2-0-3)
 
 ### IMPORTANT
 Before installing this script, in the tampermonkey settings change `General > Config mode` to `Advanced` and make sure to switch `Security > Content Script API` to `UserScripts API Dynamic` and then click on `Save`, otherwise script **won't load correctly**.
