@@ -6,6 +6,7 @@
 ### IMPORTANT
 Before installing this script, in the tampermonkey settings change `General > Config mode` to `Advanced` and make sure to switch `Security > Content Script API` to `UserScripts API Dynamic` and then click on `Save`, otherwise script **won't load correctly**.
 <br>
+
 <img src="https://imagizer.imageshack.com/img924/8446/PJSHzY.png" width="500"/>
 
 <img src="https://imagizer.imageshack.com/img922/7369/18zIVG.png" width="500"/>
