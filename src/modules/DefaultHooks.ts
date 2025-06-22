@@ -1,5 +1,6 @@
 import { ISocket } from "../types/Socket";
 import Hooker from "../utility/Hooker";
+import Logger from "../utility/Logger";
 import Storage from "../utility/Storage";
 import ZoomHandler from "./ZoomHandler";
 
@@ -35,6 +36,28 @@ const DefaultHooks = () => {
             return target.apply(_this, args);
         }
     });
+
+    // EventTarget.prototype.addEventListener = new Proxy(EventTarget.prototype.addEventListener, {
+    //     apply(target, _this, args: any) {
+    //         // if (args[0] === "statechange") {
+    //         //     const copy = args[1];
+    //         //     args[1] = function(event: any) {
+    //         //         console.log("statechange", event);
+    //         //         return copy(event);
+    //         //     }
+    //         //     console.log("found", args);
+    //         // }
+    //         console.log(_this, args);
+    //         return target.apply(_this, args);
+    //     }
+    // })
+    // window.CustomEvent = new Proxy(CustomEvent, {
+    //     construct(target, args: ConstructorParameters<typeof CustomEvent>) {
+    //         const event = new target(...args);
+    //         console.log(args);
+    //         return event;
+    //     }
+    // })
 
     window.setInterval = new Proxy(setInterval, {
         apply(target, _this, args: Parameters<typeof setInterval>) {
